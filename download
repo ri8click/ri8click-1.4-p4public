@@ -1,0 +1,31 @@
+# ============================================================================
+# RI8CLICK REAL ESTATE CONSORTIUM — USER CREDENTIALS (.envRE)
+# File Path: /.envRE (Project Root: ri8click-pro1.3P4public/.envRE)
+# ============================================================================
+
+# 1. Super Administrator Credentials
+VITE_RE_ADMIN_USERNAME=admin
+VITE_RE_ADMIN_EMAIL=admin@ri8click.com
+VITE_RE_ADMIN_PASSWORD=admin123
+
+# 2. Certified Real Estate Agency Users Credentials
+VITE_RE_AGENT_ZEM_USERNAME=zem
+VITE_RE_AGENT_ZEM_EMAIL=zem@ri8click.com
+VITE_RE_AGENT_ZEM_PASSWORD=zem123
+
+VITE_RE_AGENT_ALSADAT_USERNAME=alsadat
+VITE_RE_AGENT_ALSADAT_EMAIL=alsadat@ri8click.com
+VITE_RE_AGENT_ALSADAT_PASSWORD=alsadat123
+
+VITE_RE_AGENT_TAXILA_USERNAME=taxila
+VITE_RE_AGENT_TAXILA_EMAIL=taxila@ri8click.com
+VITE_RE_AGENT_TAXILA_PASSWORD=taxila123
+
+VITE_RE_AGENT_SAPPHIRE_USERNAME=sapphire
+VITE_RE_AGENT_SAPPHIRE_EMAIL=sapphire@ri8click.com
+VITE_RE_AGENT_SAPPHIRE_PASSWORD=sapphire123
+
+# 3. Private Portfolio Customer / Investor Credentials
+VITE_RE_CUSTOMER_INVESTOR_USERNAME=investor
+VITE_RE_CUSTOMER_INVESTOR_EMAIL=investor@gmail.com
+VITE_RE_CUSTOMER_INVESTOR_PASSWORD=investor123

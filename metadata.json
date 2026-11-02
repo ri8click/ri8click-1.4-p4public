@@ -1,0 +1,6 @@
+{
+  "name": "ri8click - Multi-Agent Real Estate & Group of Companies",
+  "description": "Corporate Multi-Agent Real Estate Portal, Consortium & AdVibe Mega-Project Advertising Module specializing in Housing Societies, High-Rise Developments, Modular Capsule Houses, and Construction in Taxila & Islamabad.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
