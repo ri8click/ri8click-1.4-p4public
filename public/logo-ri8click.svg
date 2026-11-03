@@ -1,0 +1,152 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 540 450" width="100%" height="100%" fill="none">
+  <defs>
+    <!-- Vivid Lime Green Gradient -->
+    <linearGradient id="vivid_lime" x1="20%" y1="0%" x2="80%" y2="100%">
+      <stop offset="0%" stopColor="#AEE919" />
+      <stop offset="40%" stopColor="#9BD414" />
+      <stop offset="100%" stopColor="#87BE0D" />
+    </linearGradient>
+
+    <!-- Vivid Crimson Gloss Gradient -->
+    <linearGradient id="crimson_gloss" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stopColor="#E52D4A" />
+      <stop offset="30%" stopColor="#C91B36" />
+      <stop offset="70%" stopColor="#A61028" />
+      <stop offset="100%" stopColor="#840A1D" />
+    </linearGradient>
+
+    <!-- Highlight Sheen for 'click' -->
+    <linearGradient id="text_sheen" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stopColor="#FF6B81" />
+      <stop offset="45%" stopColor="#DE213E" />
+      <stop offset="100%" stopColor="#9E0C22" />
+    </linearGradient>
+
+    <!-- Ultra-subtle crisp edge drop shadow -->
+    <filter id="crisp_edge" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="1.5" stdDeviation="1.5" floodColor="#1a0004" floodOpacity="0.25" />
+    </filter>
+  </defs>
+
+  <!-- 1. LIME GREEN FIGURE '8' & RIBBON -->
+  <g id="figure-eight" filter="url(#crisp_edge)">
+    <!-- Top Loop (Upper Circle with Top-Left Gap) -->
+    <!-- Center (270, 145), Outer Radius 88, Inner Radius 46 -->
+    <path
+      d="
+        M 270 57
+        A 88 88 0 1 1 185 174
+        L 216 189
+        A 46 46 0 1 0 270 103
+        L 270 57 Z
+      "
+      fill="url(#vivid_lime)"
+    />
+
+    <!-- Bottom Loop (Lower Circle with Bottom-Right Gap) -->
+    <!-- Center (270, 290), Outer Radius 112, Inner Radius 66 -->
+    <path
+      d="
+        M 270 402
+        A 112 112 0 1 1 364 250
+        L 326 270
+        A 66 66 0 1 0 270 356
+        L 270 402 Z
+      "
+      fill="url(#vivid_lime)"
+    />
+
+    <!-- Thin arc line under the bottom-right gap -->
+    <path
+      d="M 280 402 C 322 400, 360 380, 388 350"
+      stroke="url(#vivid_lime)"
+      stroke-width="5"
+      stroke-linecap="round"
+      fill="none"
+    />
+
+    <!-- Lime Green Ribbon / Flourish under 'click' with notched start -->
+    <path
+      d="
+        M 238 348
+        L 248 357
+        L 238 368
+        C 275 372, 325 368, 385 354
+        C 435 342, 475 345, 506 364
+        C 490 352, 445 336, 395 340
+        C 340 345, 290 354, 254 350
+        Z
+      "
+      fill="url(#vivid_lime)"
+    />
+  </g>
+
+  <!-- 2. CRIMSON 'ri' (Left side) -->
+  <g id="ri-text" filter="url(#crisp_edge)">
+    <!-- High-res vector 'r' -->
+    <path
+      d="
+        M 62 264
+        L 88 188
+        C 93 174, 102 168, 115 167
+        C 128 166, 138 174, 142 188
+        C 144 195, 139 202, 131 204
+        C 122 205, 116 198, 112 192
+        C 107 186, 102 189, 99 200
+        L 78 264
+        Z
+      "
+      fill="url(#crimson_gloss)"
+    />
+    
+    <!-- High-res vector 'i' -->
+    <path
+      d="
+        M 118 264
+        L 138 198
+        C 141 192, 148 190, 156 190
+        L 151 202
+        L 132 264
+        Z
+      "
+      fill="url(#crimson_gloss)"
+    />
+
+    <!-- Crimson circular dot for 'i' in 'ri' -->
+    <circle cx="152" cy="172" r="14" fill="url(#crimson_gloss)" />
+
+    <!-- Sharp typographic glyph overlay -->
+    <text
+      x="54"
+      y="264"
+      font-family="'Playfair Display', Georgia, 'Times New Roman', serif"
+      font-size="112"
+      font-style="italic"
+      font-weight="900"
+      fill="url(#crimson_gloss)"
+      letter-spacing="-4"
+    >
+      ri
+    </text>
+  </g>
+
+  <!-- 3. CRIMSON 'click' (Inside lower loop) -->
+  <g id="click-text" filter="url(#crisp_edge)">
+    <!-- Sharp cursive italic lettering for 'click' -->
+    <text
+      x="202"
+      y="346"
+      font-family="'Brush Script MT', 'Playfair Display', 'Dancing Script', Georgia, cursive, serif"
+      font-size="124"
+      font-style="italic"
+      font-weight="900"
+      fill="url(#text_sheen)"
+      letter-spacing="-3"
+    >
+      click
+    </text>
+
+    <!-- Circular Red Dot for the 'i' in 'click' -->
+    <circle cx="344" cy="250" r="14" fill="url(#crimson_gloss)" />
+  </g>
+</svg>
