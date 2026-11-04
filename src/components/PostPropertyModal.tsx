@@ -11,7 +11,8 @@ import {
   ShieldCheck, 
   Sparkles,
   AlertCircle,
-  Check
+  Check,
+  Plus
 } from 'lucide-react';
 import { Property, AgencyAccount, ProvinceCityData, PropertyCategory, LocationData } from '../types';
 import { WatermarkBadge } from './WatermarkBadge';
@@ -24,6 +25,7 @@ interface PostPropertyModalProps {
   onClose: () => void;
   currentAgency: AgencyAccount;
   provinceCityData: ProvinceCityData[];
+  onUpdateProvinceCityData?: (updated: ProvinceCityData[]) => void;
   onAddProperty: (property: Property) => void;
   onOpenAdmin: () => void;
   currentRole?: 'admin' | 'agency' | 'customer';
@@ -36,6 +38,7 @@ export const PostPropertyModal: React.FC<PostPropertyModalProps> = ({
   onClose,
   currentAgency,
   provinceCityData,
+  onUpdateProvinceCityData,
   onAddProperty,
   onOpenAdmin,
   currentRole = 'agency',
@@ -73,13 +76,65 @@ export const PostPropertyModal: React.FC<PostPropertyModalProps> = ({
   const [virtualTourVideoUrl, setVirtualTourVideoUrl] = useState<string>('');
   const [virtualTourVideoTitle, setVirtualTourVideoTitle] = useState<string>('');
 
-  // Check quota limit
-  const isQuotaReached = currentAgency.totalPosts >= currentAgency.postLimit;
+  // Inline Quick-Add Missing City / Society State
+  const [showQuickAddLocation, setShowQuickAddLocation] = useState(false);
+  const [quickNewCity, setQuickNewCity] = useState('');
+  const [quickNewSociety, setQuickNewSociety] = useState('');
+  const [quickAddNotice, setQuickAddNotice] = useState<string | null>(null);
+
+  // Check quota limit (Super Admin bypasses quota limit)
+  const isQuotaReached = !userIsSuperAdmin && currentAgency.totalPosts >= currentAgency.postLimit;
 
   // Available societies for selected city
   const selectedProvinceData = provinceCityData.find(p => p.province === province);
   const selectedCityData = selectedProvinceData?.cities.find(c => c.name === city);
   const availableSocieties = selectedCityData?.societies || ['Faisal Hills', 'Margalla View', 'Cantt'];
+
+  const handleQuickSaveLocation = () => {
+    const trimmedCity = quickNewCity.trim();
+    const trimmedSoc = quickNewSociety.trim();
+    if (!trimmedCity && !trimmedSoc) return;
+
+    const targetCity = trimmedCity || city;
+    const updatedData = provinceCityData.map(prov => {
+      if (prov.province !== province) return prov;
+      const cityExists = prov.cities.some(c => c.name.toLowerCase() === targetCity.toLowerCase());
+      if (!cityExists) {
+        return {
+          ...prov,
+          cities: [
+            ...prov.cities,
+            {
+              name: targetCity,
+              isFeatured: true,
+              societies: trimmedSoc
+                ? [trimmedSoc, 'Main Boulevard', 'City Centre']
+                : ['Main Boulevard', 'City Centre']
+            }
+          ]
+        };
+      }
+      return {
+        ...prov,
+        cities: prov.cities.map(c => {
+          if (c.name.toLowerCase() !== targetCity.toLowerCase()) return c;
+          if (!trimmedSoc) return c;
+          const socExists = c.societies.some(s => s.toLowerCase() === trimmedSoc.toLowerCase());
+          return socExists ? c : { ...c, societies: [trimmedSoc, ...c.societies] };
+        })
+      };
+    });
+
+    onUpdateProvinceCityData?.(updatedData);
+    setCity(targetCity);
+    if (trimmedSoc) setSociety(trimmedSoc);
+    setQuickNewCity('');
+    setQuickNewSociety('');
+    setQuickAddNotice(
+      `Added ${trimmedCity ? `City "${targetCity}" ` : ''}${trimmedSoc ? `& Society "${trimmedSoc}"` : ''} to global database!`
+    );
+    setTimeout(() => setQuickAddNotice(null), 3500);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -95,6 +150,7 @@ export const PostPropertyModal: React.FC<PostPropertyModalProps> = ({
       type,
       price,
       priceFormatted: priceFormatted.trim(),
+      currency: 'PKR',
       location: {
         province,
         city,
@@ -117,6 +173,9 @@ export const PostPropertyModal: React.FC<PostPropertyModalProps> = ({
       hasVirtualTour: userIsSuperAdmin ? Boolean(virtualTourVideoUrl.trim()) : false,
       watermark: true,
       isFeatured: true,
+      status: 'active',
+      viewsCount: 1,
+      savesCount: 0,
       agencyId: currentAgency.id,
       agentName: currentAgency.name,
       agentCompany: currentAgency.companyName,
@@ -132,7 +191,7 @@ export const PostPropertyModal: React.FC<PostPropertyModalProps> = ({
         'Underground Electricity',
         'Commercial Broadway Proximity'
       ],
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString().split('T')[0]
     };
 
     onAddProperty(newProp);
@@ -258,6 +317,7 @@ export const PostPropertyModal: React.FC<PostPropertyModalProps> = ({
                   <option value="residential">Residential</option>
                   <option value="commercial">Commercial (High ROI)</option>
                   <option value="modular">Capsule & Modular</option>
+                  <option value="projects">New Society Projects</option>
                 </select>
               </div>
 
@@ -276,6 +336,7 @@ export const PostPropertyModal: React.FC<PostPropertyModalProps> = ({
                   <option value="Retail Shop">Retail Shop</option>
                   <option value="Capsule Smart House">Capsule Smart House</option>
                   <option value="Residential Plot">Residential Plot</option>
+                  <option value="Commercial Plot">Commercial Plot</option>
                   <option value="Apartment">Apartment</option>
                 </select>
               </div>
@@ -283,9 +344,59 @@ export const PostPropertyModal: React.FC<PostPropertyModalProps> = ({
 
             {/* Location (Province, City, Society) & Interactive Map Coordinates */}
             <div className="p-4 bg-slate-50 rounded-xl border border-slate-200/80 space-y-3">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-700 block">
-                Location Details & Map Pin Calibration
-              </span>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-700 block">
+                  Location Details & Map Pin Calibration
+                </span>
+
+                <button
+                  type="button"
+                  onClick={() => setShowQuickAddLocation(prev => !prev)}
+                  className="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-[10.5px] font-bold flex items-center gap-1 shadow-2xs transition-colors"
+                >
+                  <Plus className="w-3 h-3" />
+                  <span>{showQuickAddLocation ? 'Close Quick-Add' : '+ Add Missing City / Society'}</span>
+                </button>
+              </div>
+
+              {quickAddNotice && (
+                <div className="p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center gap-1.5">
+                  <Check className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>{quickAddNotice}</span>
+                </div>
+              )}
+
+              {showQuickAddLocation && (
+                <div className="p-3.5 rounded-xl bg-blue-50/80 border border-blue-200 space-y-2.5">
+                  <div className="text-xs font-bold text-blue-950 flex items-center justify-between">
+                    <span>City or Society not in list? Add it to {province} immediately:</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <input
+                      type="text"
+                      value={quickNewCity}
+                      onChange={e => setQuickNewCity(e.target.value)}
+                      placeholder={`New City (or leave blank for ${city})`}
+                      className="p-2 bg-white border border-blue-200 rounded-lg text-xs font-semibold text-slate-900"
+                    />
+                    <input
+                      type="text"
+                      value={quickNewSociety}
+                      onChange={e => setQuickNewSociety(e.target.value)}
+                      placeholder="New Society / Block Name"
+                      className="p-2 bg-white border border-blue-200 rounded-lg text-xs font-semibold text-slate-900"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleQuickSaveLocation}
+                      className="py-2 px-3 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center justify-center gap-1"
+                    >
+                      <Check className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Save & Select Location</span>
+                    </button>
+                  </div>
+                </div>
+              )}
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
@@ -295,7 +406,12 @@ export const PostPropertyModal: React.FC<PostPropertyModalProps> = ({
                     onChange={e => {
                       setProvince(e.target.value);
                       const p = provinceCityData.find(pr => pr.province === e.target.value);
-                      if (p && p.cities.length > 0) setCity(p.cities[0].name);
+                      if (p && p.cities.length > 0) {
+                        setCity(p.cities[0].name);
+                        if (p.cities[0].societies.length > 0) {
+                          setSociety(p.cities[0].societies[0]);
+                        }
+                      }
                     }}
                     className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-hidden focus:border-blue-600"
                   >
@@ -309,7 +425,13 @@ export const PostPropertyModal: React.FC<PostPropertyModalProps> = ({
                   <label className="block text-[11px] font-medium text-slate-600 mb-1">City</label>
                   <select
                     value={city}
-                    onChange={e => setCity(e.target.value)}
+                    onChange={e => {
+                      setCity(e.target.value);
+                      const cObj = selectedProvinceData?.cities.find(c => c.name === e.target.value);
+                      if (cObj && cObj.societies.length > 0) {
+                        setSociety(cObj.societies[0]);
+                      }
+                    }}
                     className="w-full p-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-900 focus:outline-hidden focus:border-blue-600"
                   >
                     {selectedProvinceData?.cities.map(c => (
