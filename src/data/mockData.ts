@@ -8,32 +8,49 @@ import {
   SiteSectionPortion
 } from '../types';
 
+export const PAKISTAN_REGIONAL_AGENT_AVATARS = {
+  malikZeeshan_Taxila:
+    'https://images.unsplash.com/photo-1615813967515-e1838c1c5116?auto=format&fit=crop&w=400&q=80',
+  chaudhryBilal_FaisalHills:
+    'https://images.unsplash.com/photo-1633332755192-727a05c4013d?auto=format&fit=crop&w=400&q=80',
+  engrHarisFarooq_Islamabad:
+    'https://images.unsplash.com/photo-1566492031773-4f4e44671857?auto=format&fit=crop&w=400&q=80',
+  hajiAslamKhan_Kohistan:
+    'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=400&q=80',
+  mianAhmed_Lahore:
+    'https://images.unsplash.com/photo-1556157382-97eda2d62296?auto=format&fit=crop&w=400&q=80',
+  tariqMehmood_Rawalpindi:
+    'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=400&q=80'
+};
+
 export const INITIAL_PROVINCE_CITIES: ProvinceCityData[] = [
   {
     province: 'Punjab',
     cities: [
       {
         name: 'Taxila',
+        isFeatured: true,
         societies: [
           'Faisal Hills',
+          'Faisal Hills Executive Block',
           'Faisal Hills Block A',
           'Faisal Hills Block B',
           'Faisal Hills Block C',
-          'Faisal Hills Executive Block',
           'Faisal Hills Commercial Broadway',
           'Kohistan Enclave',
           'Margalla View Society',
           'Museum Road Estates',
-          'Heavy Mechanical Complex (HMC) Area',
+          'HMC Area',
           'New City Phase 1 & 2',
           'University Road Enclave',
           'Taxila Cantt',
-          'Wah Cantonment Officers Colony',
+          'Wah Cantt Officers Colony',
           'GT Road Commercial Belt'
         ]
       },
       {
         name: 'Rawalpindi',
+        isFeatured: true,
         societies: [
           'Bahria Town Phase 1-8',
           'DHA Phase 1-4',
@@ -48,6 +65,7 @@ export const INITIAL_PROVINCE_CITIES: ProvinceCityData[] = [
       },
       {
         name: 'Lahore',
+        isFeatured: true,
         societies: [
           'DHA Phase 1-9 & Prism 9',
           'Bahria Town Lahore',
@@ -102,18 +120,63 @@ export const INITIAL_PROVINCE_CITIES: ProvinceCityData[] = [
     cities: [
       {
         name: 'Islamabad',
+        isFeatured: true,
         societies: [
-          'Faisal Hills (Connecting Zone)',
+          'Faisal Hills (Margalla Connector)',
           'Multi Gardens (B-17)',
-          'Eighteen Islamabad',
-          'Gulberg Greens & Residencia',
-          'Blue Area Corporate Zone',
-          'Sector F-6 & F-7',
-          'Sector F-8 & F-10',
-          'Sector E-7 & E-11',
-          'Sector D-12',
+          'DHA Islamabad Phase 1-5',
+          'Bahria Enclave',
           'Park View City',
+          'F-6 / F-7 / F-8',
+          'E-7 / E-11',
+          'G-11 / G-13 / G-15',
+          'D-12 Margalla Foothills',
+          'Blue Area Corporate Zone',
+          'Gulberg Greens & Residencia',
+          'Eighteen Islamabad',
           'Capital Smart City'
+        ]
+      }
+    ]
+  },
+  {
+    province: 'Khyber Pakhtunkhwa (KPK)',
+    cities: [
+      {
+        name: 'Peshawar',
+        isFeatured: true,
+        societies: [
+          'DHA Peshawar',
+          'Hayatabad Phase 1-7',
+          'Regi Model Town',
+          'University Town',
+          'Warsak Road Enclave'
+        ]
+      },
+      {
+        name: 'Abbottabad',
+        societies: [
+          'PMA Kakul Road',
+          'Jinnahabad',
+          'Habibullah Colony',
+          'Mirpur Enclave',
+          'Nathia Gali Hill Resorts'
+        ]
+      },
+      {
+        name: 'Mardan',
+        societies: [
+          'Sheikh Maltoon Town',
+          'Green Acres',
+          'Cantt Commercial'
+        ]
+      },
+      {
+        name: 'Swat',
+        societies: [
+          'Mingora Commercial Hub',
+          'Fizagat Resort Enclave',
+          'Kalam Tourist Pods Zone'
         ]
       }
     ]
@@ -123,35 +186,64 @@ export const INITIAL_PROVINCE_CITIES: ProvinceCityData[] = [
     cities: [
       {
         name: 'Karachi',
+        isFeatured: true,
         societies: [
-          'DHA Karachi (Phase 1-8)',
-          'Clifton Block 1-9',
+          'DHA Karachi Phase 1-8',
           'Bahria Town Karachi',
+          'Clifton Block 1-9',
           'PECHS',
           'Gulshan-e-Iqbal',
-          'KDA Scheme 1'
+          'North Nazimabad',
+          'Emaar Crescent Bay'
+        ]
+      },
+      {
+        name: 'Hyderabad',
+        societies: [
+          'Qasimabad',
+          'Latifabad',
+          'Abdullah Garden',
+          'Auto Bahn Road Commercial'
+        ]
+      },
+      {
+        name: 'Sukkur',
+        societies: [
+          'Rohri Bypass Enclave',
+          'Sukkur Township',
+          'Military Road'
         ]
       }
     ]
   },
   {
-    province: 'Khyber Pakhtunkhwa',
+    province: 'Balochistan & Gilgit-Baltistan',
     cities: [
       {
-        name: 'Peshawar',
+        name: 'Quetta',
         societies: [
-          'Hayatabad Phases 1-7',
-          'DHA Peshawar',
-          'Regi Model Town',
-          'University Town'
+          'DHA Quetta',
+          'Jinnah Town',
+          'Samungli Road',
+          'Quetta Cantt'
         ]
       },
       {
-        name: 'Abbottabad',
+        name: 'Gwadar',
+        isFeatured: true,
         societies: [
-          'Kakool Road Enclave',
-          'Supply Area',
-          'Mandian Commercial'
+          'Sanghar Housing Scheme',
+          'New Town Phase 1-4',
+          'GDA Commercial Zone',
+          'Marine Drive Front'
+        ]
+      },
+      {
+        name: 'Skardu & Hunza',
+        societies: [
+          'Shangrila Resort Belt',
+          'Karimabad Tourist Zone',
+          'Attabad Lake Glamping Pods'
         ]
       }
     ]
@@ -161,119 +253,98 @@ export const INITIAL_PROVINCE_CITIES: ProvinceCityData[] = [
 export const INITIAL_AGENCIES: AgencyAccount[] = [
   {
     id: 'agency-1',
-    name: 'Al-Mairaj Real Estate & Builders',
-    companyName: 'Al-Mairaj Real Estate Group',
-    role: 'agency',
-    email: 'info@almairaj-realty.pk',
+    name: 'Malik Zeeshan',
+    companyName: 'Al-Mairaj Real Estate & Builders',
+    logo: PAKISTAN_REGIONAL_AGENT_AVATARS.malikZeeshan_Taxila,
+    avatar: PAKISTAN_REGIONAL_AGENT_AVATARS.malikZeeshan_Taxila,
     phone: '+92 336-5666727',
     whatsapp: '923365666727',
-    avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=400&q=80',
-    verified: true,
-    rating: 4.9,
-    totalPosts: 14,
-    postLimit: 50,
-    activeListings: 14,
+    email: 'zeeshan@almairajestates.pk',
     city: 'Taxila',
     primarySociety: 'Faisal Hills',
-    memberSince: 'Jan 2023',
-    status: 'active'
+    verified: true,
+    postLimit: 25,
+    totalPosts: 6,
+    activeListings: 6,
+    rating: 4.9,
+    joinedDate: 'Jan 2024',
+    canManageAdvibe: true
   },
   {
     id: 'agency-2',
-    name: 'Faisal Hills Property Advisors',
-    companyName: 'Faisal Hills Premier Realty',
-    role: 'agency',
-    email: 'contact@faisalhillsproperties.com',
+    name: 'Chaudhry Bilal',
+    companyName: 'Faisal Hills Property Advisors',
+    logo: PAKISTAN_REGIONAL_AGENT_AVATARS.chaudhryBilal_FaisalHills,
+    avatar: PAKISTAN_REGIONAL_AGENT_AVATARS.chaudhryBilal_FaisalHills,
     phone: '+92 336-5666727',
     whatsapp: '923365666727',
-    avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80',
-    verified: true,
-    rating: 4.85,
-    totalPosts: 9,
-    postLimit: 40,
-    activeListings: 9,
+    email: 'bilal@faisalhillsadvisors.pk',
     city: 'Taxila',
-    primarySociety: 'Faisal Hills',
-    memberSince: 'Mar 2023',
-    status: 'active'
+    primarySociety: 'Faisal Hills Executive Block',
+    verified: true,
+    postLimit: 15,
+    totalPosts: 4,
+    activeListings: 4,
+    rating: 4.85,
+    joinedDate: 'Mar 2024',
+    canManageAdvibe: true
   },
   {
     id: 'agency-3',
-    name: 'Beacon Prime Commercial Estates',
-    companyName: 'Beacon Commercial Group',
-    role: 'agency',
-    email: 'corporate@beaconprime.com',
+    name: 'Engr. Haris Farooq',
+    companyName: 'Beacon Prime Commercial Estates',
+    logo: PAKISTAN_REGIONAL_AGENT_AVATARS.engrHarisFarooq_Islamabad,
+    avatar: PAKISTAN_REGIONAL_AGENT_AVATARS.engrHarisFarooq_Islamabad,
     phone: '+92 336-5666727',
     whatsapp: '923365666727',
-    avatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=400&q=80',
-    verified: true,
-    rating: 4.95,
-    totalPosts: 19,
-    postLimit: 60,
-    activeListings: 19,
+    email: 'haris@beaconcommercial.pk',
     city: 'Islamabad',
-    primarySociety: 'Blue Area Corporate Zone',
-    memberSince: 'Nov 2022',
-    status: 'active'
+    primarySociety: 'Blue Area & Multi Gardens B-17',
+    verified: true,
+    postLimit: 30,
+    totalPosts: 4,
+    activeListings: 4,
+    rating: 4.95,
+    joinedDate: 'Nov 2023',
+    canManageAdvibe: false
   },
   {
     id: 'agency-4',
-    name: 'Taxila City Realtors & Consultants',
-    companyName: 'Taxila Realtors Consortium',
-    role: 'agency',
-    email: 'desk@taxilarealtors.pk',
+    name: 'Haji Aslam Khan',
+    companyName: 'Kohistan & Margalla Realtors',
+    logo: PAKISTAN_REGIONAL_AGENT_AVATARS.hajiAslamKhan_Kohistan,
+    avatar: PAKISTAN_REGIONAL_AGENT_AVATARS.hajiAslamKhan_Kohistan,
     phone: '+92 336-5666727',
     whatsapp: '923365666727',
-    avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=400&q=80',
-    verified: true,
-    rating: 4.75,
-    totalPosts: 6,
-    postLimit: 30,
-    activeListings: 6,
+    email: 'aslam@margallarealtors.pk',
     city: 'Taxila',
     primarySociety: 'Kohistan Enclave',
-    memberSince: 'May 2023',
-    status: 'active'
-  },
-  {
-    id: 'user-1',
-    name: 'Tariq Mehmood (Direct Owner)',
-    companyName: 'Private Investor',
-    role: 'customer',
-    email: 'tariq.mehmood@gmail.com',
-    phone: '+92 336-5666727',
-    whatsapp: '923365666727',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
     verified: true,
-    rating: 5.0,
+    postLimit: 10,
     totalPosts: 2,
-    postLimit: 5,
     activeListings: 2,
-    city: 'Taxila',
-    primarySociety: 'Faisal Hills Block B',
-    memberSince: 'Feb 2024',
-    status: 'active'
+    rating: 4.75,
+    joinedDate: 'Jun 2024',
+    canManageAdvibe: false
   },
   {
     id: 'agency-sapphire',
-    name: 'Sapphire Properties Advisory',
+    name: 'Mian Ahmed (Sapphire Properties)',
     companyName: 'Sapphire Properties & Athar Associates',
-    role: 'agency',
-    email: 'info@sapphireproperties.com.pk',
+    logo: PAKISTAN_REGIONAL_AGENT_AVATARS.mianAhmed_Lahore,
+    avatar: PAKISTAN_REGIONAL_AGENT_AVATARS.mianAhmed_Lahore,
     phone: '+92 336-5666727',
     whatsapp: '923365666727',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
-    verified: true,
-    rating: 4.98,
-    totalPosts: 12,
-    postLimit: 60,
-    activeListings: 12,
+    email: 'info@sapphireproperties.com.pk',
     city: 'Lahore',
-    primarySociety: 'Bahria Town Lahore',
-    memberSince: 'Jan 2022',
-    status: 'active',
-    address: 'Main Boulevard, Bahria Town Ring Road SL3 Interchange, Lahore, Punjab',
-    bio: 'Authorized sales and marketing partner for Icon Mall & Towers Lahore and premier landmark mixed-use towers.'
+    primarySociety: 'Bahria Town Lahore (Ring Road SL3)',
+    verified: true,
+    postLimit: 30,
+    totalPosts: 2,
+    activeListings: 2,
+    rating: 4.98,
+    joinedDate: 'Jan 2024',
+    canManageAdvibe: true
   }
 ];
 
@@ -281,14 +352,14 @@ export const INITIAL_PROPERTIES: Property[] = [
   // ===================== 1. COMMERCIAL PROPERTIES =====================
   {
     id: 'prop-icon-mall-comm-lahore',
-    title: 'Icon Mall & Towers - Prime Commercial Retail Shops & Food Court',
-    tagline: '22-Kanal Dubai-Inspired Twin Tower Mega Shopping Mall in Bahria Town Lahore',
-    description: 'Icon Mall & Towers is a prestigious 22-Kanal Dubai-inspired mixed-use development by Athar Associates and marketed by Sapphire Properties, strategically situated at the Bahria Town Interchange on Lahore Ring Road (SL3). This 17-storey twin-tower landmark features Lahore’s 4th largest shopping mall spanning 4 expansive commercial floors with 150+ international and national retail brands, anchor supermarkets, pharmacy, beauty salons, and an expansive modern food court. The complex showcases Pakistan’s largest open-to-sky central courtyard spanning 12.5 Kanals, 12 high-speed passenger & cargo elevators, 10 escalators, and 450+ basement car parking spaces, offering tremendous footfall and high rental yield.',
+    title: 'Icon Mall & Towers - Prime Commercial Shops & Food Court Outlets',
+    tagline: 'Bahria Town Ring Road SL3 Interchange • 17-Storey Twin Tower Megaproject',
+    description: 'Invest in Lahore’s premier mixed-use commercial landmark by Athar Associates & Sapphire Properties. Situated directly at Bahria Town Lahore near the Ring Road SL3 Interchange on a prime 3-side corner plot with a 12.5-Kanal central courtyard. Offering high-footfall Ground to 4th Floor retail outlets, double-height international brand showrooms, and a dedicated mega food court & entertainment zone. Backed by Royal Swiss 5-Star Hotel hospitality in Tower 2, 2 basement parking levels, 16 high-speed elevators & escalators, and flexible 5-year installment plans starting from just 1% monthly.',
     category: 'commercial',
     type: 'Retail Shop',
     purpose: 'for_sale',
     price: 3500000,
-    priceFormatted: 'PKR 35 Lakh (Booking from 5 Lakh)',
+    priceFormatted: 'PKR 35 Lakh (1% Monthly Plan)',
     currency: 'PKR',
     location: {
       province: 'Punjab',
@@ -303,40 +374,39 @@ export const INITIAL_PROPERTIES: Property[] = [
         'Bahria Town Ring Road SL3 Interchange',
         'Grand Jamia Mosque Bahria Town',
         'Eiffel Tower Bahria Town Lahore',
-        'Beaconhouse National University (BNU)',
-        'Safari Zoo Lahore',
-        'Lake City Interchange'
+        'Lake City & Adda Plot Interchange',
+        'Canal Bank Road Lahore'
       ]
     },
     area: 220,
     areaUnit: 'Sq Ft',
     floors: 17,
+    parking: 200,
     features: [
-      '22-Kanal Dubai-Inspired 17-Storey Twin Tower Landmark',
-      'Pakistan Largest 12.5-Kanal Central Open Courtyard',
-      '4 Floors Dedicated to Mega Shopping Mall (150+ Outlets)',
-      '12 High-Speed Elevators & 10 Escalators',
-      '450+ Secure Underground Basement Car Parking',
-      'Direct Access to Lahore Ring Road SL3 Interchange',
-      'Royal Swiss International 5-Star Hotel in Tower 2',
-      '24/7 Smart Biometric Security & CCTV Surveillance',
-      'Continuous 100% Power Backup with Standby Generators',
-      'Central HVAC Air Conditioning & Modern Food Court',
-      'Pre-Launch Rates with Easy 5-Year Installments (1% Monthly)'
+      'Royal Swiss 5-Star Hotel Tower Integration',
+      '12.5-Kanal Open Central Courtyard & Atrium',
+      '3-Side Corner Plot on Ring Road SL3 Interchange',
+      'Flexible 5-Year Payment Plan (1% Monthly)',
+      '16 High-Speed Capsule Elevators & Escalators',
+      '2 Dedicated Underground Basement Parking Levels',
+      'Dedicated Mega Food Court, Play Area & Brand Outlets',
+      '100% LDA / Bahria Town NOC Approved Commercial',
+      '24/7 Tier-3 Backup Power Generators & HVAC',
+      'Guaranteed High Rental Yield & Capital Appreciation'
     ],
     images: [
-      'https://images.unsplash.com/photo-1555636222-cae831e670b3?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1567449303078-57ad995bd301?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1200&q=80'
+      'https://images.unsplash.com/photo-1582407947304-fd86f028f716?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1519567241046-7f570eee3ce6?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80'
     ],
     watermark: true,
     agencyId: 'agency-sapphire',
     agentName: 'Sapphire Properties Advisory',
     agentPhone: '+92 336-5666727',
     agentWhatsApp: '923365666727',
-    agentAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
+    agentAvatar: PAKISTAN_REGIONAL_AGENT_AVATARS.mianAhmed_Lahore,
     agentCompany: 'Sapphire Properties & Athar Associates',
     agentRating: 4.98,
     isFeatured: true,
@@ -346,14 +416,14 @@ export const INITIAL_PROPERTIES: Property[] = [
     createdAt: '2026-09-01',
     status: 'active',
     virtualTourVideoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-    virtualTourVideoTitle: 'Icon Mall & Towers Commercial Atrium & Courtyard 3D Tour',
+    virtualTourVideoTitle: 'Icon Mall & Towers Bahria Town Lahore 3D Walkthrough',
     hasVirtualTour: true
   },
   {
     id: 'prop-comm-1',
     title: 'Ri8Click Executive Commercial Plaza',
-    tagline: 'Prime 5-Story Commercial Plaza on Main Boulevard',
-    description: 'Ultra-modern corporate commercial plaza located on the prestigious Main Commercial Boulevard of Faisal Hills Taxila. Features high-visibility frontage, basement parking, high-speed capsule elevators, double-glazed UPVC thermal glass facade by Ri8Click UPVC, backup solar generators, and guaranteed high rental ROI of 9.2% annually.',
+    tagline: 'Prime 5-Storey Commercial Landmark on Main Boulevard',
+    description: 'High-yield commercial plaza located in the heart of Faisal Hills Commercial Broadway, Taxila. Features double-height ground floor retail showrooms, dedicated underground parking, high-speed capsule elevator, and 4 floors of corporate office suites with panoramic Margalla Hills views. Constructed with Ri8Click German UPVC soundproof glazing.',
     category: 'commercial',
     type: 'Commercial Plaza',
     purpose: 'for_sale',
@@ -365,32 +435,41 @@ export const INITIAL_PROPERTIES: Property[] = [
       city: 'Taxila',
       society: 'Faisal Hills',
       block: 'Faisal Hills Commercial Broadway',
-      address: 'Plot #14-15, Main Commercial Boulevard, Faisal Hills, Taxila / Rawalpindi'
+      address: 'Plot #42-C, Main Commercial Broadway, Faisal Hills, Taxila',
+      latitude: 33.7297,
+      longitude: 72.8258,
+      mapZoom: 15,
+      nearbyLandmarks: [
+        'Faisal Hills Main Gate (GT Road N-5)',
+        'Taxila Museum Historical Site',
+        'HITEC University Taxila',
+        'Margalla Hills North Ridge',
+        'MPCHS Multi Gardens B-17 Interchange'
+      ]
     },
     area: 8,
     areaUnit: 'Marla',
     floors: 5,
+    parking: 12,
     features: [
-      'Double Glazed UPVC Facade',
-      'Dual Capsule Elevators',
-      'Underground Dedicated Parking',
-      'CCTV 24/7 Security Command',
-      'Fire Fighting System Installed',
-      'High Rental Yield (9.2%+)',
-      'Solar Backup 50kVA',
-      'Approved RDA/TMA NOC'
+      'Corner Commercial Plot (3-Side Open)',
+      'Capsule Passenger Elevator Installed',
+      'Ri8Click Soundproof UPVC Facade',
+      'Expected Rental Yield: 9.5% Annually',
+      'Dedicated Transformer & Backup Generator',
+      'RDA / TMA Approved Building Plan'
     ],
     images: [
       'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1000&q=80',
-      'https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=1000&q=80'
+      'https://images.unsplash.com/photo-1554469384-e58fac16e23a?auto=format&fit=crop&w=1000&q=80',
+      'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1000&q=80'
     ],
     watermark: true,
     agencyId: 'agency-1',
     agentName: 'Malik Zeeshan',
     agentPhone: '+92 336-5666727',
     agentWhatsApp: '923365666727',
-    agentAvatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=400&q=80',
+    agentAvatar: PAKISTAN_REGIONAL_AGENT_AVATARS.malikZeeshan_Taxila,
     agentCompany: 'Al-Mairaj Real Estate & Builders',
     agentRating: 4.9,
     isFeatured: true,
@@ -400,14 +479,14 @@ export const INITIAL_PROPERTIES: Property[] = [
     createdAt: '2026-08-20',
     status: 'active',
     virtualTourVideoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-    virtualTourVideoTitle: 'Executive Commercial Plaza 3D Tour & Facade Walkthrough (15s)',
+    virtualTourVideoTitle: 'Ri8Click Executive Commercial Plaza Walkthrough',
     hasVirtualTour: true
   },
   {
     id: 'prop-comm-2',
-    title: 'Multi-Story Corporate Tower on GT Road',
-    tagline: 'State-of-the-Art Commercial Business Centre',
-    description: 'Signature commercial tower on Main Grand Trunk (GT) Road Taxila near Margalla Hills junction. Ideal for multinational regional offices, banks, corporate franchises, or healthcare centers. Built with Ri8Click turnkey civil engineering standards.',
+    title: 'Multi-Storey Corporate Tower on GT Road',
+    tagline: 'Main N-5 Highway Frontage Commercial Building',
+    description: 'Flagship commercial investment opportunity directly on Main GT Road Taxila near Faisal Hills main gate. Ideal for multinational banks, software houses, medical diagnostic centers, and retail chains. 100% leased ground floor with immediate rental income.',
     category: 'commercial',
     type: 'Commercial Plaza',
     purpose: 'for_sale',
@@ -418,44 +497,54 @@ export const INITIAL_PROPERTIES: Property[] = [
       province: 'Punjab',
       city: 'Taxila',
       society: 'GT Road Commercial Belt',
-      address: 'Main GT Road Junction, Taxila Gateway, Punjab'
+      block: 'Main N-5 Corridor',
+      address: 'Adjacent Faisal Hills Main Gate, Main GT Road, Taxila',
+      latitude: 33.7458,
+      longitude: 72.7875,
+      mapZoom: 15,
+      nearbyLandmarks: [
+        'Main GT Road (N-5) Frontage',
+        'Heavy Mechanical Complex (HMC)',
+        'Taxila Cantt Checkpost',
+        'Wah Medical College'
+      ]
     },
     area: 1.5,
     areaUnit: 'Kanal',
     floors: 7,
+    parking: 35,
     features: [
-      '7 Story Approved Commercial Tower',
-      'Dedicated Basement for 40+ Cars',
-      'Reinforced Earthquake Resistant Structure',
-      'Central VRF Climate Control',
-      'Panoramic Margalla Mountain Views',
-      '3 Phase Industrial Electric Connection',
-      'UPVC Architectural Double Glaze'
+      '120-Ft Frontage on Main GT Road',
+      'Dual High-Speed Elevators',
+      'Central HVAC & Fire Safety System',
+      'Ground Floor Leased to National Bank',
+      'Underground Basement Parking',
+      'Solar Net-Metering (50kW Installed)'
     ],
     images: [
-      'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1000&q=80'
+      'https://images.unsplash.com/photo-1577495508048-b635879837f1?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1582407947304-fd86f028f716?auto=format&fit=crop&w=1000&q=80'
     ],
     watermark: true,
     agencyId: 'agency-3',
     agentName: 'Engr. Haris Farooq',
     agentPhone: '+92 336-5666727',
     agentWhatsApp: '923365666727',
-    agentAvatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=400&q=80',
+    agentAvatar: PAKISTAN_REGIONAL_AGENT_AVATARS.engrHarisFarooq_Islamabad,
     agentCompany: 'Beacon Prime Commercial Estates',
     agentRating: 4.95,
     isFeatured: true,
     isHotCommercial: true,
     viewsCount: 980,
-    savesCount: 65,
+    savesCount: 64,
     createdAt: '2026-08-18',
     status: 'active'
   },
   {
     id: 'prop-comm-3',
     title: 'Brand New Corporate Office Suite - Blue Area',
-    tagline: 'Furnished Executive Office Floor with Skyline View',
-    description: 'Fully furnished 3,800 Sq Ft corporate office space in Islamabad Blue Area business hub. Includes executive boardrooms, open workstation halls, soundproof phone booths, server room, and executive kitchenette.',
+    tagline: 'Ready-to-Move Furnished IT & Corporate Floor',
+    description: 'A-grade corporate office floor in New Blue Area, Islamabad. Designed with glass partitions, executive boardrooms, server room, fiber-optic connectivity, and dedicated parking slots.',
     category: 'commercial',
     type: 'Corporate Office',
     purpose: 'for_rent',
@@ -487,7 +576,7 @@ export const INITIAL_PROPERTIES: Property[] = [
     agentName: 'Engr. Haris Farooq',
     agentPhone: '+92 336-5666727',
     agentWhatsApp: '923365666727',
-    agentAvatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=400&q=80',
+    agentAvatar: PAKISTAN_REGIONAL_AGENT_AVATARS.engrHarisFarooq_Islamabad,
     agentCompany: 'Beacon Prime Commercial Estates',
     agentRating: 4.95,
     isFeatured: false,
@@ -534,7 +623,7 @@ export const INITIAL_PROPERTIES: Property[] = [
     agentName: 'Chaudhry Bilal',
     agentPhone: '+92 336-5666727',
     agentWhatsApp: '923365666727',
-    agentAvatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80',
+    agentAvatar: PAKISTAN_REGIONAL_AGENT_AVATARS.chaudhryBilal_FaisalHills,
     agentCompany: 'Faisal Hills Property Advisors',
     agentRating: 4.85,
     isFeatured: true,
@@ -605,7 +694,7 @@ export const INITIAL_PROPERTIES: Property[] = [
     agentName: 'Sapphire Properties Advisory',
     agentPhone: '+92 336-5666727',
     agentWhatsApp: '923365666727',
-    agentAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
+    agentAvatar: PAKISTAN_REGIONAL_AGENT_AVATARS.mianAhmed_Lahore,
     agentCompany: 'Sapphire Properties & Athar Associates',
     agentRating: 4.98,
     isFeatured: true,
@@ -614,7 +703,7 @@ export const INITIAL_PROPERTIES: Property[] = [
     savesCount: 182,
     createdAt: '2026-09-01',
     status: 'active',
-    virtualTourVideoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyBlazes.mp4',
+    virtualTourVideoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
     virtualTourVideoTitle: 'Icon Mall & Towers Luxury Apartment & Penthouse 3D Tour',
     hasVirtualTour: true
   },
@@ -649,7 +738,7 @@ export const INITIAL_PROPERTIES: Property[] = [
       '10kW Hybrid On-Grid Solar System',
       'Servant Quarters with Separate Entry',
       'Rooftop BBQ & Margalla View Terrace',
-      'Approved Completion Certificate'
+      'Approved Solid Grey Structure Certificate'
     ],
     images: [
       'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1200&q=80',
@@ -661,23 +750,23 @@ export const INITIAL_PROPERTIES: Property[] = [
     agentName: 'Malik Zeeshan',
     agentPhone: '+92 336-5666727',
     agentWhatsApp: '923365666727',
-    agentAvatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=400&q=80',
+    agentAvatar: PAKISTAN_REGIONAL_AGENT_AVATARS.malikZeeshan_Taxila,
     agentCompany: 'Al-Mairaj Real Estate & Builders',
     agentRating: 4.9,
     isFeatured: true,
-    viewsCount: 2890,
-    savesCount: 198,
-    createdAt: '2026-08-27',
+    viewsCount: 2150,
+    savesCount: 145,
+    createdAt: '2026-08-24',
     status: 'active',
-    virtualTourVideoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyBlazes.mp4',
-    virtualTourVideoTitle: 'Faisal Hills Luxury Villa Walkthrough & Rooftop Margalla View (15s)',
+    virtualTourVideoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
+    virtualTourVideoTitle: '1-Kanal Designer Villa Faisal Hills 360° Tour',
     hasVirtualTour: true
   },
   {
     id: 'prop-res-2',
-    title: 'Luxury Family Residence in Multi Gardens B-17',
-    tagline: 'Brand New 10-Marla Modern House',
-    description: 'Exquisitely designed 10-Marla corner house in Multi Gardens B-17 Islamabad, offering seamless connectivity to Islamabad Motorway M-1 and Taxila GT Road. Features 4 master bedrooms, double height lobby, solar backup, and imported fittings.',
+    title: '10-Marla Contemporary House in B-17 Multi Gardens',
+    tagline: 'Brand New Double Storey House Near MPCHS Markaz',
+    description: 'Elegantly designed 10-Marla double-storey house in Multi Gardens B-17 Block C, Islamabad. Walking distance to central park, Jamia Masjid, and commercial markaz. Direct access to GT Road and Peshawar-Islamabad Motorway M-1.',
     category: 'residential',
     type: 'Villa',
     purpose: 'for_sale',
@@ -689,7 +778,7 @@ export const INITIAL_PROPERTIES: Property[] = [
       city: 'Islamabad',
       society: 'Multi Gardens (B-17)',
       block: 'Block C',
-      address: 'Main Boulevard, Block C, B-17 Multi Gardens, Islamabad'
+      address: 'Street 44, Block C, Multi Gardens B-17, Islamabad'
     },
     area: 10,
     areaUnit: 'Marla',
@@ -697,12 +786,12 @@ export const INITIAL_PROPERTIES: Property[] = [
     bathrooms: 5,
     parking: 2,
     features: [
-      '4 Luxury En-suite Bedrooms',
-      'Double Height Ceiling Drawing Room',
-      'Ri8Click Thermal Insulated Glass',
-      'Solid Teak & Ash Woodwork',
-      'Landscaped Green Lawn',
-      'Gated Community with 24/7 Security'
+      'CDA / MPCHS Transfer Ready',
+      'Double Unit Layout (Ideal for 2 Families)',
+      'Sui Gas & Underground Electricity Installed',
+      'Grohe Sanitary Fittings & Spanish Porcelain',
+      'CCTV Surveillance System Included',
+      '2 Mins from M-1 Motorway Interchange'
     ],
     images: [
       'https://images.unsplash.com/photo-1600585154526-990dced4db0d?auto=format&fit=crop&w=1200&q=80',
@@ -713,20 +802,20 @@ export const INITIAL_PROPERTIES: Property[] = [
     agentName: 'Chaudhry Bilal',
     agentPhone: '+92 336-5666727',
     agentWhatsApp: '923365666727',
-    agentAvatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80',
+    agentAvatar: PAKISTAN_REGIONAL_AGENT_AVATARS.chaudhryBilal_FaisalHills,
     agentCompany: 'Faisal Hills Property Advisors',
     agentRating: 4.85,
     isFeatured: true,
     viewsCount: 1640,
-    savesCount: 112,
-    createdAt: '2026-08-24',
+    savesCount: 92,
+    createdAt: '2026-08-19',
     status: 'active'
   },
   {
     id: 'prop-res-3',
     title: 'Margalla Hillside Executive Villa - Kohistan Enclave',
-    tagline: 'Custom Built 1-Kanal Luxury Estate in Taxila',
-    description: 'Palatial 1-Kanal residence in Kohistan Enclave Taxila, surrounded by green Margalla foothills. Designed with high ceilings, private mini cinema, basement recreational zone, imported UPVC soundproof framing, and double garage.',
+    tagline: 'Ultra-Modern 1-Kanal Smart Residence on GT Road Taxila',
+    description: 'Situated in the lush green surroundings of Kohistan Enclave, Wah/Taxila. This 1-Kanal designer house features floor-to-ceiling thermal windows, private courtyard, home theater lounge, and top-tier security in a gated community.',
     category: 'residential',
     type: 'Villa',
     purpose: 'for_sale',
@@ -737,7 +826,8 @@ export const INITIAL_PROPERTIES: Property[] = [
       province: 'Punjab',
       city: 'Taxila',
       society: 'Kohistan Enclave',
-      address: 'Lane 4, Hillview Sector, Kohistan Enclave, Taxila, Punjab'
+      block: 'Executive Overseas Block',
+      address: 'Main Boulevard, Kohistan Enclave, GT Road Wah/Taxila'
     },
     area: 1,
     areaUnit: 'Kanal',
@@ -745,24 +835,24 @@ export const INITIAL_PROPERTIES: Property[] = [
     bathrooms: 6,
     parking: 3,
     features: [
-      '5 En-suite Bedrooms + Powder Room',
-      'Basement Home Theater / Gym Room',
-      'Lush Hilltop Scenic Views',
-      'Ri8Click Acoustic UPVC Windows',
-      'Commercial Grade Solar Inverter System',
-      'Water Filtration & Underground Tank'
+      'Gated Community with 24/7 Armed Security',
+      'Dedicated Basement Home Theater Lounge',
+      'Ri8Click Acoustic UPVC Windows & Sliding Doors',
+      'Lush Green Front & Rear Courtyard',
+      'Imported Kitchen Appliances Installed',
+      'Near Wah Cantt & Taxila Museum'
     ],
     images: [
       'https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&w=1000&q=80'
+      'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1000&q=80'
     ],
     watermark: true,
     agencyId: 'agency-4',
     agentName: 'Haji Aslam Khan',
     agentPhone: '+92 336-5666727',
     agentWhatsApp: '923365666727',
-    agentAvatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=400&q=80',
-    agentCompany: 'Taxila City Realtors & Consultants',
+    agentAvatar: PAKISTAN_REGIONAL_AGENT_AVATARS.hajiAslamKhan_Kohistan,
+    agentCompany: 'Kohistan & Margalla Realtors',
     agentRating: 4.75,
     isFeatured: true,
     viewsCount: 1890,
@@ -773,8 +863,8 @@ export const INITIAL_PROPERTIES: Property[] = [
   {
     id: 'prop-res-4',
     title: 'Penthouse Apartment in Eighteen Islamabad',
-    tagline: 'Panoramic Golf Course Luxury Living',
-    description: 'Ultra-luxurious 4-Bedroom duplex penthouse with sweeping views of the Championship Golf Course at Eighteen Islamabad. Features private infinity pool, dedicated high-speed elevator, and concierge service.',
+    tagline: 'Golf Course Facing 4-Bed Sky Villa Penthouse',
+    description: 'Experience resort-style luxury in Eighteen Islamabad. Overlooking the 18-hole championship golf course, this sky penthouse offers private elevator access, wrap-around terrace, infinity plunge pool, and concierge services.',
     category: 'residential',
     type: 'Penthouse',
     purpose: 'for_sale',
@@ -785,7 +875,7 @@ export const INITIAL_PROPERTIES: Property[] = [
       province: 'Islamabad Capital Territory',
       city: 'Islamabad',
       society: 'Eighteen Islamabad',
-      address: 'The Heights, Tower B, Eighteen, Kashmir Highway'
+      address: 'The Heights Golf View, Eighteen, Srinagar Highway, Islamabad'
     },
     area: 4500,
     areaUnit: 'Sq Ft',
@@ -793,11 +883,11 @@ export const INITIAL_PROPERTIES: Property[] = [
     bathrooms: 5,
     parking: 3,
     features: [
-      'Private Terrace Infinity Plunge Pool',
-      '18-Hole Championship Golf Course View',
-      'Floor to Ceiling Soundproof UPVC Glass',
-      'Smart Climate & Lighting Control',
-      'Private Lift Access & 24/7 Butler Service'
+      'Panoramic 18-Hole Golf Course Views',
+      'Private Terrace Plunge Pool',
+      'VRV Central Air Conditioning',
+      '5-Star Concierge & Club Membership',
+      '10 Mins from New Islamabad International Airport'
     ],
     images: [
       'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1200&q=80',
@@ -808,7 +898,7 @@ export const INITIAL_PROPERTIES: Property[] = [
     agentName: 'Engr. Haris Farooq',
     agentPhone: '+92 336-5666727',
     agentWhatsApp: '923365666727',
-    agentAvatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=400&q=80',
+    agentAvatar: PAKISTAN_REGIONAL_AGENT_AVATARS.engrHarisFarooq_Islamabad,
     agentCompany: 'Beacon Prime Commercial Estates',
     agentRating: 4.95,
     isFeatured: true,
@@ -820,8 +910,8 @@ export const INITIAL_PROPERTIES: Property[] = [
   {
     id: 'prop-res-5',
     title: 'Furnished Executive 3-Bed Villa in Faisal Hills',
-    tagline: 'Modern Designer House Available For Monthly Rent',
-    description: 'Fully furnished 7-Marla luxury villa in Faisal Hills Block A, ideal for expatriates, multinational executives, and corporate consultants. Includes imported furniture, inverter air conditioning in all rooms, and equipped kitchen.',
+    tagline: 'Ready for Immediate Family Move-In',
+    description: 'Fully furnished 7-Marla designer house available for rent in Faisal Hills Block A, Taxila. Perfect for expatriates, university faculty, and corporate executives working in Taxila, Wah Cantt, or Islamabad.',
     category: 'residential',
     type: 'Villa',
     purpose: 'for_rent',
@@ -833,7 +923,7 @@ export const INITIAL_PROPERTIES: Property[] = [
       city: 'Taxila',
       society: 'Faisal Hills',
       block: 'Faisal Hills Block A',
-      address: 'Street 9, Block A, Faisal Hills, Taxila'
+      address: 'Street 9, Block A, Near Civic Center, Faisal Hills, Taxila'
     },
     area: 7,
     areaUnit: 'Marla',
@@ -841,38 +931,35 @@ export const INITIAL_PROPERTIES: Property[] = [
     bathrooms: 4,
     parking: 2,
     features: [
-      'Fully Furnished Interior',
-      'Inverter ACs in All Rooms',
-      'Solar Backup System',
-      'Gated Community 24/7 Security',
-      'High Speed Fiber WiFi',
-      'Maintenance Support Included'
+      'Fully Furnished with Luxury Furniture',
+      'Inverter ACs & Solar Backup Installed',
+      'High-Speed Fiber Internet Ready',
+      'Walking Distance to Park & Mosque'
     ],
     images: [
-      'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=1000&q=80'
+      'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=1200&q=80'
     ],
     watermark: true,
     agencyId: 'agency-1',
     agentName: 'Malik Zeeshan',
     agentPhone: '+92 336-5666727',
     agentWhatsApp: '923365666727',
-    agentAvatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=400&q=80',
+    agentAvatar: PAKISTAN_REGIONAL_AGENT_AVATARS.malikZeeshan_Taxila,
     agentCompany: 'Al-Mairaj Real Estate & Builders',
     agentRating: 4.9,
     isFeatured: false,
-    viewsCount: 940,
-    savesCount: 52,
+    viewsCount: 840,
+    savesCount: 38,
     createdAt: '2026-08-26',
     status: 'active'
   },
 
-  // ===================== 3. PLOTS & LAND PROPERTIES =====================
+  // ===================== 3. PLOTS (RESIDENTIAL & COMMERCIAL) =====================
   {
     id: 'prop-plot-1',
     title: '5-Marla Possession Ready Plot - Faisal Hills Block C',
-    tagline: 'Ideal Residential Plot with Immediate Construction Rights',
-    description: 'Prime 5-Marla residential plot in Faisal Hills Block C Taxila. Situated on a 40-ft wide road with all underground utilities installed (Electricity, Sui Gas, Water, Sewerage). Approved NOC and instant registry/intiqal available.',
+    tagline: 'Level & Solid Land Facing Margalla Hills & Park',
+    description: 'Prime 5-Marla residential plot with immediate possession in Faisal Hills Block C, Taxila. Solid level land requiring zero filling, situated on a 40-ft wide carpeted street facing the lush green park and Margalla Hills view.',
     category: 'residential',
     type: 'Residential Plot',
     purpose: 'for_sale',
@@ -889,35 +976,34 @@ export const INITIAL_PROPERTIES: Property[] = [
     area: 5,
     areaUnit: 'Marla',
     features: [
-      'Immediate Possession & Construction Rights',
-      '40-Feet Wide Carpeted Street',
-      'Underground Utilities Connected',
-      'Near Commercial Market & Grand Mosque',
-      '100% Clear Title & Verified File'
+      'Immediate Construction Possession Available',
+      '100% Solid Level Land (No Filling Required)',
+      '40-Ft Wide Carpeted Street',
+      'Park Facing & Margalla View',
+      'All Dues Cleared - Direct Transfer'
     ],
     images: [
-      'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1524813686514-a57563d77d66?auto=format&fit=crop&w=1000&q=80'
+      'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1200&q=80'
     ],
     watermark: true,
-    agencyId: 'agency-2',
-    agentName: 'Chaudhry Bilal',
+    agencyId: 'agency-1',
+    agentName: 'Malik Zeeshan',
     agentPhone: '+92 336-5666727',
     agentWhatsApp: '923365666727',
-    agentAvatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80',
-    agentCompany: 'Faisal Hills Property Advisors',
-    agentRating: 4.85,
-    isFeatured: true,
-    viewsCount: 1720,
-    savesCount: 145,
-    createdAt: '2026-08-25',
+    agentAvatar: PAKISTAN_REGIONAL_AGENT_AVATARS.malikZeeshan_Taxila,
+    agentCompany: 'Al-Mairaj Real Estate & Builders',
+    agentRating: 4.9,
+    isFeatured: false,
+    viewsCount: 1120,
+    savesCount: 67,
+    createdAt: '2026-08-23',
     status: 'active'
   },
   {
     id: 'prop-plot-2',
-    title: '10-Marla Hill-Facing Plot - Faisal Hills Executive Block',
-    tagline: 'Scenic Elevated Location in Executive Zone',
-    description: 'Exceptional 10-Marla plot with panoramic Margalla mountain backdrop in Faisal Hills Executive Block. Adjacent to central park, executive club, and international school.',
+    title: '10-Marla Corner Residential Plot - Executive Block',
+    tagline: 'Walking Distance to Main GT Road & Markaz',
+    description: 'Prime 10-Marla corner plot in Faisal Hills Executive Block, Taxila. Fully developed sector with hundreds of families already living. Ideal for building your dream villa with Ri8Click Turnkey Construction.',
     category: 'residential',
     type: 'Residential Plot',
     purpose: 'for_sale',
@@ -927,42 +1013,40 @@ export const INITIAL_PROPERTIES: Property[] = [
     location: {
       province: 'Punjab',
       city: 'Taxila',
-      society: 'Faisal Hills',
-      block: 'Faisal Hills Executive Block',
-      address: 'Plot #89, Executive Avenue, Faisal Hills, Taxila'
+      society: 'Faisal Hills Executive Block',
+      block: 'Executive Block',
+      address: 'Plot #88-Corner, Street 6, Executive Block, Faisal Hills, Taxila'
     },
     area: 10,
     areaUnit: 'Marla',
     features: [
-      'Margalla Hills Direct View',
-      'Park-Facing Elevation',
-      'Executive Sector Security Checkpost',
-      'High Appreciation Investment Potential',
-      'Verified RDA Approved Society'
+      'Prime Corner Category Plot',
+      'Underground Electricity & Gas Available',
+      'Near Executive Block Grand Mosque',
+      '2 Mins Drive from Main GT Road N-5'
     ],
     images: [
-      'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1000&q=80'
+      'https://images.unsplash.com/photo-1516156008625-3a9d6067fab5?auto=format&fit=crop&w=1200&q=80'
     ],
     watermark: true,
     agencyId: 'agency-1',
     agentName: 'Malik Zeeshan',
     agentPhone: '+92 336-5666727',
     agentWhatsApp: '923365666727',
-    agentAvatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=400&q=80',
+    agentAvatar: PAKISTAN_REGIONAL_AGENT_AVATARS.malikZeeshan_Taxila,
     agentCompany: 'Al-Mairaj Real Estate & Builders',
     agentRating: 4.9,
     isFeatured: true,
-    viewsCount: 2150,
-    savesCount: 180,
-    createdAt: '2026-08-23',
+    viewsCount: 1340,
+    savesCount: 81,
+    createdAt: '2026-08-22',
     status: 'active'
   },
   {
     id: 'prop-plot-3',
-    title: '8-Marla Commercial Broadway Plot - Faisal Hills',
-    tagline: 'High-Yield Commercial Land for Plaza Construction',
-    description: 'Direct main boulevard commercial plot on 150-ft Faisal Hills Commercial Broadway. Permitted for Ground + 5 Story commercial plaza construction. Top tier ROI opportunity.',
+    title: '8-Marla Commercial Plot on 225-Ft Main Boulevard',
+    tagline: 'High-Rise Approved Commercial Plot in Faisal Hills',
+    description: 'Golden investment opportunity on the 225-ft wide Commercial Broadway in Faisal Hills, Taxila. Approved for Ground + 6 floors commercial plaza construction.',
     category: 'commercial',
     type: 'Commercial Plot',
     purpose: 'for_sale',
@@ -974,43 +1058,41 @@ export const INITIAL_PROPERTIES: Property[] = [
       city: 'Taxila',
       society: 'Faisal Hills',
       block: 'Faisal Hills Commercial Broadway',
-      address: 'Commercial Plot #21, Main Broadway, Faisal Hills, Taxila'
+      address: 'Main 225-Ft Boulevard, Commercial Broadway, Faisal Hills, Taxila'
     },
     area: 8,
     areaUnit: 'Marla',
     features: [
-      'G+5 Story Commercial Building Permission',
-      'Frontage on 150-Feet Main Boulevard',
-      'Surrounded by Active Commercial Plazas',
-      'Bank & Corporate Office Hub',
-      'NOC & Demarcation Cleared'
+      'Direct Frontage on 225-Ft Main Boulevard',
+      'Approved for Ground + 6 Floors',
+      'Ample Front Parking Belt',
+      'Highest Capital Appreciation Zone in Taxila'
     ],
     images: [
-      'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1000&q=80'
+      'https://images.unsplash.com/photo-1541888946425-d09bb18086f6?auto=format&fit=crop&w=1200&q=80'
     ],
     watermark: true,
     agencyId: 'agency-3',
     agentName: 'Engr. Haris Farooq',
     agentPhone: '+92 336-5666727',
     agentWhatsApp: '923365666727',
-    agentAvatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=400&q=80',
+    agentAvatar: PAKISTAN_REGIONAL_AGENT_AVATARS.engrHarisFarooq_Islamabad,
     agentCompany: 'Beacon Prime Commercial Estates',
     agentRating: 4.95,
-    isFeatured: true,
+    isFeatured: false,
     isHotCommercial: true,
-    viewsCount: 1980,
-    savesCount: 135,
-    createdAt: '2026-08-20',
+    viewsCount: 920,
+    savesCount: 53,
+    createdAt: '2026-08-17',
     status: 'active'
   },
 
-  // ===================== 4. MODULAR & CAPSULE SMART HOUSES =====================
+  // ===================== 4. MODULAR & SPACE CAPSULE SMART HOUSES =====================
   {
     id: 'prop-mod-1',
     title: 'Ri8Click Space Capsule Smart Pod (Model X-100)',
-    tagline: 'Futuristic Prefabricated Luxury Living Capsule with Curved Glass',
-    description: 'Engineered by the Ri8Click Modular Housing division. A high-tech aerospace grade aluminum & galvanized steel space capsule home with distinct curved container architecture. Comes 100% turnkey ready with integrated smart home IoT, curved 270° panoramic glass balcony, intelligent climate control, luxury bathroom with dry/wet separation, and quick 7-day on-site deployment anywhere in Pakistan (Taxila, Murree, Islamabad, Farmhouses).',
+    tagline: 'Aerospace Aluminum Shell • 270° Panoramic Glass • Deployed in 7 Days',
+    description: 'Revolutionary Readymade Space Capsule Smart House by Ri8Click Modular Consortium. Engineered with a galvanized steel structural frame, aviation-grade fluorocarbon aluminum shell, and 270-degree double-glazed Low-E panoramic glass with stargazing skylight. Fully equipped with smart voice/app automation, motorized curtains, central climate control, luxury bathroom, and ambient LED lighting. Crane-installed anywhere in Pakistan within 24 hours.',
     category: 'modular',
     type: 'Capsule Smart House',
     purpose: 'for_sale',
@@ -1021,63 +1103,35 @@ export const INITIAL_PROPERTIES: Property[] = [
       province: 'Punjab',
       city: 'Taxila',
       society: 'Faisal Hills',
-      address: 'Ri8Click Prefab Showcase Hub, Taxila Bypass, Punjab'
+      block: 'Ri8Click Modular Display Center',
+      address: 'Ri8Click Prefab Showcase Hub, Taxila Bypass / Nationwide Delivery'
     },
     area: 420,
     areaUnit: 'Sq Ft',
     bedrooms: 1,
     bathrooms: 1,
     features: [
-      'Aerodynamic Curved Aluminum Container Outer Shell',
-      'Curved 270-Degree Panoramic Tempered Glass Balcony',
-      'Complete Smart Voice & App Home Automation',
-      'Plug & Play Water, Electricity & Sewage Setup',
+      'Aerospace Aluminum Alloy Shell (50-Year Lifespan)',
+      '270° Curved Double-Glazed Low-E Panoramic Window',
+      'Smart Voice & Mobile App Home Automation',
+      'Electric Floor Heating & Inverter Climate Control',
+      'Five-Star Hotel Grade Smart Wet/Dry Bathroom',
+      'Zero On-Site Construction Mess - Crane Installed in 4 Hours',
       'Ri8Click Thermal Insulation (-20°C to +55°C)',
-      '100% Transportable & Relocatable',
-      'Delivered Fully Furnished with King Bed & AC'
+      '100% Relocatable & Transportable Asset'
     ],
     images: [
-  'https://www.genspark.ai/api/files/s/IEOFqhM7', // Lakeside Curved Glass Capsule Pod
-  'https://www.genspark.ai/api/files/s/W2Z5zFao', // V2124 Double-Decker Capsule Villa
-  'https://www.genspark.ai/api/files/s/JycQaAWz'  // Q3 Pitched-Roof Modular Capsule
+      'https://www.genspark.ai/api/files/s/I6HwjuLB',
+      'https://www.genspark.ai/api/files/s/u84KzdvI',
+      'https://www.genspark.ai/api/files/s/pSySUzgg',
+      'https://images.unsplash.com/photo-1518780664697-55e3ad937233?auto=format&fit=crop&w=1200&q=80'
     ],
-
-// Updated Modular & Capsule Smart Houses images in src/data/mockData.ts on 23-10-26:
-// prop-mod-1 (Ri8Click Space Capsule Smart Pod - Model X-100):
-images: [
-  'https://www.genspark.ai/api/files/s/I6HwjuLB', // Lakeside Curved-Glass Capsule Pod
-  'https://www.genspark.ai/api/files/s/u84KzdvI', // V2124 Double-Decker Capsule Villa
-  'https://www.genspark.ai/api/files/s/pSySUzgg'  // Q3 Pitched-Roof Modular Capsule
-],
-
-// prop-mod-3 (Ri8Click Curved Panoramic Capsule Cabin - Model E-70):
-images: [
-  'https://www.genspark.ai/api/files/s/3jIuxLrV', // Rooftop Deck Shipping Container Villa
-  'https://www.genspark.ai/api/files/s/pSySUzgg', // Q3 Alpine Capsule House
-  'https://www.genspark.ai/api/files/s/bl8vngPB'  // Curved-Corner Glass Studio Container
-],
-
-// prop-mod-2 (Ri8Click 2-Bed Modular Luxury Prefab Villa):
-images: [
-  'https://www.genspark.ai/api/files/s/u84KzdvI', // V2124 Double-Decker Stacked Capsule
-  'https://www.genspark.ai/api/files/s/OypEiCb2', // L-Shaped Loft Cutaway Interior
-  'https://www.genspark.ai/api/files/s/K4lfut6W'  // Hex-LED Smart Container House
-],
-
-
-
-    
-//    images: [
- //     'https://images.unsplash.com/photo-1587061949409-02df41d5e562?auto=format&fit=crop&w=1200&q=85',
- //     'https://images.unsplash.com/photo-1510798831971-661eb04b3739?auto=format&fit=crop&w=1200&q=85',
- //     'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=1000&q=85'
- //   ],
     watermark: true,
     agencyId: 'agency-1',
-    agentName: 'Ri8Click Modular Specialist',
+    agentName: 'Malik Zeeshan (Modular Specialist)',
     agentPhone: '+92 336-5666727',
     agentWhatsApp: '923365666727',
-    agentAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+    agentAvatar: PAKISTAN_REGIONAL_AGENT_AVATARS.malikZeeshan_Taxila,
     agentCompany: 'Ri8Click Prefab & Modular Consortium',
     agentRating: 5.0,
     isFeatured: true,
@@ -1089,8 +1143,8 @@ images: [
   {
     id: 'prop-mod-3',
     title: 'Ri8Click Curved Panoramic Capsule Cabin (Model E-70)',
-    tagline: 'Streamlined Cylindrical Curved Glass Container Living',
-    description: 'Sleek curved aerodynamic container pod engineered with aviation aluminum, seamless wraparound curved panoramic glass facade, intelligent IoT ambient lighting, luxury skylight master suite, and custom front timber viewing deck. Ideal for scenic spots, glamping resorts, and private farmhouses.',
+    tagline: 'Curved Container Architecture • Open Deck Balcony • Resort & Farmhouse Ready',
+    description: 'Bespoke curved-edge container and space capsule hybrid smart home. Features an open-air composite timber balcony deck, wraparound curved glass observation lounge, integrated smart kitchen bar, and acoustic UPVC sliding doors. Ideal for Murree, Nathia Gali, Swat, Hunza resorts, or Faisal Hills & Islamabad farmhouses.',
     category: 'modular',
     type: 'Capsule Smart House',
     purpose: 'for_sale',
@@ -1098,105 +1152,49 @@ images: [
     priceFormatted: 'PKR 98 Lakh',
     currency: 'PKR',
     location: {
-      province: 'Punjab',
-      city: 'Taxila',
-      society: 'Margalla Ridge Resort Hub',
-      address: 'Ri8Click Modular Experience Yard, Taxila / Khanpur Road'
+      province: 'Islamabad Capital Territory',
+      city: 'Islamabad',
+      society: 'Faisal Hills (Margalla Connector)',
+      block: 'Margalla Ridge Resort Hub',
+      address: 'Margalla Foothills Display / Nationwide Turnkey Delivery'
     },
     area: 550,
     areaUnit: 'Sq Ft',
-    bedrooms: 1,
+    bedrooms: 2,
     bathrooms: 1,
     features: [
-      'Seamless Wraparound Curved Container Glass Frontage',
-      'Aviation Grade Curved Alloy Body with Fluorocarbon Finish',
-      'Smart Voice Control Curtains, HVAC & Audio System',
-      'Panoramic Curved Stargazing Skylight Roof',
-      'Ready-to-Use Designer Wet/Dry Luxury Restroom',
-      '15-Day Delivery & Rapid Crane Mount Deployment'
+      'Curved-Corner Structural UPVC & Tempered Glass',
+      'Integrated Outdoor Viewing Deck & Ambient Strips',
+      'Off-Grid 8kW Solar + Lithium Battery Option',
+      '2 Bedrooms + Panoramic Lounge + Kitchenette',
+      'Seismic Grade-9 & Typhoon Wind Resistant',
+      'Turnkey Factory Built - Delivered Ready to Plug & Play'
     ],
-    /*images: [
-      'https://images.unsplash.com/photo-1510798831971-661eb04b3739?auto=format&fit=crop&w=1200&q=85',
-      'https://images.unsplash.com/photo-1587061949409-02df41d5e562?auto=format&fit=crop&w=1200&q=85',
-      'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=1200&q=85'
-    ],*/
     images: [
-  'https://www.genspark.ai/api/files/s/xBNmbfCQ', // Hex-LED Smart Container Studio
-  'https://www.genspark.ai/api/files/s/IEOFqhM7', // Lakeside Curved Glass Capsule
-  'https://www.genspark.ai/api/files/s/JycQaAWz'  // Q3 Forest Capsule Pod
+      'https://www.genspark.ai/api/files/s/OypEiCb2',
+      'https://www.genspark.ai/api/files/s/bl8vngPB',
+      'https://www.genspark.ai/api/files/s/3jIuxLrV',
+      'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1200&q=80'
     ],
-
     watermark: true,
     agencyId: 'agency-1',
-    agentName: 'Ri8Click Modular Specialist',
+    agentName: 'Malik Zeeshan (Modular Specialist)',
     agentPhone: '+92 336-5666727',
     agentWhatsApp: '923365666727',
-    agentAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+    agentAvatar: PAKISTAN_REGIONAL_AGENT_AVATARS.malikZeeshan_Taxila,
     agentCompany: 'Ri8Click Prefab & Modular Consortium',
     agentRating: 5.0,
     isFeatured: true,
     viewsCount: 3950,
-    savesCount: 345,
-    createdAt: '2026-08-29',
-    status: 'active'
-  },
-  {
-    id: 'prop-mod-4',
-    title: 'Ri8Click Curved Container Space Box (Model C-40)',
-    tagline: 'Rounded-Corner Marine-Grade Prefab Container Pod',
-    description: 'Modern curved-edge container architectural pod featuring rounded corner radius, floor-to-ceiling thermally isolated curved glass frontage, integrated smart bathroom with dry-wet separation, concealed induction kitchenette, and rapid 5-day installation.',
-    category: 'modular',
-    type: 'Capsule Smart House',
-    purpose: 'for_sale',
-    price: 7200000,
-    priceFormatted: 'PKR 72 Lakh',
-    currency: 'PKR',
-    location: {
-      province: 'Islamabad Capital Territory',
-      city: 'Islamabad',
-      society: 'Chak Shahzad Farmhouses',
-      address: 'Ri8Click Demonstration Unit, Park Road, Islamabad'
-    },
-    area: 380,
-    areaUnit: 'Sq Ft',
-    bedrooms: 1,
-    bathrooms: 1,
-    features: [
-      'Rounded Corner Marine-Grade Steel & Alloy Construction',
-      'Floor-to-Ceiling Curved Double-Glazed Thermal Glass',
-      'Concealed Induction Kitchenette & Mini Bar',
-      'Smart Keyless Touchpad & Mobile App Entry',
-      'Solar Panel Hookup & Smart Energy Storage Ready'
-    ],
-    /*images: [
-      'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=1200&q=85',
-      'https://images.unsplash.com/photo-1449158743715-0a90ebb6d2d8?auto=format&fit=crop&w=1200&q=85',
-      'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=1200&q=85'
-    ],*/
-    images: [
-  'https://www.genspark.ai/api/files/s/Iswmh2Gk', // Rooftop Deck Shipping Container Villa
-  'https://www.genspark.ai/api/files/s/JycQaAWz', // Q3 Alpine Capsule House
-  'https://www.genspark.ai/api/files/s/W2Z5zFao'  // V2124 Double-Decker Capsule
-    ],
-    watermark: true,
-    agencyId: 'agency-1',
-    agentName: 'Ri8Click Modular Specialist',
-    agentPhone: '+92 336-5666727',
-    agentWhatsApp: '923365666727',
-    agentAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
-    agentCompany: 'Ri8Click Prefab & Modular Consortium',
-    agentRating: 4.9,
-    isFeatured: false,
-    viewsCount: 2800,
-    savesCount: 230,
+    savesCount: 310,
     createdAt: '2026-08-27',
     status: 'active'
   },
   {
     id: 'prop-mod-2',
     title: 'Ri8Click 2-Bed Modular Luxury Prefab Villa',
-    tagline: 'Modern 2-Bedroom Eco Smart House (Installed in 30 Days)',
-    description: 'Double-unit luxury modular residence manufactured in precision factory setting and assembled on your plot in 30 days. Includes 2 spacious bedrooms, designer lounge, American kitchen with breakfast counter, front wooden deck, and UPVC double glazed facade.',
+    tagline: 'Expandable Double-Story Modular Smart Home with Rooftop Deck',
+    description: 'A complete 2-bedroom luxury modular smart home engineered for plots, farmhouses, hills, and rooftops. Built with high-density polyurethane thermal panels and Ri8Click UPVC double-glazed windows. Assembled on-site in under 15 days.',
     category: 'modular',
     type: 'Capsule Smart House',
     purpose: 'for_sale',
@@ -1207,42 +1205,37 @@ images: [
       province: 'Punjab',
       city: 'Taxila',
       society: 'Margalla View Society',
-      address: 'Ri8Click Eco-Living Demonstration Yard, Margalla View, Taxila'
+      address: 'Margalla View Enclave, Taxila / Islamabad'
     },
     area: 950,
     areaUnit: 'Sq Ft',
     bedrooms: 2,
     bathrooms: 2,
     features: [
-      'Factory Built in 3 Weeks / Assembled in 7 Days',
-      'Zero Construction Waste & Eco-Friendly',
-      'Integrated Solar Roof System Ready',
-      'German UPVC Soundproof Windows',
-      'Fire-Proof & Earthquake Resistant Grade 9',
-      '50+ Year Structural Durability Guarantee'
+      '2 Full Bedrooms + Living Lounge + Designer Kitchen',
+      '40% More Energy Efficient than Brick & Mortar',
+      'Earthquake Resistant Steel Modular Chassis',
+      'Complete Smart Lighting & Security Package',
+      'Custom Exterior Cladding Options Available'
     ],
-    /*images: [
-      'https://images.unsplash.com/photo-1518780664697-55e3ad937233?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=1000&q=80',
-      'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1000&q=80'
-    ],*/
     images: [
-  'https://www.genspark.ai/api/files/s/W2Z5zFao', // V2124 Double-Decker Stacked Capsule
-  'https://www.genspark.ai/api/files/s/Iswmh2Gk', // 2-Story Rooftop Deck Container Villa
-  'https://www.genspark.ai/api/files/s/xBNmbfCQ'  // Hex-LED Smart Container House
+      'https://www.genspark.ai/api/files/s/K4lfut6W',
+      'https://www.genspark.ai/api/files/s/3jIuxLrV',
+      'https://www.genspark.ai/api/files/s/pSySUzgg',
+      'https://images.unsplash.com/photo-1600585154526-990dced4db0d?auto=format&fit=crop&w=1200&q=80'
     ],
     watermark: true,
     agencyId: 'agency-1',
-    agentName: 'Ri8Click Modular Specialist',
+    agentName: 'Malik Zeeshan (Modular Specialist)',
     agentPhone: '+92 336-5666727',
     agentWhatsApp: '923365666727',
-    agentAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+    agentAvatar: PAKISTAN_REGIONAL_AGENT_AVATARS.malikZeeshan_Taxila,
     agentCompany: 'Ri8Click Prefab & Modular Consortium',
     agentRating: 5.0,
     isFeatured: true,
-    viewsCount: 3600,
-    savesCount: 310,
-    createdAt: '2026-08-26',
+    viewsCount: 2790,
+    savesCount: 215,
+    createdAt: '2026-08-25',
     status: 'active'
   },
 
@@ -1250,8 +1243,8 @@ images: [
   {
     id: 'prop-proj-1',
     title: 'Faisal Hills Commercial Broadway Heights',
-    tagline: 'Iconic Mega Shopping & Luxury Apartment Complex',
-    description: 'Premier off-plan master development on Faisal Hills Commercial Broadway. Offering commercial shops, food court units, corporate offices, and 1-2 bedroom luxury apartments on a flexible 3-year installment plan.',
+    tagline: 'Book Shops & Luxury Apartments on 3-Year Easy Installments',
+    description: 'Pre-launch booking open in Faisal Hills Commercial Broadway Heights, Taxila. Offering ground floor brand shops, corporate offices, and 1 & 2-bed luxury serviced apartments with 25% down payment.',
     category: 'projects',
     type: 'Commercial Plaza',
     purpose: 'for_sale',
@@ -1262,33 +1255,32 @@ images: [
       province: 'Punjab',
       city: 'Taxila',
       society: 'Faisal Hills',
-      block: 'Faisal Hills Commercial Broadway',
-      address: 'Main Broadway Plaza Site, Faisal Hills, Taxila'
+      block: 'Commercial Broadway',
+      address: 'Plot #105, Main Broadway, Faisal Hills, Taxila'
     },
     area: 350,
     areaUnit: 'Sq Ft',
+    floors: 8,
     features: [
-      '3-Year Easy Installment Plan',
-      'Guaranteed Rental Returns on Possession',
-      'Central Air Conditioning & Atrium',
-      'High Speed Lifts & Backup Power',
-      'Underground 3-Level Dedicated Parking'
+      '25% Down Payment - 36 Monthly Installments',
+      'Guaranteed Rental Pool Management',
+      'Rooftop Restaurant & Infinity View Deck',
+      'Constructed by Ri8Click Consortium Group'
     ],
     images: [
-      'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1200&q=80',
-      'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1000&q=80'
+      'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1200&q=80'
     ],
     watermark: true,
     agencyId: 'agency-2',
     agentName: 'Chaudhry Bilal',
     agentPhone: '+92 336-5666727',
     agentWhatsApp: '923365666727',
-    agentAvatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80',
+    agentAvatar: PAKISTAN_REGIONAL_AGENT_AVATARS.chaudhryBilal_FaisalHills,
     agentCompany: 'Faisal Hills Property Advisors',
     agentRating: 4.85,
     isFeatured: true,
-    viewsCount: 2980,
-    savesCount: 215,
+    viewsCount: 1580,
+    savesCount: 112,
     createdAt: '2026-08-27',
     status: 'active'
   }
@@ -1296,60 +1288,58 @@ images: [
 
 export const CONSORTIUM_DIVISIONS: ConsortiumDivision[] = [
   {
-    id: 'div-realty',
+    id: 'div-realestate',
     title: 'Ri8Click Real Estate & Multi-Agent Network',
-    shortName: 'Real Estate & Properties',
-    tagline: 'Pakistan’s verified property network connecting elite agencies, buyers, and investors.',
-    description: 'Empowering multi-agent collaboration with transparent property verification, watermark authentication, digital escrow coordination, and verified listings across Punjab (Taxila, Rawalpindi, Lahore) and Islamabad Capital Territory.',
-    badge: 'Core Division (95% Focus)',
+    shortName: 'Real Estate Portal',
+    tagline: 'Pakistan’s verified property marketplace & investment advisory.',
+    description: 'Connecting buyers, overseas investors, and verified real estate agencies across Taxila, Faisal Hills, Islamabad, Rawalpindi, and Lahore with 100% watermarked authentic property listings.',
+    badge: 'Core Platform (95% Focus)',
     iconName: 'Building2',
-    image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80',
+    image: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=800&q=80',
     capabilities: [
-      'Multi-Agent Verified MLS Listings',
-      'Commercial & Corporate Plaza Advisory',
-      'Faisal Hills & Taxila Land Acquisition',
-      'Property Valuation & ROI Analytics',
-      'Watermark Verification System'
+      'Verified Commercial & Residential Listings',
+      'Faisal Hills & Taxila Specialist Advisory',
+      'Multi-Agent Brokerage Portal & Quota Management',
+      'Interactive 3D Virtual Tours & NOC Verification'
     ],
     stats: [
-      { label: 'Active Listings', value: '4,500+' },
-      { label: 'Verified Agencies', value: '120+' },
+      { label: 'Verified Listings', value: '4,500+' },
+      { label: 'Partner Agencies', value: '120+' },
       { label: 'Transaction Volume', value: 'PKR 15B+' }
     ],
-    contactPerson: 'Director Real Estate Operations',
+    contactPerson: 'Malik Zeeshan',
     contactPhone: '+92 336-5666727',
     contactWhatsApp: '923365666727'
   },
   {
     id: 'div-modular',
-    title: 'Ri8Click Readymade Capsule & Modular Prefab Smart Houses',
-    shortName: 'Modular Capsule Smart Houses',
-    tagline: 'Futuristic luxury living capsules and prefabricated homes deployed in days.',
-    description: 'Transforming housing with factory-engineered smart space capsules and modular prefab homes. Aerospace-grade durability, complete IoT smart controls, and turnkey installation on plots, farmhouses, and tourist resorts.',
-    badge: 'Innovation Showcase',
-    iconName: 'Home',
-    image: 'https://images.unsplash.com/photo-1587061949409-02df41d5e562?auto=format&fit=crop&w=800&q=80',
+    title: 'Ri8Click Readymade Capsule & Modular Smart Homes',
+    shortName: 'Capsule & Modular Homes',
+    tagline: 'Aerospace-grade space capsule pods & curved container smart villas.',
+    description: 'Pioneering prefabricated luxury living in Pakistan. Our readymade space capsule houses and curved panoramic container homes are factory-built with full IoT automation and deployed on your land within 7 to 30 days.',
+    badge: 'Flagship Innovation',
+    iconName: 'Box',
+    image: 'https://www.genspark.ai/api/files/s/I6HwjuLB',
     capabilities: [
-      'Space Capsule Smart Pods (Model X & Z Series)',
-      'Prefab Luxury 2 & 3 Bedroom Modular Villas',
-      'Eco-Glamping Pods for Tourism & Resorts',
-      'Rapid 7 to 30 Day Complete On-Site Deployment',
-      '100% Relocatable & Transportable Housing'
+      'Space Capsule Smart Pods (270° Panoramic Glass)',
+      'Curved-Corner Container Villas & Farmhouses',
+      'Rooftop Executive Pods & Hill Resort Cabins',
+      '100% Relocatable with Solar Off-Grid Options'
     ],
     stats: [
-      { label: 'Deploy Time', value: '7-30 Days' },
-      { label: 'Earthquake Grade', value: 'Grade 9' },
-      { label: 'Smart IoT', value: '100% Integrated' }
+      { label: 'Deployment Time', value: '7-30 Days' },
+      { label: 'Lifespan', value: '50+ Years' },
+      { label: 'Seismic Rating', value: 'Grade 9' }
     ],
-    contactPerson: 'Director Modular Living',
+    contactPerson: 'Modular Division Lead',
     contactPhone: '+92 336-5666727',
     contactWhatsApp: '923365666727'
   },
   {
     id: 'div-construction',
     title: 'Ri8Click Turnkey Construction & Civil Works',
-    shortName: 'Construction & Civil Engineering',
-    tagline: 'Engineering excellence for commercial plazas, luxury residences, and infrastructure.',
+    shortName: 'Turnkey Construction',
+    tagline: 'A-Grade commercial plazas, luxury residences, and infrastructure.',
     description: 'Delivering end-to-end grey structure and turnkey luxury finishing for commercial complexes, corporate towers, and residential villas in Taxila, Faisal Hills, and Islamabad with strict international structural codes.',
     badge: 'Consortium Company',
     iconName: 'HardHat',
@@ -1475,7 +1465,7 @@ export const INITIAL_HERO_SLIDES: HeroSlide[] = [
     price: 'PKR 85 Lakh',
     location: 'Taxila & Nationwide Deployment',
     society: 'Ri8Click Modular Experience Yard',
-    imageUrl: 'https://images.unsplash.com/photo-1510798831971-661eb04b3739?auto=format&fit=crop&w=2000&q=85',
+    imageUrl: 'https://www.genspark.ai/api/files/s/I6HwjuLB',
     tourRoomsCount: 3,
     isActive: true,
     order: 3,
@@ -1492,38 +1482,38 @@ export const INITIAL_HERO_SLIDES: HeroSlide[] = [
     badgeColor: 'bg-purple-600 text-white',
     title: 'DHA Phase 6 Main Boulevard Commercial Plaza',
     subtitle: 'High Footfall Retail & Corporate Plaza in Lahore',
-    description: 'Prestigious commercial plaza directly on DHA Lahore Phase 6 Main Boulevard. 4 commercial retail floors with double basement parking, marble and granite foyer, and high rental demand from banking institutions.',
+    description: 'Prestigious commercial plaza directly on DHA Lahore Phase 6 Main Boulevard. 4 commercial floors, basement parking, modern glass & aluminum elevation, leased to multinational brands.',
     price: 'PKR 18.0 Crore',
     location: 'Lahore',
-    society: 'DHA Phase 6 Main Boulevard',
-    imageUrl: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=2000&q=85',
-    tourRoomsCount: 3,
+    society: 'DHA Phase 6 Lahore',
+    imageUrl: 'https://images.unsplash.com/photo-1582407947304-fd86f028f716?auto=format&fit=crop&w=2000&q=85',
+    tourRoomsCount: 4,
     isActive: true,
     order: 4,
-    features: ['Main Boulevard Frontage', 'Double Basement Parking', 'High Footfall Hub', 'Ready Tenancy'],
+    features: ['Main Boulevard Front', 'Multinational Tenants', 'Capsule Elevator', 'LDA / DHA Approved'],
     samplePropertyData: {
-      title: 'DHA Phase 6 Commercial Plaza',
+      title: 'DHA Phase 6 Main Boulevard Commercial Plaza',
       category: 'commercial',
       location: { city: 'Lahore', society: 'DHA Phase 1-9 & Prism 9', province: 'Punjab' }
     }
   },
   {
     id: 'slide-5',
-    categoryTag: 'Multi Gardens B-17 & Faisal Town',
-    badgeColor: 'bg-teal-600 text-white',
-    title: 'Multi Gardens B-17 Margalla View Luxury Residence',
-    subtitle: 'Sector G Architect-Designed Villa Near C-18 Interchange',
-    description: 'Spectacular 1-Kanal modern villa in Multi Gardens B-17 Sector G Islamabad. Featuring direct Margalla views, double-height lobby, landscaped lawn, imported Spanish tiles, and soundproof UPVC fixtures.',
+    categoryTag: 'Islamabad B-17 Multi Gardens',
+    badgeColor: 'bg-amber-600 text-white',
+    title: 'Margalla View Luxury Residence in Multi Gardens B-17',
+    subtitle: 'Direct M-1 Motorway & GT Road Access with CDANOC',
+    description: 'Contemporary 1-Kanal smart residence in MPCHS Multi Gardens B-17 Islamabad. Surrounded by scenic Margalla foothills, dedicated botanical gardens, underground utilities, and Ri8Click smart home security.',
     price: 'PKR 5.25 Crore',
     location: 'Islamabad',
     society: 'Multi Gardens (B-17)',
-    imageUrl: 'https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=2000&q=85',
+    imageUrl: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=2000&q=85',
     tourRoomsCount: 4,
     isActive: true,
     order: 5,
-    features: ['Direct Margalla Hills View', 'C-18 Interchange Access', 'Imported Spanish Tiles', '3D Walkthrough'],
+    features: ['MPCHS Approved Sector', 'Smart Biometric Lock', 'Italian Designer Kitchen', 'Dedicated M-1 Interchange'],
     samplePropertyData: {
-      title: 'Modern Villa in Multi Gardens B-17',
+      title: 'Margalla View Luxury Residence in B-17',
       category: 'residential',
       location: { city: 'Islamabad', society: 'Multi Gardens (B-17)', province: 'Islamabad Capital Territory' }
     }
@@ -1533,67 +1523,55 @@ export const INITIAL_HERO_SLIDES: HeroSlide[] = [
 export const INITIAL_BLOGS: BlogPost[] = [
   {
     id: 'blog-1',
-    title: 'Faisal Hills Taxila 2026 Price Trends & Development Update: Executive Block & Broadway Breakdown',
+    title: 'Faisal Hills Taxila 2026 Price Trends & Executive Block Development Update',
     slug: 'faisal-hills-taxila-2026-price-trends-executive-block-development',
     category: 'Market Trends',
-    excerpt: 'Comprehensive real estate breakdown of Faisal Hills Taxila across Executive Block, Block A, B, C, and Commercial Broadway with current market rates and future ROI outlook.',
-    content: `### Executive Overview: Why Faisal Hills Taxila is Leading North Punjab Real Estate
+    excerpt: 'Complete analysis of residential and commercial plot appreciation in Faisal Hills Executive Block, Block A, B, C, and Commercial Broadway along GT Road N-5.',
+    content: `### Why Faisal Hills Taxila Leads Rawalpindi-Islamabad Corridor Growth
 
-Faisal Hills Taxila has emerged as one of the most resilient and rapid-growth master-planned communities in the twin cities (Islamabad-Rawalpindi) and Taxila corridor. With direct access from the N-5 Grand Trunk (GT) Road and dedicated connections towards the Margalla Avenue extension, the society provides seamless access to central Islamabad in under 20 minutes.
+Faisal Hills has transformed the Taxila and GT Road real estate landscape, offering CDA-standard infrastructure at highly competitive valuations. Backed by Zedem International, the society enjoys direct access from Main GT Road (N-5) and seamless connectivity to Islamabad Sector B-17 and the M-1 Motorway.
 
-#### 1. Executive Block: The Premium Residence Zone
-- **Price Performance**: 1-Kanal residential plots in Executive Block have appreciated by **18.4%** over the past 12 months, driven by possession handovers and construction boom.
-- **Top Amenities**: Underground electrification, landscaped civic parks, sports complex, and unobstructed views of the Margalla Hills.
-- **Construction Trends**: Over 450+ designer villas are currently under construction, with high demand for German UPVC double-glazed thermal windows to minimize energy costs.
+#### Key Investment Highlights for 2026:
+1. **Executive Block Rapid Possession**: Over 650+ luxury villas are either completed or under active construction, driving strong end-user demand.
+2. **Commercial Broadway Boom**: High-rise commercial plots on the 225-ft wide boulevard have recorded 28% capital appreciation over the past 14 months.
+3. **Margalla Highway Connectivity**: The upcoming connector link to Margalla Avenue reduces travel time to Islamabad F-10/F-11 to under 18 minutes.
 
-#### 2. Commercial Broadway: High Rental Yield Opportunities
-The Commercial Broadway in Faisal Hills is envisioned as the commercial spine of the region:
-- **Plot Dimensions**: 4 Marla, 5.5 Marla, and 8 Marla commercial plots.
-- **Rental Projections**: Ground floor retail spaces are yielding between **8.5% to 9.8% annual ROI**, heavily sought after by national retail brands and banking chains.
-
-#### 3. Investment Verdict for Overseas Pakistanis
-If you are planning long-term capital gain (2 to 5 years), Faisal Hills Executive Block and Main Boulevard commercial plazas offer unmatched stability with complete RDA approvals.`,
-    coverImage: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1200&q=85',
+#### Current Market Price Brackets:
+- **5 Marla Residential**: PKR 42 Lakh – PKR 68 Lakh (Block C to Executive Block)
+- **10 Marla Residential**: PKR 78 Lakh – PKR 1.25 Crore
+- **1 Kanal Residential**: PKR 1.45 Crore – PKR 2.35 Crore`,
+    coverImage: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=1200&q=85',
     authorName: 'Malik Zeeshan',
-    authorAvatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=400&q=80',
-    authorRole: 'Senior Property Analyst & Broker',
+    authorAvatar: PAKISTAN_REGIONAL_AGENT_AVATARS.malikZeeshan_Taxila,
+    authorRole: 'Senior Faisal Hills Investment Advisor',
     publishedAt: '2026-08-28',
     readingTime: '5 min read',
-    tags: ['Faisal Hills', 'Taxila', 'Executive Block', 'Property Rates', 'Real Estate Investment'],
+    tags: ['Faisal Hills', 'Taxila Real Estate', 'Executive Block', 'Property Rates 2026', 'GT Road'],
     viewsCount: 3420,
     isFeatured: true,
     status: 'published'
   },
   {
     id: 'blog-2',
-    title: 'DHA Lahore vs. DHA Islamabad: Where Should Overseas Pakistanis Invest for Maximum Rental Yield?',
-    slug: 'dha-lahore-vs-dha-islamabad-overseas-pakistanis-rental-yield',
+    title: 'DHA Lahore vs. DHA Islamabad: Where Should Overseas Pakistanis Invest?',
+    slug: 'dha-lahore-vs-dha-islamabad-overseas-investment-comparison',
     category: 'Investment Guides',
-    excerpt: 'Detailed comparison between DHA Lahore (Phase 5, 6, 9 Prism) and DHA Islamabad (Phase 2, 4, 5) analyzing capital growth, tenancy demand, and commercial yields.',
-    content: `### Comparing Pakistan’s Top Defence Housing Authorities
+    excerpt: 'Comparing rental yields, commercial plaza ROI, and 3-to-5 year capital appreciation between DHA Lahore Phase 6/Prism 9 and DHA Islamabad Phase 2 & 5.',
+    content: `### Strategic Portfolio Allocation for Overseas Investors
 
-Both DHA Lahore and DHA Islamabad represent the gold standard of institutional trust, security, and civic infrastructure in Pakistan. However, their investment profiles differ significantly based on your target: capital appreciation or steady rental cash flow.
+Overseas Pakistanis remain the backbone of high-value real estate transactions in Pakistan. Choosing between **DHA Lahore** and **DHA Islamabad-Rawalpindi** depends on whether your primary goal is immediate rental cashflow or medium-term land appreciation.
 
-#### DHA Lahore Key Strengths:
-1. **Phase 6 & 8 Commercial Footfall**: Home to Raya Fairways, international dining chains, and premium corporate offices.
-2. **High Tenancy Demand**: Rental vacancy in DHA Phase 5 and 6 is under 3%, ensuring swift tenant placement.
-3. **Phase 9 Prism Growth**: Ideal for 3-5 year holding with strong infrastructure completion milestones.
+#### 1. Commercial Plazas & Rental Yield
+- **DHA Lahore Phase 6 & 8**: Offers mature commercial boulevards with multinational retail tenants generating **7.5% to 9.2% annual rental yield** plus annual 10% rent escalation.
+- **DHA Islamabad Phase 2 (Main GT Road)**: Situated between Giga Mall and Rawalpindi/Islamabad arteries, commercial offices and luxury serviced apartments command exceptional occupancy.
 
-#### DHA Islamabad Key Strengths:
-1. **Phase 2 Prime Connectivity**: Direct access to Islamabad Expressway and G.T. Road, commanding top rental rates for furnished corporate housing.
-2. **Phase 4 & 5 Scenic Topography**: Riverbed and hillside vistas providing luxury residential estates.
-
-#### Comparative Summary Table
-| Metric | DHA Lahore (Phase 6) | DHA Islamabad (Phase 2) |
-|---|---|---|
-| Average 1-Kanal Villa Rate | PKR 7.5 - 11.5 Cr | PKR 6.8 - 10.5 Cr |
-| Commercial Rental Yield | 7.8% - 9.2% | 8.0% - 9.5% |
-| Infrastructure Quality | Grade A+ | Grade A+ |`,
+#### 2. Residential Plot Growth
+- **DHA Phase 9 Prism (Lahore)** and **DHA Phase 5 (Islamabad)** provide the strongest 3-year capital gain potential as possession opens across new sectors.`,
     coverImage: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=85',
     authorName: 'Engr. Haris Farooq',
-    authorAvatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=400&q=80',
-    authorRole: 'Commercial Portfolio Manager',
-    publishedAt: '2026-08-25',
+    authorAvatar: PAKISTAN_REGIONAL_AGENT_AVATARS.engrHarisFarooq_Islamabad,
+    authorRole: 'Commercial Portfolio Director',
+    publishedAt: '2026-08-24',
     readingTime: '6 min read',
     tags: ['DHA Lahore', 'DHA Islamabad', 'Overseas Pakistanis', 'Rental Yield', 'Commercial Plazas'],
     viewsCount: 2890,
@@ -1602,13 +1580,13 @@ Both DHA Lahore and DHA Islamabad represent the gold standard of institutional t
   },
   {
     id: 'blog-3',
-    title: 'Multi Gardens B-17 (MPCHS) Sector G & C-18 Interchange Connectivity: Complete Real Estate Review',
-    slug: 'multi-gardens-b17-mpchs-sector-g-c18-interchange-connectivity',
+    title: 'Multi Gardens B-17 (MPCHS) Sector G & C-18 Interchange Connectivity',
+    slug: 'multi-gardens-b17-mpchs-motorway-interchange-update',
     category: 'Project Updates',
-    excerpt: 'How the direct M-1 Motorway C-18 Interchange and Margalla Avenue connectivity have transformed Multi Gardens B-17 into a prime residential haven.',
-    content: `### Multi Gardens B-17: The Crown Jewel of MPCHS
+    excerpt: 'How the dedicated M-1 Motorway interchange and Margalla Avenue extension are reshaping property values in MPCHS Multi Gardens B-17 Islamabad.',
+    content: `### Multi Gardens B-17: The Gateway to Islamabad
 
-Multi Gardens Sector B-17 in Islamabad has witnessed unprecedented residential habitation over the past two years. With the operational C-18 Motorway Interchange and rapid work on the Margalla Avenue link, B-17 has become one of the most accessible sectors in Islamabad.
+Managed by MPCHS, Multi Gardens B-17 bridges Taxila GT Road with the M-1 Motorway, offering scenic views of the Margalla Hills and peaceful family living in Islamabad.
 
 #### Sector G Highlights
 - Located directly at the entrance from the Motorway connector.
@@ -1619,7 +1597,7 @@ Multi Gardens Sector B-17 in Islamabad has witnessed unprecedented residential h
 Modern home builders in B-17 are increasingly adopting soundproof acoustic UPVC double glazing to eliminate highway noise while providing thermal efficiency during Islamabad’s extreme summer heat.`,
     coverImage: 'https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=1200&q=85',
     authorName: 'Chaudhry Bilal',
-    authorAvatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80',
+    authorAvatar: PAKISTAN_REGIONAL_AGENT_AVATARS.chaudhryBilal_FaisalHills,
     authorRole: 'Regional Property Specialist',
     publishedAt: '2026-08-20',
     readingTime: '4 min read',
@@ -1649,7 +1627,7 @@ Prefabricated modular living has arrived in Pakistan. Pioneered by Ri8Click Modu
 - Rooftop penthouse suites and guest annexes.`,
     coverImage: 'https://images.unsplash.com/photo-1510798831971-661eb04b3739?auto=format&fit=crop&w=1200&q=85',
     authorName: 'Engr. Haris Farooq',
-    authorAvatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=400&q=80',
+    authorAvatar: PAKISTAN_REGIONAL_AGENT_AVATARS.engrHarisFarooq_Islamabad,
     authorRole: 'Prefab & Modular Systems Lead',
     publishedAt: '2026-08-15',
     readingTime: '5 min read',
@@ -1679,7 +1657,7 @@ Chaudhry Abdul Majeed and Zedem International have maintained an exceptional rep
 - **Ideal For**: Long-term capital multiplication over 3 to 7 years with affordable installment structures.`,
     coverImage: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=1200&q=85',
     authorName: 'Malik Zeeshan',
-    authorAvatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=400&q=80',
+    authorAvatar: PAKISTAN_REGIONAL_AGENT_AVATARS.malikZeeshan_Taxila,
     authorRole: 'Senior Property Analyst',
     publishedAt: '2026-08-10',
     readingTime: '4 min read',
