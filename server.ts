@@ -1,362 +1,410 @@
 import express from "express";
 import path from "path";
+import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
 
-//============ changes made on 21-10-26 ========
-//import dotenv from "dotenv";
-import path from "path";
-
+// Load environment variables from .envRE if available
 dotenv.config({ path: path.resolve(process.cwd(), ".envRE") });
-//dotenv.config();
-
-
-// END ====== 21-10-16 ======
-
-dotenv.config();
 
 const app = express();
 const PORT = 3000;
 
-app.use(express.json());
+// Increase body limit to 50MB so base64/uploaded images from Admin or Agencies save universally
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
-// Initialize Gemini SDK lazily / safely on server
+// Lazy initialization of Gemini client
 let aiClient: GoogleGenAI | null = null;
 function getGeminiClient(): GoogleGenAI | null {
-  if (!aiClient && process.env.GEMINI_API_KEY) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey || apiKey === "your_actual_gemini_api_key_here") {
+    return null;
+  }
+  if (!aiClient) {
     aiClient = new GoogleGenAI({
-      apiKey: process.env.GEMINI_API_KEY,
+      apiKey,
       httpOptions: {
         headers: {
-          'User-Agent': 'aistudio-build',
-        },
-      },
+          "User-Agent": "aistudio-build"
+        }
+      }
     });
   }
   return aiClient;
 }
 
-// Health check endpoint
-app.get("/api/health", (_req, res) => {
-  res.json({ status: "ok", service: "ri8click-real-estate-api", timestamp: new Date().toISOString() });
+// ============================================================================
+// UNIVERSAL PORTAL STATE PERSISTENCE & REAL-TIME SSE BROADCAST
+// ============================================================================
+const DATA_DIR = path.resolve(process.cwd(), "data");
+const STATE_FILE = path.join(DATA_DIR, "portal-state.json");
+
+interface GlobalPortalState {
+  properties: any[] | null;
+  agencies: any[] | null;
+  provinceCityData: any[] | null;
+  heroSlides: any[] | null;
+  blogs: any[] | null;
+  sitePortions: any[] | null;
+  userAccounts: any[] | null;
+  advibeProjects: any[] | null;
+  advibeLeads: any[] | null;
+  updatedAt: string;
+}
+
+function loadGlobalState(): GlobalPortalState {
+  try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+    if (fs.existsSync(STATE_FILE)) {
+      const raw = fs.readFileSync(STATE_FILE, "utf-8");
+      return JSON.parse(raw);
+    }
+  } catch (err) {
+    console.error("Failed to read global portal state:", err);
+  }
+  return {
+    properties: null,
+    agencies: null,
+    provinceCityData: null,
+    heroSlides: null,
+    blogs: null,
+    sitePortions: null,
+    userAccounts: null,
+    advibeProjects: null,
+    advibeLeads: null,
+    updatedAt: new Date().toISOString()
+  };
+}
+
+let globalPortalState: GlobalPortalState = loadGlobalState();
+
+function saveGlobalState() {
+  try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+    globalPortalState.updatedAt = new Date().toISOString();
+    fs.writeFileSync(STATE_FILE, JSON.stringify(globalPortalState, null, 2), "utf-8");
+  } catch (err) {
+    console.error("Failed to persist global portal state:", err);
+  }
+}
+
+// Connected SSE clients for instant multi-browser synchronization
+const sseClients = new Set<express.Response>();
+
+function broadcastStateUpdate(changedKeys: string[]) {
+  const payload = JSON.stringify({
+    type: "STATE_UPDATED",
+    changedKeys,
+    updatedAt: globalPortalState.updatedAt,
+    state: globalPortalState
+  });
+  for (const client of sseClients) {
+    try {
+      client.write(`data: ${payload}\n\n`);
+    } catch {
+      sseClients.delete(client);
+    }
+  }
+}
+
+// Subscribe to live state updates via Server-Sent Events (SSE)
+app.get("/api/state/stream", (req, res) => {
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.flushHeaders?.();
+
+  sseClients.add(res);
+  res.write(
+    `data: ${JSON.stringify({
+      type: "CONNECTED",
+      updatedAt: globalPortalState.updatedAt
+    })}\n\n`
+  );
+
+  req.on("close", () => {
+    sseClients.delete(res);
+  });
 });
 
-// Gemini AI Chatbot endpoint for ri8click Real Estate & Consortium
+// Get universal portal state for all browser sessions
+app.get("/api/state", (_req, res) => {
+  res.json(globalPortalState);
+});
+
+// Update universal portal state (any section or multiple sections)
+app.put("/api/state", (req, res) => {
+  const updates = req.body || {};
+  const allowedKeys: (keyof GlobalPortalState)[] = [
+    "properties",
+    "agencies",
+    "provinceCityData",
+    "heroSlides",
+    "blogs",
+    "sitePortions",
+    "userAccounts",
+    "advibeProjects",
+    "advibeLeads"
+  ];
+
+  const changedKeys: string[] = [];
+  for (const key of allowedKeys) {
+    if (updates[key] !== undefined) {
+      (globalPortalState as any)[key] = updates[key];
+      changedKeys.push(key);
+    }
+  }
+
+  if (changedKeys.length > 0) {
+    saveGlobalState();
+    broadcastStateUpdate(changedKeys);
+  }
+
+  res.json({
+    status: "ok",
+    changedKeys,
+    updatedAt: globalPortalState.updatedAt
+  });
+});
+
+// ============================================================================
+// ADVIBE INTERACTIVE MEGAPROJECT SHOWCASE API ROUTES
+// ============================================================================
+const advibeStore: {
+  projects: any[];
+  leads: any[];
+  permittedDealers: Set<string>;
+} = {
+  projects: globalPortalState.advibeProjects || [],
+  leads: globalPortalState.advibeLeads || [],
+  permittedDealers: new Set(["agency-1", "agency-2"])
+};
+
+function requireAdvibeAuth(
+  req: express.Request,
+  res: express.Response,
+  next: express.NextFunction
+) {
+  const userRole = (req.headers["x-user-role"] as string) || "admin";
+  const agencyId = (req.headers["x-agency-id"] as string) || "";
+
+  if (userRole === "admin") {
+    return next();
+  }
+  if (userRole === "agency" && advibeStore.permittedDealers.has(agencyId)) {
+    return next();
+  }
+
+  return res.status(403).json({
+    error: "Forbidden: Requires Super Admin or Authorized Dealer privileges for AdVibe."
+  });
+}
+
+// GET all AdVibe projects
+app.get("/api/advibe/projects", (_req, res) => {
+  res.json({ projects: globalPortalState.advibeProjects || advibeStore.projects });
+});
+
+// GET single AdVibe project by slug
+app.get("/api/advibe/projects/:slug", (req, res) => {
+  const list = globalPortalState.advibeProjects || advibeStore.projects;
+  const project = list.find(
+    (p) => p.slug === req.params.slug || p.id === req.params.slug
+  );
+  if (!project) {
+    return res.status(404).json({ error: "AdVibe project not found" });
+  }
+  res.json({ project });
+});
+
+// POST / PUT AdVibe project (Create or Update)
+app.post("/api/advibe/projects", requireAdvibeAuth, (req, res) => {
+  const project = req.body;
+  if (!project || !project.title || !project.slug) {
+    return res.status(400).json({ error: "Project title and slug are required." });
+  }
+
+  const list = globalPortalState.advibeProjects || advibeStore.projects;
+  const existingIdx = list.findIndex((p) => p.id === project.id);
+  if (existingIdx >= 0) {
+    list[existingIdx] = {
+      ...project,
+      updatedAt: new Date().toISOString().split("T")[0]
+    };
+  } else {
+    list.unshift({
+      ...project,
+      id: project.id || `advibe-proj-${Date.now()}`,
+      createdAt: new Date().toISOString().split("T")[0],
+      updatedAt: new Date().toISOString().split("T")[0]
+    });
+  }
+
+  advibeStore.projects = list;
+  globalPortalState.advibeProjects = list;
+  saveGlobalState();
+  broadcastStateUpdate(["advibeProjects"]);
+
+  res.json({ status: "ok", project });
+});
+
+// DELETE AdVibe project
+app.delete("/api/advibe/projects/:id", requireAdvibeAuth, (req, res) => {
+  const list = globalPortalState.advibeProjects || advibeStore.projects;
+  const nextList = list.filter((p) => p.id !== req.params.id);
+  advibeStore.projects = nextList;
+  globalPortalState.advibeProjects = nextList;
+  saveGlobalState();
+  broadcastStateUpdate(["advibeProjects"]);
+
+  res.json({ status: "deleted", id: req.params.id });
+});
+
+// POST duplicate AdVibe project
+app.post("/api/advibe/projects/:id/duplicate", requireAdvibeAuth, (req, res) => {
+  const list = globalPortalState.advibeProjects || advibeStore.projects;
+  const source = list.find((p) => p.id === req.params.id);
+  if (!source) {
+    return res.status(404).json({ error: "Source project not found" });
+  }
+  const copy = {
+    ...source,
+    id: `advibe-proj-${Date.now()}`,
+    title: `${source.title} (Copy)`,
+    slug: `${source.slug}-copy-${Date.now().toString().slice(-4)}`,
+    status: "draft",
+    viewsCount: 0,
+    leadsCount: 0,
+    createdAt: new Date().toISOString().split("T")[0],
+    updatedAt: new Date().toISOString().split("T")[0]
+  };
+  list.unshift(copy);
+  advibeStore.projects = list;
+  globalPortalState.advibeProjects = list;
+  saveGlobalState();
+  broadcastStateUpdate(["advibeProjects"]);
+
+  res.json({ status: "duplicated", project: copy });
+});
+
+// POST public lead from AdVibe interactive showcase
+app.post("/api/advibe/leads", (req, res) => {
+  const lead = req.body;
+  if (!lead || !lead.name || !lead.phone) {
+    return res.status(400).json({ error: "Lead name and phone are required." });
+  }
+  const newLead = {
+    ...lead,
+    id: lead.id || `advibe-lead-${Date.now()}`,
+    status: "new",
+    createdAt: new Date().toISOString()
+  };
+  const leadsList = globalPortalState.advibeLeads || advibeStore.leads;
+  leadsList.unshift(newLead);
+  advibeStore.leads = leadsList;
+  globalPortalState.advibeLeads = leadsList;
+  saveGlobalState();
+  broadcastStateUpdate(["advibeLeads"]);
+
+  res.json({ status: "ok", lead: newLead });
+});
+
+// GET all AdVibe leads (Admin / Authorized Dealer)
+app.get("/api/advibe/leads", requireAdvibeAuth, (_req, res) => {
+  res.json({ leads: globalPortalState.advibeLeads || advibeStore.leads });
+});
+
+// POST toggle dealer AdVibe permission (Super Admin only)
+app.post("/api/advibe/permissions", (req, res) => {
+  const { agencyId, allowed } = req.body;
+  if (!agencyId) {
+    return res.status(400).json({ error: "agencyId is required" });
+  }
+  if (allowed) {
+    advibeStore.permittedDealers.add(agencyId);
+  } else {
+    advibeStore.permittedDealers.delete(agencyId);
+  }
+  res.json({
+    status: "ok",
+    agencyId,
+    allowed: advibeStore.permittedDealers.has(agencyId)
+  });
+});
+
+// API Health Check
+app.get("/api/health", (_req, res) => {
+  res.json({
+    status: "ok",
+    geminiConfigured: Boolean(getGeminiClient()),
+    stateUpdatedAt: globalPortalState.updatedAt
+  });
+});
+
+// Gemini AI Real Estate Assistant Endpoint
 app.post("/api/gemini/chat", async (req, res) => {
   try {
-    const { message, conversationHistory = [] } = req.body;
-
+    const { message, context } = req.body;
     if (!message || typeof message !== "string") {
-      res.status(400).json({ error: "A valid message is required." });
-      return;
+      return res.status(400).json({ error: "A valid message is required." });
     }
 
     const ai = getGeminiClient();
-
     if (!ai) {
-      // Friendly fallback if API key is not yet set in environment
-      res.json({
-        reply: `Thank you for contacting ri8click! I am your AI Property Advisor for ri8click Real Estate & Consortium. We specialize in premier properties across Taxila, Faisal Hills, Islamabad, Rawalpindi, and Lahore, as well as Commercial Plazas and futuristic Readymade Capsule Modular Houses. How may I assist your property or investment search today?`,
-        source: "fallback"
+      return res.status(200).json({
+        reply:
+          "Welcome to ri8click Real Estate & Modular Homes Consortium! Tell me your budget, preferred city (Taxila, Faisal Hills, Islamabad, Rawalpindi, or Lahore), or whether you're interested in Residential Villas, Commercial Highrises, or Readymade Space Capsule Smart Houses. For immediate assistance, WhatsApp +92 336-5666727.",
+        fallback: true
       });
-      return;
     }
 
-    const systemInstruction = `You are the official AI Property Advisor for "ri8click" (formerly Homeland, now upgraded to ri8click Multi-Agent Real Estate & Group of Companies).
-You represent a premier corporate consortium operating in Pakistan and internationally with 5 major divisions:
-1. Ri8Click Real Estate & Property Network: Multi-agent portal offering verified residential, commercial, luxury villas, and plots across Punjab (Taxila, Lahore, Rawalpindi, Faisalabad) and Islamabad (Faisal Hills, B-17 Multi Gardens, Blue Area, Eighteen, DHA, Bahria Town).
-2. Ri8Click Turnkey Construction & Civil Works: Modern structural building, luxury finishing, and architectural construction.
-3. Ri8Click UPVC & Architectural Products: Energy-efficient double-glazed UPVC windows, structural doors, and thermal insulation systems.
-4. Ri8Click Technology Services & AI Solutions: PropTech portals, real estate CRM, multi-agent management, and digital twin tours.
-5. Ri8Click Readymade Capsule & Modular Prefab Smart Houses: High-tech prefabricated luxury living capsules and eco-pods delivered and installed anywhere.
+    const systemInstruction = `You are the official AI Property & Investment Advisor for "ri8click" (ri8click.com), Pakistan's premier verified real estate portal and consortium group specializing in:
+1. Taxila & Faisal Hills (Executive Block, Block A, B, C, Commercial Broadway), Kohistan Enclave, Multi Gardens B-17, DHA Islamabad/Rawalpindi, Bahria Town, and Lahore.
+2. Commercial Plazas, Retail Shops, Corporate Offices, and High-ROI real estate investments.
+3. Readymade Space Capsule Smart Houses & Curved Container Modular Homes (deployed in 7-30 days across Pakistan).
+4. Ri8Click Consortium Group services: Turnkey Construction, German UPVC Windows & Doors Manufacturing, and PropTech solutions.
 
-Key Areas Highlight:
-- Taxila: Historic and rapidly developing investment hub in Punjab.
-- Faisal Hills (near Taxila & Margalla Hills): Prime residential and commercial blocks (Executive Block, Block A, B, C, Commercial Broadway).
-- Islamabad & Rawalpindi: B-17 Multi Gardens, Eighteen, Top City, Blue Area commercial towers.
+Official Contact & WhatsApp: +92 336-5666727
+Always be polite, concise, accurate, and helpful. Use Pakistani Rupees (PKR, Lakh, Crore) and local area units (Marla, Kanal, Sq Ft).
+${context ? `\nCurrent Portal Context:\n${context}` : ""}`;
 
-Guidelines:
-- Provide polite, sophisticated, highly professional real estate advice.
-- Assist users with property valuations, buying/selling advice, commercial ROI calculations, and scheduling agent site visits.
-- Emphasize ri8click's verified multi-agent network, transparency, and watermark verification.
-- Offer to connect them via WhatsApp or schedule an agent consultation.
-- Keep answers clear, structured, and helpful.`;
-
-    const chat = ai.chats.create({
+    const response = await ai.models.generateContent({
       model: "gemini-3.8-flash",
+      contents: message,
       config: {
         systemInstruction,
         temperature: 0.7,
+        maxOutputTokens: 500
       }
     });
 
-    // Send the user query
-    const response = await chat.sendMessage({
-      message: message,
+    return res.json({
+      reply:
+        response.text ||
+        "Please contact our senior advisors on WhatsApp at +92 336-5666727 for personalized property guidance.",
+      fallback: false
     });
-
-    const reply = response.text || "I apologize, but I was unable to generate a response. Please reach out to our 24/7 WhatsApp helpline for direct agent assistance.";
-    res.json({ reply, source: "gemini" });
-  } catch (error: any) {
-    console.error("Gemini API error:", error);
-    res.status(500).json({
-      error: "Error processing request with AI assistant",
-      reply: "We are currently experiencing high request volume. You can connect directly with a ri8click verified agent in Taxila or Faisal Hills via our WhatsApp chat button on the screen!"
+  } catch (error) {
+    console.error("Gemini API Error:", error);
+    return res.status(200).json({
+      reply:
+        "I can help you explore properties in Faisal Hills Taxila, Islamabad, Rawalpindi, and Lahore, or share details on our Readymade Capsule Smart Homes. Connect with our team directly on WhatsApp at +92 336-5666727.",
+      fallback: true
     });
   }
 });
-
-// ==========================================
-// ADVIBE MODULE SERVER-SIDE API & CRUD
-// ==========================================
-import { initialAdvibeProjects, initialAdvibeLeads } from "./src/data/advibeDemoData";
-
-// In-memory persistent state (with initial seed from demo data)
-let advibeProjects = [...initialAdvibeProjects];
-let advibeLeads = [...initialAdvibeLeads];
-let permittedDealers = new Set<string>(['agency-1', 'agency-2']); // default permitted dealers
-
-// List all AdVibe projects
-app.get("/api/advibe/projects", (req, res) => {
-  const role = (req.headers["x-user-role"] as string) || (req.query.role as string) || "customer";
-  const agencyId = (req.headers["x-agency-id"] as string) || (req.query.agencyId as string);
-  const includeUnpublished = role === "admin" || (role === "agency" && permittedDealers.has(agencyId));
-
-  let results = advibeProjects;
-  if (!includeUnpublished) {
-    results = results.filter(p => p.published && !p.archived);
-  }
-
-  // Optional filters
-  if (req.query.type) {
-    results = results.filter(p => p.type === req.query.type);
-  }
-  if (req.query.city) {
-    results = results.filter(p => p.city.toLowerCase().includes((req.query.city as string).toLowerCase()));
-  }
-  if (req.query.featured === "true") {
-    results = results.filter(p => p.featured);
-  }
-
-  res.json({ success: true, count: results.length, projects: results });
-});
-
-// Get single project by slug or ID
-app.get("/api/advibe/projects/:slugOrId", (req, res) => {
-  const { slugOrId } = req.params;
-  const project = advibeProjects.find(p => p.slug === slugOrId || p.id === slugOrId);
-
-  if (!project) {
-    res.status(404).json({ success: false, error: "AdVibe Project not found" });
-    return;
-  }
-
-  // Increment views
-  project.viewsCount = (project.viewsCount || 0) + 1;
-  res.json({ success: true, project });
-});
-
-// Create new AdVibe project
-app.post("/api/advibe/projects", (req, res) => {
-  const role = (req.headers["x-user-role"] as string) || req.body.role || "customer";
-  const agencyId = (req.headers["x-agency-id"] as string) || req.body.agencyId;
-
-  // Server-side permission check:
-  if (role !== "admin" && (!agencyId || !permittedDealers.has(agencyId))) {
-    res.status(403).json({
-      success: false,
-      error: "Forbidden: Only Super Admins and authorized certified brokerages have permission to create AdVibe projects."
-    });
-    return;
-  }
-
-  const newProjectData = req.body;
-  if (!newProjectData.title) {
-    res.status(400).json({ success: false, error: "Project title is required" });
-    return;
-  }
-
-  const generatedId = `advibe-proj-${Date.now()}`;
-  const generatedSlug = (newProjectData.slug || newProjectData.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")) || generatedId;
-
-  const newProject = {
-    ...newProjectData,
-    id: generatedId,
-    slug: generatedSlug,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    viewsCount: 0
-  };
-
-  advibeProjects.unshift(newProject);
-  res.status(201).json({ success: true, project: newProject });
-});
-
-// Update AdVibe project
-app.put("/api/advibe/projects/:id", (req, res) => {
-  const role = (req.headers["x-user-role"] as string) || req.body.role || "customer";
-  const agencyId = (req.headers["x-agency-id"] as string) || req.body.agencyId;
-  const { id } = req.params;
-
-  const index = advibeProjects.findIndex(p => p.id === id);
-  if (index === -1) {
-    res.status(404).json({ success: false, error: "Project not found" });
-    return;
-  }
-
-  // Permission enforcement
-  const existing = advibeProjects[index];
-  if (role !== "admin" && existing.dealerId !== agencyId && !permittedDealers.has(agencyId)) {
-    res.status(403).json({ success: false, error: "Unauthorized to edit this project." });
-    return;
-  }
-
-  advibeProjects[index] = {
-    ...existing,
-    ...req.body,
-    id: existing.id, // prevent ID change
-    updatedAt: new Date().toISOString()
-  };
-
-  res.json({ success: true, project: advibeProjects[index] });
-});
-
-// Delete or Archive AdVibe project
-app.delete("/api/advibe/projects/:id", (req, res) => {
-  const role = (req.headers["x-user-role"] as string) || (req.query.role as string) || "customer";
-  const agencyId = (req.headers["x-agency-id"] as string) || (req.query.agencyId as string);
-  const { id } = req.params;
-
-  const index = advibeProjects.findIndex(p => p.id === id);
-  if (index === -1) {
-    res.status(404).json({ success: false, error: "Project not found" });
-    return;
-  }
-
-  if (role !== "admin" && advibeProjects[index].dealerId !== agencyId) {
-    res.status(403).json({ success: false, error: "Unauthorized to delete this project." });
-    return;
-  }
-
-  const deleted = advibeProjects.splice(index, 1);
-  res.json({ success: true, message: "Project deleted successfully", project: deleted[0] });
-});
-
-// Duplicate AdVibe project
-app.post("/api/advibe/projects/:id/duplicate", (req, res) => {
-  const { id } = req.params;
-  const original = advibeProjects.find(p => p.id === id);
-
-  if (!original) {
-    res.status(404).json({ success: false, error: "Original project not found" });
-    return;
-  }
-
-  const copyId = `advibe-proj-${Date.now()}`;
-  const copySlug = `${original.slug}-copy-${Date.now().toString().slice(-4)}`;
-
-  const duplicate = {
-    ...original,
-    id: copyId,
-    slug: copySlug,
-    title: `${original.title} (Copy)`,
-    published: false,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    viewsCount: 0
-  };
-
-  advibeProjects.unshift(duplicate);
-  res.status(201).json({ success: true, project: duplicate });
-});
-
-// Leads List
-app.get("/api/advibe/leads", (req, res) => {
-  const role = (req.headers["x-user-role"] as string) || (req.query.role as string) || "customer";
-  const projectId = req.query.projectId as string;
-
-  let leads = advibeLeads;
-  if (projectId) {
-    leads = leads.filter(l => l.projectId === projectId);
-  }
-
-  res.json({ success: true, count: leads.length, leads });
-});
-
-// Submit Lead
-app.post("/api/advibe/leads", (req, res) => {
-  const { projectId, projectTitle, name, phone, email, preferredUnit, message, contactPreference, source } = req.body;
-
-  if (!name || !phone) {
-    res.status(400).json({ success: false, error: "Name and Phone number are required." });
-    return;
-  }
-
-  const newLead = {
-    id: `lead-adv-${Date.now()}`,
-    projectId: projectId || "general",
-    projectTitle: projectTitle || "AdVibe Project",
-    name,
-    phone,
-    email: email || "",
-    preferredUnit: preferredUnit || "General Inquiry",
-    message: message || "Interested in learning more about this project.",
-    contactPreference: contactPreference || "whatsapp",
-    source: source || "website_advibe",
-    status: "new" as const,
-    createdAt: new Date().toISOString()
-  };
-
-  advibeLeads.unshift(newLead);
-  res.status(201).json({ success: true, lead: newLead });
-});
-
-// Update Lead Status
-app.put("/api/advibe/leads/:id", (req, res) => {
-  const { id } = req.params;
-  const index = advibeLeads.findIndex(l => l.id === id);
-
-  if (index === -1) {
-    res.status(404).json({ success: false, error: "Lead not found" });
-    return;
-  }
-
-  advibeLeads[index] = {
-    ...advibeLeads[index],
-    ...req.body
-  };
-
-  res.json({ success: true, lead: advibeLeads[index] });
-});
-
-// Toggle Agency Permission for AdVibe
-app.patch("/api/advibe/agencies/:agencyId/permission", (req, res) => {
-  const role = (req.headers["x-user-role"] as string) || req.body.role || "customer";
-  if (role !== "admin") {
-    res.status(403).json({ success: false, error: "Super Admin privilege required." });
-    return;
-  }
-
-  const { agencyId } = req.params;
-  const { permitted } = req.body;
-
-  if (permitted) {
-    permittedDealers.add(agencyId);
-  } else {
-    permittedDealers.delete(agencyId);
-  }
-
-  res.json({ success: true, agencyId, permitted: permittedDealers.has(agencyId) });
-});
-
 
 async function startServer() {
-  // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
       server: { middlewareMode: true },
-      appType: "spa",
+      appType: "spa"
     });
     app.use(vite.middlewares);
   } else {
@@ -368,7 +416,7 @@ async function startServer() {
   }
 
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`ri8click Corporate Server running on http://0.0.0.0:${PORT}`);
+    console.log(`Server running on http://localhost:${PORT}`);
   });
 }
 
