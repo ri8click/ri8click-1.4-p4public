@@ -266,7 +266,7 @@ export const AdminCitySocietyManager: React.FC<AdminCitySocietyManagerProps> = (
               type="text"
               value={newCityName}
               onChange={e => setNewCityName(e.target.value)}
-              placeholder="e.g. Wah Cantt, Attock, Murree, Chakwal"
+              placeholder="e.g. Wah Cantt, Attock, Murree,chakwal"
               className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:outline-none focus:border-blue-600"
             />
           </div>
