@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Heart, 
   MapPin, 
@@ -8,13 +8,15 @@ import {
   Compass, 
   Video, 
   Phone, 
-  MessageSquare,
-  ShieldCheck,
+  MessageCircle, 
+  Star,
+  Sparkles,
   Building2,
-  Calendar
+  Eye
 } from 'lucide-react';
 import { Property } from '../types';
 import { WatermarkBadge } from './WatermarkBadge';
+import { resolvePakistanAgentAvatar } from './AgenciesSection';
 
 interface PropertyCardProps {
   property: Property;
@@ -24,176 +26,208 @@ interface PropertyCardProps {
   onScheduleTour: (property: Property) => void;
 }
 
+const BROKEN_LEGACY_MODULAR_URLS: Record<string, string> = {
+  'https://www.genspark.ai/api/files/s/xBNmbfCQ': 'https://www.genspark.ai/api/files/s/OypEiCb2',
+  'https://www.genspark.ai/api/files/s/IEOFqhM7': 'https://www.genspark.ai/api/files/s/bl8vngPB',
+  'https://www.genspark.ai/api/files/s/JycQaAWz': 'https://www.genspark.ai/api/files/s/3jIuxLrV',
+  'https://www.genspark.ai/api/files/s/W2Z5zFao': 'https://www.genspark.ai/api/files/s/K4lfut6W',
+  'https://www.genspark.ai/api/files/s/ISwmh2Gk': 'https://www.genspark.ai/api/files/s/u84KzdvI'
+};
+
 export const PropertyCard: React.FC<PropertyCardProps> = ({
   property,
   isSaved,
   onToggleSave,
   onSelectProperty,
-  onScheduleTour
+  onScheduleTour,
 }) => {
-  const primaryImage = property.images && property.images.length > 0 
-    ? property.images[0] 
-    : 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80';
+  const [imgError, setImgError] = useState(false);
 
-  const handleWhatsApp = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    const phone = property.agentWhatsApp || property.agentPhone || '923365666727';
-    const text = encodeURIComponent(`Assalam o Alaikum, I am inquiring about "${property.title}" (PKR ${property.priceFormatted}) on ri8click.`);
-    window.open(`https://wa.me/${phone.replace(/[^0-9]/g, '')}?text=${text}`, '_blank');
-  };
+  const rawPrimaryImg =
+    property.images && property.images.length > 0
+      ? BROKEN_LEGACY_MODULAR_URLS[property.images[0]] || property.images[0]
+      : '';
+
+  const fallbackImg =
+    property.category === 'modular'
+      ? 'https://www.genspark.ai/api/files/s/I6HwjuLB'
+      : 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80';
+
+  const displayImg = !imgError && rawPrimaryImg ? rawPrimaryImg : fallbackImg;
+
+  const resolvedAgentAvatar = resolvePakistanAgentAvatar(
+    property.agentAvatar,
+    `${property.agencyId} ${property.agentName} ${property.agentCompany}`
+  );
+
+  const whatsappMessage = encodeURIComponent(
+    `Assalam o Alaikum, I am inquiring about "${property.title}" (${property.priceFormatted}) on ri8click.`
+  );
+  const cleanWhatsApp = (property.agentWhatsApp || '923365666727').replace(/[^0-9]/g, '');
 
   return (
     <div 
       onClick={() => onSelectProperty(property)}
-      className="group bg-white rounded-2xl border border-slate-200/80 shadow-2xs hover:shadow-xl hover:border-blue-400 transition-all duration-300 flex flex-col overflow-hidden cursor-pointer"
+      className="group bg-white rounded-2xl border border-slate-200/90 hover:border-slate-300 overflow-hidden shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col justify-between cursor-pointer text-slate-900"
     >
-      {/* Top Image Container with Badges */}
-      <div className="relative aspect-[4/3] bg-slate-900 overflow-hidden">
-        <img
-          src={primaryImage}
-          alt={property.title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
-          loading="lazy"
-        />
+      <div>
+        {/* Image Container with Official Watermark */}
+        <div className="relative h-56 w-full overflow-hidden bg-slate-900">
+          <img
+            src={displayImg}
+            alt={property.title}
+            onError={() => setImgError(true)}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/15 to-transparent" />
 
-        {/* Top Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30 pointer-events-none" />
+          {/* Top Left Badges */}
+          <div className="absolute top-3 left-3 flex flex-wrap items-center gap-1.5 z-10">
+            <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider shadow-xs ${
+              property.purpose === 'for_rent' 
+                ? 'bg-indigo-600 text-white' 
+                : 'bg-blue-600 text-white'
+            }`}>
+              {property.purpose === 'for_rent' ? 'For Rent' : 'For Sale'}
+            </span>
 
-        {/* Purpose & Category Badges */}
-        <div className="absolute top-3 left-3 z-10 flex flex-wrap gap-1.5 pointer-events-none">
-          <span className="px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-slate-950/80 backdrop-blur-md text-white border border-white/10">
-            {property.purpose === 'for_rent' ? 'For Rent' : 'For Sale'}
-          </span>
-          {property.isFeatured && (
-            <span className="px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-amber-400 text-slate-950 shadow-xs">
-              Featured
-            </span>
+            {property.status === 'sold' && (
+              <span className="px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wider bg-rose-600 text-white shadow-xs">
+                Sold Out
+              </span>
+            )}
+
+            {property.isFeatured && (
+              <span className="px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-amber-400 text-slate-950 flex items-center gap-1 shadow-xs">
+                <Sparkles className="w-2.5 h-2.5 fill-current" />
+                <span>Featured</span>
+              </span>
+            )}
+
+            {property.virtualTourVideoUrl && (
+              <span className="px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-purple-600/90 text-white flex items-center gap-1 shadow-xs backdrop-blur-xs">
+                <Video className="w-2.5 h-2.5" />
+                <span>Movie Tour</span>
+              </span>
+            )}
+          </div>
+
+          {/* Top Right Favorite Button */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleSave(property.id);
+            }}
+            className={`absolute top-3 right-3 z-10 p-2 rounded-full backdrop-blur-md transition-all ${
+              isSaved 
+                ? 'bg-red-500 text-white shadow-md' 
+                : 'bg-slate-900/50 text-white hover:bg-slate-900/80 border border-white/20'
+            }`}
+            title={isSaved ? 'Remove from Saved' : 'Save Property'}
+          >
+            <Heart className={`w-4 h-4 ${isSaved ? 'fill-current' : ''}`} />
+          </button>
+
+          {/* Official Ri8Click Watermark Overlay */}
+          {property.watermark !== false && (
+            <WatermarkBadge position="bottom-right" size="sm" showVerifiedText />
           )}
-          {property.virtualTourVideoUrl && (
-            <span className="px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-purple-600 text-white flex items-center gap-1 shadow-xs">
-              <Video className="w-2.5 h-2.5" />
-              <span>Movie Tour</span>
-            </span>
-          )}
+
+          {/* Bottom Left Price Overlay */}
+          <div className="absolute bottom-3 left-3 z-10">
+            <div className="text-[10px] uppercase tracking-wider text-slate-300 font-semibold">
+              {property.currency || 'PKR'} Valuation
+            </div>
+            <div className="text-lg font-extrabold text-white tracking-tight leading-none">
+              {property.priceFormatted}
+            </div>
+          </div>
         </div>
 
-        {/* Save to Favorites Button */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggleSave(property.id);
-          }}
-          className={`absolute top-3 right-3 z-20 p-2 rounded-full backdrop-blur-md border transition-all ${
-            isSaved 
-              ? 'bg-rose-500 border-rose-500 text-white shadow-md' 
-              : 'bg-black/40 border-white/20 text-white hover:bg-black/60'
-          }`}
-          title={isSaved ? "Remove from Saved" : "Save Property"}
-        >
-          <Heart className={`w-4 h-4 ${isSaved ? 'fill-current' : ''}`} />
-        </button>
-
-        {/* Official Ri8Click Watermark Overlay */}
-        <WatermarkBadge position="bottom-right" size="sm" showVerifiedText={true} />
-
-        {/* Price Tag Bar */}
-        <div className="absolute bottom-3 left-3 z-10 text-white">
-          <div className="text-[10px] text-slate-200 uppercase tracking-wider font-semibold">
-            {property.currency || 'PKR'}
-          </div>
-          <div className="text-lg font-black tracking-tight drop-shadow-md">
-            {property.priceFormatted}
-          </div>
-        </div>
-      </div>
-
-      {/* Content Body */}
-      <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
-        
-        {/* Title & Location */}
-        <div className="space-y-1">
-          <div className="flex items-center gap-1 text-[11px] font-semibold text-blue-600 truncate">
+        {/* Content Body */}
+        <div className="p-4 space-y-2.5">
+          {/* Location */}
+          <div className="flex items-center gap-1 text-xs font-semibold text-blue-600">
             <MapPin className="w-3.5 h-3.5 shrink-0" />
-            <span>{property.location.society}, {property.location.city}</span>
+            <span className="truncate">{property.location.society}, {property.location.city}</span>
           </div>
 
+          {/* Title */}
           <h3 className="text-sm font-bold text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-1">
             {property.title}
           </h3>
 
-          <p className="text-[11.5px] text-slate-500 line-clamp-2 leading-relaxed">
+          {/* Description Snippet */}
+          <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">
             {property.description}
           </p>
-        </div>
 
-        {/* Specifications Strip (Beds, Baths, Area) */}
-        <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-slate-600 text-xs font-semibold">
-          {property.bedrooms ? (
-            <div className="flex items-center gap-1">
-              <BedDouble className="w-3.5 h-3.5 text-slate-400" />
-              <span>{property.bedrooms} Beds</span>
-            </div>
-          ) : (
-            <div className="flex items-center gap-1 text-[11px] text-slate-400">
-              <Building2 className="w-3.5 h-3.5" />
-              <span>{property.type}</span>
-            </div>
-          )}
-
-          {property.bathrooms && (
-            <div className="flex items-center gap-1">
-              <Bath className="w-3.5 h-3.5 text-slate-400" />
-              <span>{property.bathrooms} Baths</span>
-            </div>
-          )}
-
-          <div className="flex items-center gap-1 text-slate-800">
-            <Maximize className="w-3.5 h-3.5 text-blue-600" />
-            <span>{property.area} {property.areaUnit}</span>
-          </div>
-        </div>
-
-        {/* Agent attribution & Quick Action Buttons */}
-        <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 min-w-0">
-            <img
-              src={property.agentAvatar}
-              alt={property.agentName}
-              className="w-7 h-7 rounded-full object-cover border border-slate-200 shrink-0"
-            />
-            <div className="min-w-0">
-              <div className="text-[11px] font-bold text-slate-900 truncate">
-                {property.agentName}
+          {/* Specs Strip */}
+          <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600 font-medium">
+            {property.bedrooms !== undefined ? (
+              <div className="flex items-center gap-1">
+                <BedDouble className="w-3.5 h-3.5 text-slate-400" />
+                <span>{property.bedrooms} Beds</span>
               </div>
-              <div className="text-[9.5px] text-slate-400 truncate">
-                {property.agentCompany}
+            ) : (
+              <div className="flex items-center gap-1">
+                <Building2 className="w-3.5 h-3.5 text-slate-400" />
+                <span>{property.type}</span>
               </div>
+            )}
+
+            {property.bathrooms !== undefined && (
+              <div className="flex items-center gap-1">
+                <Bath className="w-3.5 h-3.5 text-slate-400" />
+                <span>{property.bathrooms} Baths</span>
+              </div>
+            )}
+
+            <div className="flex items-center gap-1 font-semibold text-slate-800">
+              <Maximize className="w-3.5 h-3.5 text-blue-500" />
+              <span>{property.area} {property.areaUnit}</span>
             </div>
           </div>
+        </div>
+      </div>
 
-          <div className="flex items-center gap-1.5 shrink-0">
-            <button
-              onClick={handleWhatsApp}
-              className="p-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white transition-colors"
-              title="Chat on WhatsApp"
-            >
-              <MessageSquare className="w-3.5 h-3.5" />
-            </button>
-
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onScheduleTour(property);
-              }}
-              className="px-2.5 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-700 text-[11px] font-bold transition-colors flex items-center gap-1"
-              title="Book Site Visit"
-            >
-              <Calendar className="w-3 h-3" />
-              <span>Visit</span>
-            </button>
+      {/* Agent & Instant Action Footer */}
+      <div 
+        onClick={(e) => e.stopPropagation()}
+        className="px-4 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between gap-2"
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          <img
+            src={resolvedAgentAvatar}
+            alt={property.agentName}
+            className="w-7 h-7 rounded-full object-cover border border-slate-200 shrink-0"
+          />
+          <div className="min-w-0">
+            <div className="text-[11px] font-bold text-slate-800 truncate">{property.agentName}</div>
+            <div className="text-[9.5px] text-slate-500 truncate">{property.agentCompany}</div>
           </div>
         </div>
 
+        <div className="flex items-center gap-1.5 shrink-0">
+          <a
+            href={`https://wa.me/${cleanWhatsApp}?text=${whatsappMessage}`}
+            target="_blank"
+            rel="noreferrer"
+            className="p-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white transition-colors shadow-2xs"
+            title="WhatsApp Agent"
+          >
+            <MessageCircle className="w-3.5 h-3.5" />
+          </a>
+
+          <button
+            type="button"
+            onClick={() => onScheduleTour(property)}
+            className="px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-semibold transition-colors"
+          >
+            Visit
+          </button>
+        </div>
       </div>
     </div>
   );
