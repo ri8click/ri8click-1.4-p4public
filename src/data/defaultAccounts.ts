@@ -26,6 +26,24 @@ export interface UserAccount {
   };
 }
 
+// Verified Local Pakistan Regional Agent & Executive Portraits
+export const PAKISTAN_AGENT_AVATARS = {
+  adminPrincipal:
+    'https://images.unsplash.com/photo-1615813967515-e1838c1c5116?auto=format&fit=crop&w=400&q=80',
+  malikZeeshan:
+    'https://images.unsplash.com/photo-1615813967515-e1838c1c5116?auto=format&fit=crop&w=400&q=80',
+  chaudhryBilal:
+    'https://images.unsplash.com/photo-1633332755192-727a05c4013d?auto=format&fit=crop&w=400&q=80',
+  engrHarisFarooq:
+    'https://images.unsplash.com/photo-1566492031773-4f4e44671857?auto=format&fit=crop&w=400&q=80',
+  hajiAslamKhan:
+    'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=400&q=80',
+  mianAhmed:
+    'https://images.unsplash.com/photo-1556157382-97eda2d62296?auto=format&fit=crop&w=400&q=80',
+  tariqMehmood:
+    'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=400&q=80'
+};
+
 export const initialUserAccounts: UserAccount[] = [
   {
     id: 'user-admin-1',
@@ -36,7 +54,7 @@ export const initialUserAccounts: UserAccount[] = [
     role: 'admin',
     designation: 'Principal System Administrator & Consortium Controller',
     companyName: 'ri8click Corporate Consortium',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+    avatar: PAKISTAN_AGENT_AVATARS.adminPrincipal,
     phone: '+92 336 5666727',
     whatsapp: '+92 336 5666727',
     verified: true,
@@ -74,7 +92,7 @@ export const initialUserAccounts: UserAccount[] = [
     designation: 'Chief Executive & Senior Certified Broker',
     agencyId: 'agency-1',
     companyName: 'Al-Mairaj Real Estate Group / ZEM Builders',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
+    avatar: PAKISTAN_AGENT_AVATARS.malikZeeshan,
     phone: '+92 333 5551234',
     whatsapp: '+92 333 5551234',
     verified: true,
@@ -108,7 +126,7 @@ export const initialUserAccounts: UserAccount[] = [
     designation: 'Managing Partner & Certified Broker',
     agencyId: 'agency-2',
     companyName: 'Faisal Hills Premier Realty / Al-Sadat',
-    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80',
+    avatar: PAKISTAN_AGENT_AVATARS.chaudhryBilal,
     phone: '+92 300 9876543',
     whatsapp: '+92 300 9876543',
     verified: true,
@@ -142,7 +160,7 @@ export const initialUserAccounts: UserAccount[] = [
     designation: 'Director of Investments & Certified Agent',
     agencyId: 'agency-4',
     companyName: 'Taxila City Realtors & Consultants',
-    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=200&q=80',
+    avatar: PAKISTAN_AGENT_AVATARS.hajiAslamKhan,
     phone: '+92 336 5666727',
     whatsapp: '+92 336 5666727',
     verified: true,
@@ -176,7 +194,7 @@ export const initialUserAccounts: UserAccount[] = [
     designation: 'Principal Investment Consultant & Certified Partner',
     agencyId: 'agency-sapphire',
     companyName: 'Sapphire Properties & Athar Associates',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
+    avatar: PAKISTAN_AGENT_AVATARS.mianAhmed,
     phone: '+92 336 5666727',
     whatsapp: '+92 336 5666727',
     verified: true,
@@ -208,7 +226,7 @@ export const initialUserAccounts: UserAccount[] = [
     role: 'customer',
     designation: 'Private Portfolio Investor',
     companyName: 'Overseas Private Investor',
-    avatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=200&q=80',
+    avatar: PAKISTAN_AGENT_AVATARS.tariqMehmood,
     phone: '+44 7700 900123',
     whatsapp: '+44 7700 900123',
     verified: true,
