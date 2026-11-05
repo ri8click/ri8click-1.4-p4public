@@ -20,7 +20,12 @@ export const ModularHomesShowcase: React.FC<ModularHomesShowcaseProps> = ({
   onScheduleTour,
   onWhatsAppInquiry
 }) => {
-  const modularProps = properties.filter(p => p.category === 'modular' || p.type.toLowerCase().includes('capsule')).slice(0, 4);
+  // Show all active modular & space capsule properties added/updated by Admin across all sessions
+  const modularProps = properties.filter(
+    p =>
+      p.status !== 'pending' &&
+      (p.category === 'modular' || p.type.toLowerCase().includes('capsule'))
+  );
 
   return (
     <section id="modular-section" className="py-14 bg-gradient-to-b from-slate-900 to-slate-950 text-white w-full">
@@ -31,7 +36,7 @@ export const ModularHomesShowcase: React.FC<ModularHomesShowcaseProps> = ({
           <div className="space-y-1.5">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-purple-600 text-white">
               <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-              <span>Futuristic Living • Modular Prefab Innovation</span>
+              <span>Futuristic Living • Modular Prefab Innovation ({modularProps.length} Models)</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight font-serif">
               Readymade Space Capsule & Modular Smart Houses
