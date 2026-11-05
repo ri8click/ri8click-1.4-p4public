@@ -26,14 +26,6 @@ interface PropertyCardProps {
   onScheduleTour: (property: Property) => void;
 }
 
-const BROKEN_LEGACY_MODULAR_URLS: Record<string, string> = {
-  'https://www.genspark.ai/api/files/s/xBNmbfCQ': 'https://www.genspark.ai/api/files/s/OypEiCb2',
-  'https://www.genspark.ai/api/files/s/IEOFqhM7': 'https://www.genspark.ai/api/files/s/bl8vngPB',
-  'https://www.genspark.ai/api/files/s/JycQaAWz': 'https://www.genspark.ai/api/files/s/3jIuxLrV',
-  'https://www.genspark.ai/api/files/s/W2Z5zFao': 'https://www.genspark.ai/api/files/s/K4lfut6W',
-  'https://www.genspark.ai/api/files/s/ISwmh2Gk': 'https://www.genspark.ai/api/files/s/u84KzdvI'
-};
-
 export const PropertyCard: React.FC<PropertyCardProps> = ({
   property,
   isSaved,
@@ -44,13 +36,11 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
   const [imgError, setImgError] = useState(false);
 
   const rawPrimaryImg =
-    property.images && property.images.length > 0
-      ? BROKEN_LEGACY_MODULAR_URLS[property.images[0]] || property.images[0]
-      : '';
+    property.images && property.images.length > 0 ? property.images[0] : '';
 
   const fallbackImg =
     property.category === 'modular'
-      ? 'https://www.genspark.ai/api/files/s/I6HwjuLB'
+      ? 'https://images.unsplash.com/photo-1518780664697-55e3ad937233?auto=format&fit=crop&w=1200&q=85'
       : 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80';
 
   const displayImg = !imgError && rawPrimaryImg ? rawPrimaryImg : fallbackImg;
