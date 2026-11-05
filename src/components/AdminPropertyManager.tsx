@@ -294,7 +294,7 @@ export const AdminPropertyManager: React.FC<AdminPropertyManagerProps> = ({
         ? formImages
         : [
             formCategory === 'modular'
-              ? 'https://www.genspark.ai/api/files/s/I6HwjuLB'
+              ? 'https://images.unsplash.com/photo-1518780664697-55e3ad937233?auto=format&fit=crop&w=1200&q=85'
               : 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80'
           ];
 
