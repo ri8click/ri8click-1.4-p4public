@@ -210,7 +210,6 @@ export function App() {
   };
 
   useEffect(() => {
-    // 1. Load latest universal state from backend on initial load
     fetch('/api/state')
       .then(res => res.json())
       .then(serverState => {
@@ -297,7 +296,6 @@ export function App() {
       })
       .catch(() => {});
 
-    // 2. Subscribe to real-time SSE stream so updates in any browser tab/session appear immediately
     const evtSource = new EventSource('/api/state/stream');
     evtSource.onmessage = event => {
       try {
