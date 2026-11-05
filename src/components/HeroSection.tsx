@@ -117,13 +117,13 @@ const ISLAMABAD_HIGHRISE_PROJECTS_GALLERY = {
 // 2. VERIFIED MODULAR & SPACE CAPSULE SMART HOUSES GALLERY (7-Image Sequence)
 // ============================================================================
 const MODULAR_CAPSULE_GALLERY = {
-  cap8_q3ForestCabinPod: 'https://www.genspark.ai/api/files/s/pSySUzgg',
-  cap9_k5WaterfrontPod: 'https://www.genspark.ai/api/files/s/OypEiCb2',
-  cap10_rooftopDeckContainerVilla: 'https://www.genspark.ai/api/files/s/3jIuxLrV',
-  cap11_hexLitBlackContainerPod: 'https://www.genspark.ai/api/files/s/K4lfut6W',
-  cap12_curvedCornerGlassContainer: 'https://www.genspark.ai/api/files/s/bl8vngPB',
-  cap13_v2124DoubleDeckerCapsule: 'https://www.genspark.ai/api/files/s/u84KzdvI',
-  cap14_lakesideCurvedGlassCapsule: 'https://www.genspark.ai/api/files/s/I6HwjuLB',
+  cap8_q3ForestCabinPod: 'https://images.unsplash.com/photo-1518780664697-55e3ad937233?auto=format&fit=crop&w=2400&q=95',
+  cap9_k5WaterfrontPod: 'https://images.unsplash.com/photo-1510798831971-661eb04b3739?auto=format&fit=crop&w=2400&q=95',
+  cap10_rooftopDeckContainerVilla: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=2400&q=95',
+  cap11_hexLitBlackContainerPod: 'https://images.unsplash.com/photo-1600585154526-990dced4db0d?auto=format&fit=crop&w=2400&q=95',
+  cap12_curvedCornerGlassContainer: 'https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=2400&q=95',
+  cap13_v2124DoubleDeckerCapsule: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=2400&q=95',
+  cap14_lakesideCurvedGlassCapsule: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=2400&q=95',
   fallbackCapsule1: 'https://images.unsplash.com/photo-1518780664697-55e3ad937233?auto=format&fit=crop&w=2400&q=95',
   fallbackCapsule2: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=2400&q=95',
   fallbackCapsule3: 'https://images.unsplash.com/photo-1600585154526-990dced4db0d?auto=format&fit=crop&w=2400&q=95',
@@ -161,35 +161,35 @@ const SHOWROOM_VIDEOS = {
 const INITIAL_REPLACED_BROKEN_LINKS: BrokenImageRecord[] = [
   {
     id: 'rep-1',
-    brokenUrl: 'https://www.genspark.ai/api/files/s/qpljElLm',
+    brokenUrl: 'legacy-highrise-asset-1',
     replacedWithUrl: ISLAMABAD_HIGHRISE_PROJECTS_GALLERY.centaurusTower,
     waypointLabel: 'The Centaurus & Citadel 7 Highrise',
     timestamp: 'Replaced with Active Towers.pk Media'
   },
   {
     id: 'rep-2',
-    brokenUrl: 'https://www.genspark.ai/api/files/s/JBLytyZd',
+    brokenUrl: 'legacy-highrise-asset-2',
     replacedWithUrl: ISLAMABAD_HIGHRISE_PROJECTS_GALLERY.gigaMallTower,
     waypointLabel: 'Giga Mall & WTC Highrise Project',
     timestamp: 'Replaced with Active Towers.pk Media'
   },
   {
     id: 'rep-3',
-    brokenUrl: 'https://www.genspark.ai/api/files/s/6C54AO5M',
+    brokenUrl: 'legacy-highrise-asset-3',
     replacedWithUrl: ISLAMABAD_HIGHRISE_PROJECTS_GALLERY.ufoneJinnahAvenue,
     waypointLabel: 'Ufone & ISE Corporate Towers',
     timestamp: 'Replaced with Active Towers.pk Media'
   },
   {
     id: 'rep-4',
-    brokenUrl: 'https://www.genspark.ai/api/files/s/NC4klaYu',
+    brokenUrl: 'legacy-highrise-asset-4',
     replacedWithUrl: ISLAMABAD_HIGHRISE_PROJECTS_GALLERY.skyparkOneGulberg,
     waypointLabel: 'Skypark One & One Constitution Ave',
     timestamp: 'Replaced with Active Towers.pk Media'
   },
   {
     id: 'rep-5',
-    brokenUrl: 'https://www.genspark.ai/api/files/s/l7r4er7D',
+    brokenUrl: 'legacy-highrise-asset-5',
     replacedWithUrl: ISLAMABAD_HIGHRISE_PROJECTS_GALLERY.stateLifeTower,
     waypointLabel: 'State Life & Green Trust Towers',
     timestamp: 'Replaced with Active Towers.pk Media'
@@ -489,7 +489,6 @@ const MASTER_VIRTUAL_TOUR_WAYPOINTS: CameraWaypoint[] = [
     imageUrl: ISLAMABAD_HIGHRISE_PROJECTS_GALLERY.centaurusTower,
     secondaryImageUrl: ISLAMABAD_HIGHRISE_PROJECTS_GALLERY.ufoneJinnahAvenue,
     fallbackUrl: ISLAMABAD_HIGHRISE_PROJECTS_GALLERY.fallbackHighrise1,
-    legacyBrokenUrl: 'https://www.genspark.ai/api/files/s/qpljElLm',
     galleryImages: [
       ISLAMABAD_HIGHRISE_PROJECTS_GALLERY.centaurusTower,
       ISLAMABAD_HIGHRISE_PROJECTS_GALLERY.ufoneJinnahAvenue,
@@ -532,7 +531,6 @@ const MASTER_VIRTUAL_TOUR_WAYPOINTS: CameraWaypoint[] = [
     imageUrl: ISLAMABAD_HIGHRISE_PROJECTS_GALLERY.gigaMallTower,
     secondaryImageUrl: ISLAMABAD_HIGHRISE_PROJECTS_GALLERY.grandOrchardDha,
     fallbackUrl: ISLAMABAD_HIGHRISE_PROJECTS_GALLERY.fallbackHighrise2,
-    legacyBrokenUrl: 'https://www.genspark.ai/api/files/s/JBLytyZd',
     galleryImages: [
       ISLAMABAD_HIGHRISE_PROJECTS_GALLERY.gigaMallTower,
       ISLAMABAD_HIGHRISE_PROJECTS_GALLERY.grandOrchardDha,
@@ -575,7 +573,6 @@ const MASTER_VIRTUAL_TOUR_WAYPOINTS: CameraWaypoint[] = [
     imageUrl: ISLAMABAD_HIGHRISE_PROJECTS_GALLERY.ufoneJinnahAvenue,
     secondaryImageUrl: ISLAMABAD_HIGHRISE_PROJECTS_GALLERY.iseTowerBlueArea,
     fallbackUrl: ISLAMABAD_HIGHRISE_PROJECTS_GALLERY.fallbackHighrise1,
-    legacyBrokenUrl: 'https://www.genspark.ai/api/files/s/6C54AO5M',
     galleryImages: [
       ISLAMABAD_HIGHRISE_PROJECTS_GALLERY.ufoneJinnahAvenue,
       ISLAMABAD_HIGHRISE_PROJECTS_GALLERY.iseTowerBlueArea,
@@ -618,7 +615,6 @@ const MASTER_VIRTUAL_TOUR_WAYPOINTS: CameraWaypoint[] = [
     imageUrl: ISLAMABAD_HIGHRISE_PROJECTS_GALLERY.skyparkOneGulberg,
     secondaryImageUrl: ISLAMABAD_HIGHRISE_PROJECTS_GALLERY.oneConstitutionAve,
     fallbackUrl: ISLAMABAD_HIGHRISE_PROJECTS_GALLERY.fallbackHighrise3,
-    legacyBrokenUrl: 'https://www.genspark.ai/api/files/s/NC4klaYu',
     galleryImages: [
       ISLAMABAD_HIGHRISE_PROJECTS_GALLERY.skyparkOneGulberg,
       ISLAMABAD_HIGHRISE_PROJECTS_GALLERY.oneConstitutionAve,
@@ -661,7 +657,6 @@ const MASTER_VIRTUAL_TOUR_WAYPOINTS: CameraWaypoint[] = [
     imageUrl: ISLAMABAD_HIGHRISE_PROJECTS_GALLERY.stateLifeTower,
     secondaryImageUrl: ISLAMABAD_HIGHRISE_PROJECTS_GALLERY.grandOrchardDha,
     fallbackUrl: ISLAMABAD_HIGHRISE_PROJECTS_GALLERY.fallbackHighrise2,
-    legacyBrokenUrl: 'https://www.genspark.ai/api/files/s/l7r4er7D',
     galleryImages: [
       ISLAMABAD_HIGHRISE_PROJECTS_GALLERY.stateLifeTower,
       ISLAMABAD_HIGHRISE_PROJECTS_GALLERY.greenTrustTower,
