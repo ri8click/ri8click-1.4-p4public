@@ -21,8 +21,8 @@ export const CommercialShowcase: React.FC<CommercialShowcaseProps> = ({
   onViewAllCommercial
 }) => {
   const commercialProps = properties
-    .filter(p => p.category === 'commercial' || p.isHotCommercial)
-    .slice(0, 4);
+    .filter(p => p.status !== 'pending' && (p.category === 'commercial' || p.isHotCommercial))
+    .slice(0, 8);
 
   if (commercialProps.length === 0) return null;
 
