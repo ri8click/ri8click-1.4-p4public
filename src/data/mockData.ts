@@ -1121,10 +1121,9 @@ export const INITIAL_PROPERTIES: Property[] = [
       '100% Relocatable & Transportable Asset'
     ],
     images: [
-      'https://www.genspark.ai/api/files/s/I6HwjuLB',
-      'https://www.genspark.ai/api/files/s/u84KzdvI',
-      'https://www.genspark.ai/api/files/s/pSySUzgg',
-      'https://images.unsplash.com/photo-1518780664697-55e3ad937233?auto=format&fit=crop&w=1200&q=80'
+      'https://images.unsplash.com/photo-1518780664697-55e3ad937233?auto=format&fit=crop&w=1200&q=85',
+      'https://images.unsplash.com/photo-1510798831971-661eb04b3739?auto=format&fit=crop&w=1200&q=85',
+      'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1200&q=85'
     ],
     watermark: true,
     agencyId: 'agency-1',
@@ -1171,10 +1170,9 @@ export const INITIAL_PROPERTIES: Property[] = [
       'Turnkey Factory Built - Delivered Ready to Plug & Play'
     ],
     images: [
-      'https://www.genspark.ai/api/files/s/OypEiCb2',
-      'https://www.genspark.ai/api/files/s/bl8vngPB',
-      'https://www.genspark.ai/api/files/s/3jIuxLrV',
-      'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1200&q=80'
+      'https://images.unsplash.com/photo-1510798831971-661eb04b3739?auto=format&fit=crop&w=1200&q=85',
+      'https://images.unsplash.com/photo-1600585154526-990dced4db0d?auto=format&fit=crop&w=1200&q=85',
+      'https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=1200&q=85'
     ],
     watermark: true,
     agencyId: 'agency-1',
@@ -1219,10 +1217,9 @@ export const INITIAL_PROPERTIES: Property[] = [
       'Custom Exterior Cladding Options Available'
     ],
     images: [
-      'https://www.genspark.ai/api/files/s/K4lfut6W',
-      'https://www.genspark.ai/api/files/s/3jIuxLrV',
-      'https://www.genspark.ai/api/files/s/pSySUzgg',
-      'https://images.unsplash.com/photo-1600585154526-990dced4db0d?auto=format&fit=crop&w=1200&q=80'
+      'https://images.unsplash.com/photo-1600585154526-990dced4db0d?auto=format&fit=crop&w=1200&q=85',
+      'https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=1200&q=85',
+      'https://images.unsplash.com/photo-1518780664697-55e3ad937233?auto=format&fit=crop&w=1200&q=85'
     ],
     watermark: true,
     agencyId: 'agency-1',
@@ -1319,7 +1316,7 @@ export const CONSORTIUM_DIVISIONS: ConsortiumDivision[] = [
     description: 'Pioneering prefabricated luxury living in Pakistan. Our readymade space capsule houses and curved panoramic container homes are factory-built with full IoT automation and deployed on your land within 7 to 30 days.',
     badge: 'Flagship Innovation',
     iconName: 'Box',
-    image: 'https://www.genspark.ai/api/files/s/I6HwjuLB',
+    image: 'https://images.unsplash.com/photo-1518780664697-55e3ad937233?auto=format&fit=crop&w=1200&q=85',
     capabilities: [
       'Space Capsule Smart Pods (270° Panoramic Glass)',
       'Curved-Corner Container Villas & Farmhouses',
@@ -1465,7 +1462,7 @@ export const INITIAL_HERO_SLIDES: HeroSlide[] = [
     price: 'PKR 85 Lakh',
     location: 'Taxila & Nationwide Deployment',
     society: 'Ri8Click Modular Experience Yard',
-    imageUrl: 'https://www.genspark.ai/api/files/s/I6HwjuLB',
+    imageUrl: 'https://images.unsplash.com/photo-1510798831971-661eb04b3739?auto=format&fit=crop&w=2000&q=85',
     tourRoomsCount: 3,
     isActive: true,
     order: 3,
@@ -1502,7 +1499,7 @@ export const INITIAL_HERO_SLIDES: HeroSlide[] = [
     categoryTag: 'Islamabad B-17 Multi Gardens',
     badgeColor: 'bg-amber-600 text-white',
     title: 'Margalla View Luxury Residence in Multi Gardens B-17',
-    subtitle: 'Direct M-1 Motorway & GT Road Access with CDANOC',
+    subtitle: 'Direct M-1 Motorway & GT Road Access with CDA NOC',
     description: 'Contemporary 1-Kanal smart residence in MPCHS Multi Gardens B-17 Islamabad. Surrounded by scenic Margalla foothills, dedicated botanical gardens, underground utilities, and Ri8Click smart home security.',
     price: 'PKR 5.25 Crore',
     location: 'Islamabad',
