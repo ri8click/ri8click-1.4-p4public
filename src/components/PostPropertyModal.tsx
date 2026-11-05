@@ -592,7 +592,7 @@ export const PostPropertyModal: React.FC<PostPropertyModalProps> = ({
               </div>
             )}
 
-            {/* Property Media Uploader: Multi-file Local / URL + Super Admin Short Movie Clip */}
+            {/* Property Media Uploader */}
             <PropertyMediaUploader
               images={images}
               onChangeImages={setImages}
