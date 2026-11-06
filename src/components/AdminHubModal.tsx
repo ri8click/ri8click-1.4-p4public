@@ -1,38 +1,30 @@
 import React, { useState } from 'react';
-import { 
-  X, 
-  MapPin, 
-  Users, 
-  Sparkles, 
-  FileText, 
-  Layout, 
-  BarChart3, 
-  Eye, 
-  Layers, 
+import {
+  X,
+  MapPin,
+  Users,
+  Sparkles,
+  FileText,
+  Layout,
+  BarChart3,
   ShieldCheck,
   ShieldAlert,
-  Lock,
-  Key,
-  AlertCircle,
   Building2,
-  SlidersHorizontal,
-  ExternalLink,
   CheckCircle2,
-  User,
-  BadgeCheck
+  User
 } from 'lucide-react';
-import { 
-  ProvinceCityData, 
-  AgencyAccount, 
-  Property, 
-  HeroSlide, 
-  BlogPost, 
+import {
+  ProvinceCityData,
+  AgencyAccount,
+  Property,
+  HeroSlide,
+  BlogPost,
   SiteSectionPortion,
   AdVibeProject,
   AdVibeLead
 } from '../types';
 import { UserAccount, PAKISTAN_AGENT_AVATARS } from '../data/defaultAccounts';
-import { AdVibeAdminManager } from './AdVibeAdminManager';
+import { AdvibeAdminManager } from './advibe/AdvibeAdminManager';
 import { AdminCitySocietyManager } from './AdminCitySocietyManager';
 import { AgencyPostMonitorManager } from './AgencyPostMonitorManager';
 import { AdminBannerManager } from './AdminBannerManager';
@@ -43,7 +35,17 @@ import { AdminUserProfileManager } from './AdminUserProfileManager';
 import { AdminRolesManager } from './AdminRolesManager';
 import { Ri8ClickLogo } from './Ri8ClickLogo';
 
-export type AdminTabType = 'overview' | 'properties' | 'advibe' | 'banners' | 'blogs' | 'portions' | 'locations' | 'agencies' | 'profile' | 'roles';
+export type AdminTabType =
+  | 'overview'
+  | 'properties'
+  | 'advibe'
+  | 'banners'
+  | 'blogs'
+  | 'portions'
+  | 'locations'
+  | 'agencies'
+  | 'profile'
+  | 'roles';
 
 interface AdminHubModalProps {
   isOpen: boolean;
@@ -142,8 +144,9 @@ export const AdminHubModal: React.FC<AdminHubModalProps> = ({
     if (passwordInput.trim() === validPass) {
       setIsAdminUnlocked(true);
       setAuthError('');
+      setPasswordInput('');
     } else {
-      setAuthError(`Invalid Super Admin password. Default is "${validPass}".`);
+      setAuthError('Invalid Super Admin password. Please verify your credentials.');
     }
   };
 
@@ -179,7 +182,7 @@ export const AdminHubModal: React.FC<AdminHubModalProps> = ({
           </div>
           <h3 className="text-base font-bold text-slate-900">Protected Management Console</h3>
           <p className="text-xs text-slate-500">
-            Enter Super Admin password (default: <strong>admin123</strong>) to unlock global portal controls.
+            Enter your Super Admin password to unlock global portal controls.
           </p>
           {authError && (
             <div className="p-2.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold">
@@ -191,8 +194,9 @@ export const AdminHubModal: React.FC<AdminHubModalProps> = ({
               type="password"
               value={passwordInput}
               onChange={e => setPasswordInput(e.target.value)}
-              placeholder="Super Admin Password (admin123)"
+              placeholder="Enter Super Admin Password"
               className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-center"
+              autoComplete="current-password"
             />
             <div className="flex gap-2">
               <button
@@ -477,7 +481,7 @@ export const AdminHubModal: React.FC<AdminHubModalProps> = ({
           )}
 
           {activeTab === 'advibe' && (
-            <AdVibeAdminManager
+            <AdvibeAdminManager
               projects={advibeProjects}
               leads={advibeLeads}
               agencies={agencies}
@@ -486,7 +490,7 @@ export const AdminHubModal: React.FC<AdminHubModalProps> = ({
               onDeleteProject={onDeleteAdvibeProject || (() => {})}
               onDuplicateProject={onDuplicateAdvibeProject || (() => {})}
               onUpdateLeadStatus={onUpdateAdvibeLeadStatus || (() => {})}
-              onToggleAgencyPermission={onToggleAgencyAdvibePermission || (() => {})}
+              onToggleAgencyAdvibePermission={onToggleAgencyAdvibePermission || (() => {})}
               onPreviewProject={onPreviewAdvibeProject || (() => {})}
               currentRole={currentRole}
             />
