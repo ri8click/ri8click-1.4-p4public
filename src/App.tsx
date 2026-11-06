@@ -21,32 +21,32 @@ import { AiChatbot } from './components/AiChatbot';
 import { FloatingWhatsApp } from './components/FloatingWhatsApp';
 import { ScrollToTop } from './components/ScrollToTop';
 import { Footer } from './components/Footer';
-import { AdVibeListingPage } from './components/AdVibeListingPage';
-import { AdVibeProjectScrollyPage } from './components/AdVibeProjectScrollyPage';
+import { AdvibeListingPage } from './components/advibe/AdvibeListingPage';
+import { AdvibeProjectScrollyPage } from './components/advibe/AdvibeProjectScrollyPage';
 
-import { 
-  initialProperties, 
-  initialAgencies, 
-  initialProvinceCityData, 
+import {
+  initialProperties,
+  initialAgencies,
+  initialProvinceCityData,
   initialConsortiumDivisions,
   initialHeroSlides,
   initialBlogPosts,
   initialSitePortions
 } from './data/mockData';
-import { initialAdvibeProjects, initialAdvibeLeads } from './data/advibeMockData';
+import { initialAdvibeProjects, initialAdvibeLeads } from './data/advibeDemoData';
 import { initialUserAccounts, UserAccount } from './data/defaultAccounts';
-import { 
-  Property, 
-  AgencyAccount, 
-  ProvinceCityData, 
-  SearchFilterState, 
-  HeroSlide, 
-  BlogPost, 
+import {
+  Property,
+  AgencyAccount,
+  ProvinceCityData,
+  SearchFilterState,
+  HeroSlide,
+  BlogPost,
   SiteSectionPortion,
   AdVibeProject,
   AdVibeLead
 } from './types';
-import { Building2, Sparkles, SlidersHorizontal, RotateCcw, ArrowRight, MessageSquare, Settings } from 'lucide-react';
+import { Sparkles, SlidersHorizontal, RotateCcw } from 'lucide-react';
 
 function sanitizeAgenciesToPakistanRegion(list: AgencyAccount[]): AgencyAccount[] {
   return list.map((ag, idx) => {
@@ -152,10 +152,14 @@ export function App() {
         const parsed: UserAccount[] = JSON.parse(saved);
         const existingIds = new Set(parsed.map(u => u.id));
         const missingDefaults = initialUserAccounts.filter(u => !existingIds.has(u.id));
-        return [...parsed, ...missingDefaults].map((u, idx) => ({
-          ...u,
-          avatar: resolvePakistanAgentAvatar(u.avatar, `${u.agencyId || ''} ${u.name}`, idx)
-        }));
+        return [...parsed, ...missingDefaults].map((u, idx) => {
+          const defaultAcc = initialUserAccounts.find(d => d.id === u.id || d.username === u.username);
+          return {
+            ...u,
+            password: u.password || defaultAcc?.password || 'admin123',
+            avatar: resolvePakistanAgentAvatar(u.avatar, `${u.agencyId || ''} ${u.name}`, idx)
+          };
+        });
       }
       return initialUserAccounts;
     } catch {
@@ -204,7 +208,11 @@ export function App() {
   const syncUniversalStateToServer = (payload: Record<string, any>) => {
     fetch('/api/state', {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-user-role': currentUser?.role || 'customer',
+        'x-agency-id': currentUser?.agencyId || ''
+      },
       body: JSON.stringify(payload)
     }).catch(err => console.warn('Universal state sync notice:', err));
   };
@@ -273,9 +281,18 @@ export function App() {
         }
 
         if (Array.isArray(serverState.userAccounts) && serverState.userAccounts.length > 0) {
-          setUserAccounts(serverState.userAccounts);
+          const mergedAccounts = serverState.userAccounts.map((u: UserAccount, idx: number) => {
+            const localMatch = userAccounts.find(l => l.id === u.id || l.username === u.username);
+            const defaultMatch = initialUserAccounts.find(d => d.id === u.id || d.username === u.username);
+            return {
+              ...u,
+              password: u.password || localMatch?.password || defaultMatch?.password || 'admin123',
+              avatar: resolvePakistanAgentAvatar(u.avatar, `${u.agencyId || ''} ${u.name}`, idx)
+            };
+          });
+          setUserAccounts(mergedAccounts);
           try {
-            localStorage.setItem('ri8click_user_accounts', JSON.stringify(serverState.userAccounts));
+            localStorage.setItem('ri8click_user_accounts', JSON.stringify(mergedAccounts));
           } catch {}
         } else {
           seedPayload.userAccounts = userAccounts;
@@ -341,10 +358,17 @@ export function App() {
             } catch {}
           }
           if (Array.isArray(st.userAccounts)) {
-            setUserAccounts(st.userAccounts);
-            try {
-              localStorage.setItem('ri8click_user_accounts', JSON.stringify(st.userAccounts));
-            } catch {}
+            setUserAccounts(prev =>
+              st.userAccounts.map((u: UserAccount, idx: number) => {
+                const existing = prev.find(p => p.id === u.id || p.username === u.username);
+                const def = initialUserAccounts.find(d => d.id === u.id || d.username === u.username);
+                return {
+                  ...u,
+                  password: u.password || existing?.password || def?.password || 'admin123',
+                  avatar: resolvePakistanAgentAvatar(u.avatar, `${u.agencyId || ''} ${u.name}`, idx)
+                };
+              })
+            );
           }
           if (Array.isArray(st.advibeProjects)) {
             setAdvibeProjects(st.advibeProjects);
@@ -366,6 +390,17 @@ export function App() {
       evtSource.close();
     };
   }, []);
+
+  const [currentRole, setCurrentRole] = useState<'admin' | 'agency' | 'customer'>(() => {
+    return currentUser ? currentUser.role : 'customer';
+  });
+  const [currentAgencyId, setCurrentAgencyId] = useState<string>(() => {
+    return currentUser?.agencyId || 'agency-1';
+  });
+
+  const currentAgency = useMemo(() => {
+    return agencies.find(a => a.id === currentAgencyId) || agencies[0];
+  }, [agencies, currentAgencyId]);
 
   const handleUserLogin = (user: UserAccount) => {
     setCurrentUser(user);
@@ -407,13 +442,6 @@ export function App() {
     syncUniversalStateToServer({ userAccounts: updatedUsers });
   };
 
-  const [currentRole, setCurrentRole] = useState<'admin' | 'agency' | 'customer'>(() => {
-    return currentUser ? currentUser.role : 'customer';
-  });
-  const [currentAgencyId, setCurrentAgencyId] = useState<string>(() => {
-    return currentUser?.agencyId || 'agency-1';
-  });
-
   // Navigation & Modal States
   const [activeTab, setActiveTab] = useState('properties');
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
@@ -421,22 +449,27 @@ export function App() {
   const [tourProperty, setTourProperty] = useState<Property | null>(null);
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
-  const [loginModalReason, setLoginModalReason] = useState<'general' | 'admin_required' | 'agency_required' | 'advibe_required'>('general');
+  const [loginModalReason, setLoginModalReason] = useState<
+    'general' | 'admin_required' | 'agency_required' | 'advibe_required'
+  >('general');
   const [isSavedModalOpen, setIsSavedModalOpen] = useState(false);
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
   const [adminInitialTab, setAdminInitialTab] = useState<AdminTabType>('overview');
   const [isAuthRoleModalOpen, setIsAuthRoleModalOpen] = useState(false);
-  const [virtualTourProperty, setVirtualTourProperty] = useState<Partial<Property> | null>(null);
+  const [virtualTourProperty, setVirtualTourProperty] = useState<Property | null>(null);
 
   const [activeAdvibeSlug, setActiveAdvibeSlug] = useState<string | null>(() => {
-    const path = window.location.pathname;
-    if (path.startsWith('/advibe/')) {
-      return path.replace('/advibe/', '').split('/')[0] || null;
+    if (typeof window !== 'undefined') {
+      const path = window.location.pathname;
+      if (path.startsWith('/advibe/')) {
+        return path.replace('/advibe/', '').split('/')[0] || null;
+      }
     }
     return null;
   });
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
     if (window.location.pathname === '/advibe' || window.location.pathname.startsWith('/advibe/')) {
       setActiveTab('advibe');
     }
@@ -459,15 +492,19 @@ export function App() {
   const navigateToAdvibeListing = () => {
     setActiveTab('advibe');
     setActiveAdvibeSlug(null);
-    window.history.pushState({}, '', '/advibe');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (typeof window !== 'undefined' && window.history.pushState) {
+      window.history.pushState({}, '', '/advibe');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   const navigateToAdvibeProject = (slug: string) => {
     setActiveTab('advibe');
     setActiveAdvibeSlug(slug);
-    window.history.pushState({}, '', `/advibe/${slug}`);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (typeof window !== 'undefined' && window.history.pushState) {
+      window.history.pushState({}, '', `/advibe/${slug}`);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
     const nextProjects = advibeProjects.map(p =>
       p.slug === slug ? { ...p, viewsCount: (p.viewsCount || 0) + 1 } : p
     );
@@ -511,9 +548,8 @@ export function App() {
       id: `advibe-proj-${Date.now()}`,
       title: `${source.title} (Copy)`,
       slug: `${source.slug}-copy-${Date.now().toString().slice(-4)}`,
-      status: 'draft',
+      status: 'Booking Open',
       viewsCount: 0,
-      leadsCount: 0,
       createdAt: new Date().toISOString().split('T')[0],
       updatedAt: new Date().toISOString().split('T')[0]
     };
@@ -523,21 +559,6 @@ export function App() {
       localStorage.setItem('ri8click_advibe_projects', JSON.stringify(updated));
     } catch {}
     syncUniversalStateToServer({ advibeProjects: updated });
-  };
-
-  const handleSubmitAdvibeLead = (leadData: Omit<AdVibeLead, 'id' | 'createdAt' | 'status'>) => {
-    const newLead: AdVibeLead = {
-      ...leadData,
-      id: `advibe-lead-${Date.now()}`,
-      status: 'new',
-      createdAt: new Date().toISOString()
-    };
-    const updatedLeads = [newLead, ...advibeLeads];
-    setAdvibeLeads(updatedLeads);
-    try {
-      localStorage.setItem('ri8click_advibe_leads', JSON.stringify(updatedLeads));
-    } catch {}
-    syncUniversalStateToServer({ advibeLeads: updatedLeads });
   };
 
   const handleUpdateAdvibeLeadStatus = (leadId: string, status: AdVibeLead['status']) => {
@@ -562,15 +583,14 @@ export function App() {
 
   const [savedPropertyIds, setSavedPropertyIds] = useState<string[]>(['prop-comm-1', 'prop-res-1']);
 
-  const currentAgency = useMemo(
-    () => agencies.find(a => a.id === currentAgencyId) || agencies[0],
-    [agencies, currentAgencyId]
-  );
-
   const handleToggleSave = (propertyId: string) => {
     setSavedPropertyIds(prev =>
       prev.includes(propertyId) ? prev.filter(id => id !== propertyId) : [...prev, propertyId]
     );
+  };
+
+  const clearAllSaved = () => {
+    setSavedPropertyIds([]);
   };
 
   const handleSelectProperty = (property: Property) => {
@@ -587,14 +607,14 @@ export function App() {
 
   const handleSelectBlog = (blog: BlogPost) => {
     const updated = blogs.map(b =>
-      b.id === blog.id ? { ...b, viewsCount: b.viewsCount + 1 } : b
+      b.id === blog.id ? { ...b, viewsCount: (b.viewsCount || 0) + 1 } : b
     );
     setBlogs(updated);
     try {
       localStorage.setItem('ri8click_blogs_data', JSON.stringify(updated));
     } catch {}
     syncUniversalStateToServer({ blogs: updated });
-    setSelectedBlog({ ...blog, viewsCount: blog.viewsCount + 1 });
+    setSelectedBlog({ ...blog, viewsCount: (blog.viewsCount || 0) + 1 });
   };
 
   const handleUpdateHeroSlides = (updatedSlides: HeroSlide[]) => {
@@ -682,13 +702,17 @@ export function App() {
 
       if (filters.purpose !== 'all' && p.purpose !== filters.purpose) return false;
       if (filters.category !== 'all' && p.category !== filters.category) return false;
-      if (filters.province && p.location.province !== filters.province) return false;
-      if (filters.city && p.location.city !== filters.city) return false;
+      if (filters.province && filters.province !== 'All Provinces' && p.location.province !== filters.province) return false;
+      if (filters.city && filters.city !== 'All Cities' && p.location.city.toLowerCase() !== filters.city.toLowerCase()) return false;
       if (
         filters.society &&
+        filters.society !== 'All Societies' &&
+        filters.society !== 'Show All' &&
+        filters.society !== 'all' &&
         !p.location.society.toLowerCase().includes(filters.society.toLowerCase())
-      )
+      ) {
         return false;
+      }
       if (filters.propertyType && p.type !== filters.propertyType) return false;
       if (filters.minBedrooms !== null && (p.bedrooms || 0) < filters.minBedrooms) return false;
       if (filters.agencyId && p.agencyId !== filters.agencyId) return false;
@@ -758,6 +782,49 @@ export function App() {
     return portion ? portion.title : fallback;
   };
 
+  const handleOpenVirtualTourFromPartial = (propData: Partial<Property>) => {
+    const fullProp: Property = {
+      id: propData.id || `tour-${Date.now()}`,
+      title: propData.title || 'Ri8Click Showcase Tour',
+      description: propData.description || '360° interactive architectural tour.',
+      purpose: propData.purpose || 'for_sale',
+      category: propData.category || 'commercial',
+      type: propData.type || 'Highrise Project',
+      price: propData.price || 25000000,
+      priceFormatted: propData.priceFormatted || 'PKR 2.5 Crore',
+      currency: 'PKR',
+      location: propData.location || {
+        province: 'Islamabad Capital Territory',
+        city: 'Islamabad / Taxila',
+        society: 'Faisal Hills & Blue Area',
+        address: 'Main Boulevard'
+      },
+      area: propData.area || '1000',
+      areaUnit: propData.areaUnit || 'Sq Ft',
+      features: propData.features || ['Ri8Click Thermal UPVC', 'Verified Legal NOC'],
+      images:
+        propData.images && propData.images.length > 0
+          ? propData.images
+          : ['https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1200&q=80'],
+      virtualTourVideoUrl: propData.virtualTourVideoUrl,
+      virtualTourVideoTitle: propData.virtualTourVideoTitle,
+      hasVirtualTour: true,
+      watermark: true,
+      agencyId: propData.agencyId || 'agency-1',
+      agentName: propData.agentName || 'Malik Zeeshan',
+      agentCompany: propData.agentCompany || 'Al-Mairaj Real Estate & Builders',
+      agentPhone: propData.agentPhone || '+92 336-5666727',
+      agentWhatsApp: propData.agentWhatsApp || '923365666727',
+      agentAvatar: resolvePakistanAgentAvatar(propData.agentAvatar, 'agency-1'),
+      agentVerified: true,
+      agentRating: 4.9,
+      isFeatured: true,
+      status: 'active',
+      createdAt: new Date().toISOString().split('T')[0]
+    };
+    setVirtualTourProperty(fullProp);
+  };
+
   if (activeAdvibeSlug) {
     const activeProject =
       advibeProjects.find(p => p.slug === activeAdvibeSlug || p.id === activeAdvibeSlug) ||
@@ -766,16 +833,17 @@ export function App() {
     if (activeProject) {
       return (
         <div className="min-h-screen bg-slate-950 text-white font-sans">
-          <AdVibeProjectScrollyPage
+          <AdvibeProjectScrollyPage
             project={activeProject}
-            allProperties={properties.filter(p => p.status !== 'pending')}
-            onBackToPortal={() => {
+            properties={properties.filter(p => p.status !== 'pending')}
+            onBackToListing={() => {
               setActiveAdvibeSlug(null);
               setActiveTab('advibe');
-              window.history.pushState({}, '', '/advibe');
+              if (typeof window !== 'undefined' && window.history.pushState) {
+                window.history.pushState({}, '', '/advibe');
+              }
             }}
             onSelectProperty={prop => setSelectedProperty(prop)}
-            onSubmitLead={handleSubmitAdvibeLead}
           />
           <PropertyDetailModal
             property={selectedProperty}
@@ -805,7 +873,7 @@ export function App() {
           } else {
             setActiveTab(tab);
             setActiveAdvibeSlug(null);
-            if (window.location.pathname !== '/') {
+            if (typeof window !== 'undefined' && window.location.pathname !== '/') {
               window.history.pushState({}, '', '/');
             }
           }
@@ -820,7 +888,7 @@ export function App() {
             setIsPostModalOpen(true);
           }
         }}
-        onOpenScheduleModal={() => setTourProperty(properties[0])}
+        onOpenScheduleModal={() => setTourProperty(properties[0] || null)}
         onOpenAdmin={() => {
           if (!currentUser || currentUser.role !== 'admin') {
             setLoginModalReason('admin_required');
@@ -849,7 +917,7 @@ export function App() {
       />
 
       {activeTab === 'advibe' ? (
-        <AdVibeListingPage
+        <AdvibeListingPage
           projects={advibeProjects}
           onOpenProject={slug => navigateToAdvibeProject(slug)}
           onOpenCreateProject={() => {
@@ -880,7 +948,7 @@ export function App() {
                   .getElementById('properties-grid-section')
                   ?.scrollIntoView({ behavior: 'smooth' });
               }}
-              onContactAgentClick={() => setTourProperty(properties[0])}
+              onContactAgentClick={() => setTourProperty(properties[0] || null)}
               onSelectCategoryFilter={cat => {
                 setFilters(prev => ({ ...prev, category: cat }));
                 setTimeout(() => {
@@ -889,7 +957,7 @@ export function App() {
                     ?.scrollIntoView({ behavior: 'smooth' });
                 }, 100);
               }}
-              onOpen3DTour={propData => setVirtualTourProperty(propData)}
+              onOpen3DTour={propData => handleOpenVirtualTourFromPartial(propData)}
             />
           )}
 
@@ -971,7 +1039,7 @@ export function App() {
                     No Matching Properties Found
                   </h3>
                   <p className="text-xs text-slate-500 leading-relaxed">
-                    We couldn't find any active listings matching your current filter criteria. Try resetting your filters or selecting another society.
+                    We couldn&apos;t find any active listings matching your current filter criteria. Try resetting your filters or selecting another society.
                   </p>
                   <button
                     onClick={resetFilters}
@@ -1001,7 +1069,7 @@ export function App() {
             />
           )}
 
-          {isPortionEnabled('modular_showcase') && (
+          {isPortionEnabled('modular_houses') && (
             <ModularHomesShowcase
               properties={properties}
               savedPropertyIds={savedPropertyIds}
@@ -1035,7 +1103,7 @@ export function App() {
             />
           )}
 
-          {isPortionEnabled('agencies_network') && (
+          {isPortionEnabled('verified_agencies') && (
             <AgenciesSection
               agencies={agencies}
               properties={properties}
@@ -1057,10 +1125,10 @@ export function App() {
             />
           )}
 
-          {isPortionEnabled('consortium_showcase') && (
+          {isPortionEnabled('consortium_section') && (
             <ConsortiumShowcase
               divisions={consortiumDivisions}
-              onContactDivision={div => {
+              onSelectDivisionContact={div => {
                 window.open(
                   `https://wa.me/${div.contactWhatsApp}?text=${encodeURIComponent(
                     `Assalam o Alaikum, I am inquiring about ${div.title} on ri8click.`
@@ -1074,6 +1142,12 @@ export function App() {
       )}
 
       <Footer
+        divisions={consortiumDivisions}
+        currentUser={currentUser}
+        onOpenLogin={() => {
+          setLoginModalReason('general');
+          setIsLoginModalOpen(true);
+        }}
         onOpenAdmin={() => {
           if (!currentUser || currentUser.role !== 'admin') {
             setLoginModalReason('admin_required');
@@ -1083,23 +1157,15 @@ export function App() {
             setIsAdminModalOpen(true);
           }
         }}
-        onSelectCity={city => {
+        onSelectSociety={society => {
           setActiveTab('properties');
           setActiveAdvibeSlug(null);
-          setFilters(prev => ({ ...prev, city, society: '' }));
+          setFilters(prev => ({ ...prev, society }));
           document
             .getElementById('properties-grid-section')
             ?.scrollIntoView({ behavior: 'smooth' });
         }}
-        onSelectSociety={(city, society) => {
-          setActiveTab('properties');
-          setActiveAdvibeSlug(null);
-          setFilters(prev => ({ ...prev, city, society }));
-          document
-            .getElementById('properties-grid-section')
-            ?.scrollIntoView({ behavior: 'smooth' });
-        }}
-        onNavigateSection={section => {
+        onSelectNavTab={section => {
           if (section === 'advibe') {
             navigateToAdvibeListing();
             return;
@@ -1112,7 +1178,7 @@ export function App() {
             modular: 'modular-section',
             consortium: 'consortium-section',
             agents: 'agents-section',
-            blogs: 'blogs-section'
+            news_blogs: 'news-blogs-section'
           };
           const targetId = idMap[section];
           if (targetId) {
@@ -1127,9 +1193,9 @@ export function App() {
         isOpen={Boolean(virtualTourProperty)}
         onClose={() => setVirtualTourProperty(null)}
         property={virtualTourProperty}
-        onSchedulePhysicalVisit={() => {
+        onScheduleVisit={prop => {
           setVirtualTourProperty(null);
-          setTourProperty(properties[0]);
+          setTourProperty(prop);
         }}
       />
 
@@ -1137,11 +1203,13 @@ export function App() {
         isOpen={isAuthRoleModalOpen}
         onClose={() => setIsAuthRoleModalOpen(false)}
         currentRole={currentRole}
-        onSelectRole={role => setCurrentRole(role)}
+        currentAgency={currentAgency}
+        allAgencies={agencies}
         agencies={agencies}
-        currentAgencyId={currentAgencyId}
+        onSelectRole={role => setCurrentRole(role)}
         onSelectAgency={id => setCurrentAgencyId(id)}
         onOpenAdminHub={() => {
+          setIsAuthRoleModalOpen(false);
           if (!currentUser || currentUser.role !== 'admin') {
             setLoginModalReason('admin_required');
             setIsLoginModalOpen(true);
@@ -1151,6 +1219,7 @@ export function App() {
           }
         }}
         onOpenPostProperty={() => {
+          setIsAuthRoleModalOpen(false);
           if (
             !currentUser ||
             (currentUser.role !== 'admin' && currentUser.role !== 'agency')
@@ -1166,9 +1235,10 @@ export function App() {
       <AuthLoginModal
         isOpen={isLoginModalOpen}
         onClose={() => setIsLoginModalOpen(false)}
-        accounts={userAccounts}
         currentUser={currentUser}
-        onLoginSuccess={user => {
+        agencies={agencies}
+        requiredReason={loginModalReason}
+        onLogin={user => {
           handleUserLogin(user);
           if (loginModalReason === 'admin_required' && user.role === 'admin') {
             setAdminInitialTab('overview');
@@ -1184,15 +1254,6 @@ export function App() {
           }
         }}
         onLogout={handleUserLogout}
-        reasonMessage={
-          loginModalReason === 'admin_required'
-            ? 'Super Admin authentication is required to access the Management Console.'
-            : loginModalReason === 'agency_required'
-            ? 'Please sign in with a Certified Agency or Super Admin account to publish listings.'
-            : loginModalReason === 'advibe_required'
-            ? 'Authorized Dealer or Super Admin sign-in is required to manage AdVibe projects.'
-            : undefined
-        }
       />
 
       <PropertyDetailModal
@@ -1200,10 +1261,21 @@ export function App() {
         onClose={() => setSelectedProperty(null)}
         isSaved={selectedProperty ? savedPropertyIds.includes(selectedProperty.id) : false}
         onToggleSave={handleToggleSave}
-        onScheduleTour={prop => setTourProperty(prop)}
+        onScheduleTour={prop => {
+          setSelectedProperty(null);
+          setTourProperty(prop);
+        }}
       />
 
-      <BlogDetailModal blog={selectedBlog} onClose={() => setSelectedBlog(null)} />
+      <BlogDetailModal
+        blog={selectedBlog}
+        onClose={() => setSelectedBlog(null)}
+        onOpenPropertySearch={society => {
+          setFilters(prev => ({ ...prev, society }));
+          setSelectedBlog(null);
+          document.getElementById('properties-grid-section')?.scrollIntoView({ behavior: 'smooth' });
+        }}
+      />
 
       <ScheduleTourModal
         isOpen={Boolean(tourProperty)}
@@ -1231,8 +1303,10 @@ export function App() {
         isOpen={isSavedModalOpen}
         onClose={() => setIsSavedModalOpen(false)}
         savedProperties={savedPropertiesList}
-        onRemoveSaved={handleToggleSave}
+        onToggleSave={handleToggleSave}
         onSelectProperty={handleSelectProperty}
+        onScheduleTour={prop => setTourProperty(prop)}
+        onClearAllSaved={clearAllSaved}
       />
 
       <AdminHubModal
@@ -1288,7 +1362,10 @@ export function App() {
         }}
       />
 
-      <AiChatbot />
+      <AiChatbot
+        properties={properties.filter(p => p.status !== 'pending')}
+        onSelectProperty={handleSelectProperty}
+      />
       <FloatingWhatsApp />
       <ScrollToTop />
     </div>
