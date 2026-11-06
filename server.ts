@@ -5,11 +5,20 @@ import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
 
-// Load environment variables from .envRE if available
+// Load environment variables from .envRE and .env if available
 dotenv.config({ path: path.resolve(process.cwd(), ".envRE") });
+dotenv.config();
 
 const app = express();
-const PORT = 3000;
+const PORT = Number(process.env.PORT) || 3000;
+
+// Security headers middleware
+app.use((_req, res, next) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "SAMEORIGIN");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  next();
+});
 
 // Increase body limit to 50MB so base64/uploaded images from Admin or Agencies save universally
 app.use(express.json({ limit: "50mb" }));
@@ -94,6 +103,16 @@ function saveGlobalState() {
   }
 }
 
+// Redact sensitive password fields when broadcasting state to public browser clients
+function getPublicSanitizedState(state: GlobalPortalState): GlobalPortalState {
+  return {
+    ...state,
+    userAccounts: Array.isArray(state.userAccounts)
+      ? state.userAccounts.map(({ password, ...safeAccount }) => safeAccount)
+      : null
+  };
+}
+
 // Connected SSE clients for instant multi-browser synchronization
 const sseClients = new Set<express.Response>();
 
@@ -102,7 +121,7 @@ function broadcastStateUpdate(changedKeys: string[]) {
     type: "STATE_UPDATED",
     changedKeys,
     updatedAt: globalPortalState.updatedAt,
-    state: globalPortalState
+    state: getPublicSanitizedState(globalPortalState)
   });
   for (const client of sseClients) {
     try {
@@ -133,14 +152,18 @@ app.get("/api/state/stream", (req, res) => {
   });
 });
 
-// Get universal portal state for all browser sessions
+// Get universal portal state for all browser sessions (passwords redacted)
 app.get("/api/state", (_req, res) => {
-  res.json(globalPortalState);
+  res.json(getPublicSanitizedState(globalPortalState));
 });
 
 // Update universal portal state (any section or multiple sections)
 app.put("/api/state", (req, res) => {
-  const updates = req.body || {};
+  const updates = req.body;
+  if (!updates || typeof updates !== "object" || Array.isArray(updates)) {
+    return res.status(400).json({ error: "Invalid state payload" });
+  }
+
   const allowedKeys: (keyof GlobalPortalState)[] = [
     "properties",
     "agencies",
@@ -155,7 +178,7 @@ app.put("/api/state", (req, res) => {
 
   const changedKeys: string[] = [];
   for (const key of allowedKeys) {
-    if (updates[key] !== undefined) {
+    if (Object.prototype.hasOwnProperty.call(updates, key) && Array.isArray(updates[key])) {
       (globalPortalState as any)[key] = updates[key];
       changedKeys.push(key);
     }
@@ -191,7 +214,7 @@ function requireAdvibeAuth(
   res: express.Response,
   next: express.NextFunction
 ) {
-  const userRole = (req.headers["x-user-role"] as string) || "admin";
+  const userRole = (req.headers["x-user-role"] as string) || "";
   const agencyId = (req.headers["x-agency-id"] as string) || "";
 
   if (userRole === "admin") {
@@ -226,7 +249,7 @@ app.get("/api/advibe/projects/:slug", (req, res) => {
 // POST / PUT AdVibe project (Create or Update)
 app.post("/api/advibe/projects", requireAdvibeAuth, (req, res) => {
   const project = req.body;
-  if (!project || !project.title || !project.slug) {
+  if (!project || typeof project.title !== "string" || typeof project.slug !== "string") {
     return res.status(400).json({ error: "Project title and slug are required." });
   }
 
@@ -278,7 +301,7 @@ app.post("/api/advibe/projects/:id/duplicate", requireAdvibeAuth, (req, res) => 
     id: `advibe-proj-${Date.now()}`,
     title: `${source.title} (Copy)`,
     slug: `${source.slug}-copy-${Date.now().toString().slice(-4)}`,
-    status: "draft",
+    status: "Booking Open",
     viewsCount: 0,
     leadsCount: 0,
     createdAt: new Date().toISOString().split("T")[0],
@@ -296,12 +319,20 @@ app.post("/api/advibe/projects/:id/duplicate", requireAdvibeAuth, (req, res) => 
 // POST public lead from AdVibe interactive showcase
 app.post("/api/advibe/leads", (req, res) => {
   const lead = req.body;
-  if (!lead || !lead.name || !lead.phone) {
+  if (!lead || typeof lead.name !== "string" || typeof lead.phone !== "string") {
     return res.status(400).json({ error: "Lead name and phone are required." });
   }
   const newLead = {
-    ...lead,
-    id: lead.id || `advibe-lead-${Date.now()}`,
+    id: `advibe-lead-${Date.now()}`,
+    projectId: String(lead.projectId || ""),
+    projectTitle: String(lead.projectTitle || ""),
+    name: lead.name.trim().slice(0, 120),
+    phone: lead.phone.trim().slice(0, 40),
+    email: String(lead.email || "").trim().slice(0, 120),
+    preferredUnit: String(lead.preferredUnit || "").trim().slice(0, 120),
+    message: String(lead.message || "").trim().slice(0, 1000),
+    contactPreference: lead.contactPreference || "whatsapp",
+    source: String(lead.source || "website_advibe"),
     status: "new",
     createdAt: new Date().toISOString()
   };
@@ -321,9 +352,9 @@ app.get("/api/advibe/leads", requireAdvibeAuth, (_req, res) => {
 });
 
 // POST toggle dealer AdVibe permission (Super Admin only)
-app.post("/api/advibe/permissions", (req, res) => {
-  const { agencyId, allowed } = req.body;
-  if (!agencyId) {
+app.post("/api/advibe/permissions", requireAdvibeAuth, (req, res) => {
+  const { agencyId, allowed } = req.body || {};
+  if (!agencyId || typeof agencyId !== "string") {
     return res.status(400).json({ error: "agencyId is required" });
   }
   if (allowed) {
@@ -350,7 +381,7 @@ app.get("/api/health", (_req, res) => {
 // Gemini AI Real Estate Assistant Endpoint
 app.post("/api/gemini/chat", async (req, res) => {
   try {
-    const { message, context } = req.body;
+    const { message, context } = req.body || {};
     if (!message || typeof message !== "string") {
       return res.status(400).json({ error: "A valid message is required." });
     }
@@ -372,11 +403,11 @@ app.post("/api/gemini/chat", async (req, res) => {
 
 Official Contact & WhatsApp: +92 336-5666727
 Always be polite, concise, accurate, and helpful. Use Pakistani Rupees (PKR, Lakh, Crore) and local area units (Marla, Kanal, Sq Ft).
-${context ? `\nCurrent Portal Context:\n${context}` : ""}`;
+${context ? `\nCurrent Portal Context:\n${String(context).slice(0, 2000)}` : ""}`;
 
     const response = await ai.models.generateContent({
       model: "gemini-3.8-flash",
-      contents: message,
+      contents: message.slice(0, 1000),
       config: {
         systemInstruction,
         temperature: 0.7,
