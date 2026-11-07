@@ -1137,7 +1137,9 @@ export const INITIAL_PROPERTIES: Property[] = [
     viewsCount: 4200,
     savesCount: 380,
     createdAt: '2026-08-28',
-    status: 'active'
+    status: 'active',
+    virtualTourVideoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
+    virtualTourVideoTitle: 'Space Capsule Smart Pod (Model X-100) Walkthrough'
   },
   {
     id: 'prop-mod-3',
@@ -1387,132 +1389,591 @@ export const CONSORTIUM_DIVISIONS: ConsortiumDivision[] = [
     title: 'Ri8Click Technology Services & AI Solutions',
     shortName: 'PropTech & AI Solutions',
     tagline: 'Next-generation PropTech ERP, multi-agent management, and AI matching.',
-    description: 'Pioneering intelligent software systems for modern real estate brokerages, including real-time listing feeds, multi-agent quota controls, digital lead routing, 3D digital twins, and conversational AI chatbots.',
-    badge: 'Technology Branch',
+    description: 'Powering digital transformation in real estate with automated property watermarking, 360° virtual tour rendering, CRM lead routing, and AI-driven property valuation across Pakistan.',
+    badge: 'Digital & AI Wing',
     iconName: 'Cpu',
     image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&q=80',
     capabilities: [
-      'Multi-Agent Quota & Limits Engine',
-      'Gemini-Powered Property Matching AI',
-      'Automated Watermark Stamping Pipeline',
-      'Real Estate Brokerage Cloud ERP',
-      'WhatsApp Multi-Agent Lead Router'
+      'AI Property Valuation & Investment Analytics',
+      '3D Virtual Walkthrough & Drone Mapping',
+      'Agency Quota & Lead Automation CRM',
+      'Custom Real Estate Web & Mobile Platforms'
     ],
     stats: [
       { label: 'Platform Uptime', value: '99.98%' },
       { label: 'AI Queries Handled', value: '250K+' },
-      { label: 'Agency Integrations', value: '100+' }
+      { label: 'Digital Tours', value: '1,800+' }
     ],
-    contactPerson: 'Chief Technology Officer',
+    contactPerson: 'CTO Digital Wing',
     contactPhone: '+92 336-5666727',
     contactWhatsApp: '923365666727'
   }
 ];
 
+/**
+ * UNIFIED HERO BANNER & CRYSTAL PORTFOLIO DECK SLIDES
+ * Every slide in the Portfolio Deck is now stored here so Super Admin can
+ * delete, hide, edit, or reorder ANY item (including "Model Q3 Forest Cabin Pod").
+ */
 export const INITIAL_HERO_SLIDES: HeroSlide[] = [
   {
-    id: 'slide-1',
-    categoryTag: 'Faisal Hills Executive Luxury',
-    badgeColor: 'bg-blue-600 text-white',
-    title: 'Modern 1-Kanal Designer Villa in Faisal Hills',
-    subtitle: 'Executive Margalla View Living with Ri8Click UPVC & Smart Automation',
-    description: 'Experience bespoke luxury in Faisal Hills Executive Block (Taxila / Margalla Ridge). Features 5 master bedrooms, German UPVC acoustic double-glazing by Ri8Click, Italian show kitchen, 10kW solar system, and rooftop Margalla view terrace.',
-    price: 'PKR 6.85 Crore',
-    location: 'Taxila / Rawalpindi',
-    society: 'Faisal Hills (Executive Block)',
-    imageUrl: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=2000&q=85',
+    id: 'capsule-seq-8-q3',
+    categoryTag: 'Contemporary Modular Capsule',
+    badgeColor: 'bg-indigo-600 text-white',
+    title: 'Model Q3 Forest Cabin Pod — Panoramic Glass & Warm Timber Cladding',
+    subtitle: 'Compact Luxury Capsule Pod • 28–38 Sq.M • Curved Corner Glazing',
+    description: 'Contemporary curved-edge container cabin with floor-to-ceiling insulated UPVC glass, warm timber soffits, and ambient exterior LED perimeter lighting. Ready for hill resorts, farmhouses, and rooftop suites.',
+    price: 'PKR 48 Lakh – 68 Lakh',
+    location: 'Taxila / Murree / Nathia Gali / Islamabad',
+    society: 'Faisal Hills & Resort Estates',
+    imageUrl: 'https://www.genspark.ai/api/files/s/pSySUzgg',
+    galleryImages: [
+      'https://www.genspark.ai/api/files/s/pSySUzgg',
+      'https://www.genspark.ai/api/files/s/OypEiCb2',
+      'https://www.genspark.ai/api/files/s/I6HwjuLB'
+    ],
     tourRoomsCount: 4,
     isActive: true,
     order: 1,
-    features: ['5 En-suite Bedrooms', 'Ri8Click UPVC Windows', '10kW Solar Backup', 'Margalla View Terrace'],
+    features: [
+      'Curved-Corner Low-E Tempered Glass',
+      'Ri8click UPVC Thermal Seal (-20°C to +55°C)',
+      'Crane-Installed in 4 Hours',
+      'Smart Voice & App Climate Control'
+    ],
     samplePropertyData: {
-      title: 'Modern Architectural Villa in Faisal Hills',
-      category: 'residential',
-      location: { city: 'Taxila', society: 'Faisal Hills', province: 'Punjab' }
+      title: 'Model Q3 Forest Cabin Pod',
+      category: 'modular',
+      location: {
+        city: 'Taxila',
+        society: 'Faisal Hills & Resort Estates',
+        province: 'Punjab'
+      }
     }
   },
   {
-    id: 'slide-2',
-    categoryTag: 'Islamabad Prime Commercial',
-    badgeColor: 'bg-emerald-600 text-white',
-    title: 'Blue Area Corporate Financial Tower - Islamabad',
-    subtitle: 'High-Visibility Glass Facade Tower on Jinnah Avenue Skyline',
-    description: 'Premier institutional commercial property in Islamabad Blue Area near Centaurus. 8 floors of open-plan corporate suites, high-speed capsule elevators, 3-level basement parking, and double-glazed acoustic UPVC facade.',
-    price: 'PKR 24.5 Crore',
-    location: 'Islamabad',
-    society: 'Blue Area Corporate Zone',
-    imageUrl: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=2000&q=85',
-    tourRoomsCount: 4,
+    id: 'capsule-seq-9-k5',
+    categoryTag: 'Contemporary Modular Capsule',
+    badgeColor: 'bg-indigo-600 text-white',
+    title: 'Model K5 L-Shaped Loft Container Villa & Open Viewing Deck',
+    subtitle: 'Multi-Module Architectural Container Villa • 56–75 Sq.M',
+    description: 'Architectural L-shaped modular container villa featuring a cantilevered upper studio, open-air composite timber terrace, and full-height Ri8click UPVC sliding glass walls.',
+    price: 'PKR 82 Lakh – 1.25 Crore',
+    location: 'Faisal Hills / B-17 / Gulberg Greens',
+    society: 'Faisal Hills Executive Block',
+    imageUrl: 'https://www.genspark.ai/api/files/s/OypEiCb2',
+    galleryImages: [
+      'https://www.genspark.ai/api/files/s/OypEiCb2',
+      'https://www.genspark.ai/api/files/s/pSySUzgg',
+      'https://www.genspark.ai/api/files/s/gbfFKIcB'
+    ],
+    tourRoomsCount: 5,
     isActive: true,
     order: 2,
-    features: ['8 Floor Approved Tower', 'High Speed Lifts', 'Centaurus Skyline View', '10.5% Annual ROI'],
+    features: [
+      '2 En-Suite Bedrooms + Double Lounge',
+      'Integrated Rooftop & Ground Composite Deck',
+      'Seismic Grade-9 Galvanized Steel Chassis',
+      'Ri8click Acoustic UPVC Sliding Glass Walls'
+    ],
     samplePropertyData: {
-      title: 'Blue Area Corporate Financial Tower',
-      category: 'commercial',
-      location: { city: 'Islamabad', society: 'Blue Area Corporate Zone', province: 'Islamabad Capital Territory' }
+      title: 'Model K5 L-Shaped Loft Container Villa',
+      category: 'modular',
+      location: {
+        city: 'Taxila',
+        society: 'Faisal Hills Executive Block',
+        province: 'Punjab'
+      }
     }
   },
   {
-    id: 'slide-3',
-    categoryTag: 'Turnkey Modular Innovation',
+    id: 'capsule-seq-10-rooftop',
+    categoryTag: 'Contemporary Modular Capsule',
     badgeColor: 'bg-indigo-600 text-white',
-    title: 'Ri8Click Curved Space Capsule & Container Home',
-    subtitle: 'Curved Panoramic Glass Capsule Living Deployed in 7 Days',
-    description: 'Factory-engineered with aerodynamic curved aluminum alloy shell, 270° panoramic curved stargazing skylight, IoT voice automation, and military-grade thermal insulation. 100% turnkey relocatable for farmhouses, plots, and tourist resorts.',
-    price: 'PKR 85 Lakh',
-    location: 'Taxila & Nationwide Deployment',
-    society: 'Ri8Click Modular Experience Yard',
-    imageUrl: 'https://images.unsplash.com/photo-1510798831971-661eb04b3739?auto=format&fit=crop&w=2000&q=85',
-    tourRoomsCount: 3,
+    title: 'Sky-Deck Container Villa with Glass-Railed Rooftop Lounge',
+    subtitle: 'Single-Module Container Home + Full Rooftop Observation Terrace',
+    description: 'Engineered with an external spiral staircase leading to a tempered-glass rooftop observation deck, warm wood-slat facade, and panoramic UPVC sliding doors.',
+    price: 'PKR 55 Lakh – 78 Lakh',
+    location: 'Islamabad / Khanpur Dam / Swat / Hunza',
+    society: 'Margalla Foothills & Resort Enclaves',
+    imageUrl: 'https://www.genspark.ai/api/files/s/I6HwjuLB',
+    galleryImages: [
+      'https://www.genspark.ai/api/files/s/I6HwjuLB',
+      'https://www.genspark.ai/api/files/s/gbfFKIcB',
+      'https://www.genspark.ai/api/files/s/pSySUzgg'
+    ],
+    tourRoomsCount: 4,
     isActive: true,
     order: 3,
-    features: ['Aerospace Curved Shell', '270° Curved Glass Balcony', 'IoT Voice Controls', 'Deployed in 7 Days'],
+    features: [
+      'Full-Length Rooftop Stargazing & BBQ Deck',
+      'German UPVC Multi-Point Locking Patio Doors',
+      '10kW Hybrid Solar Ready Roof Mounts',
+      'Turnkey Factory Finished Bathroom & Kitchen'
+    ],
     samplePropertyData: {
-      title: 'Ri8Click Space Capsule Smart Pod (Model X-100)',
+      title: 'Sky-Deck Container Villa with Glass-Railed Rooftop Lounge',
       category: 'modular',
-      location: { city: 'Taxila', society: 'Faisal Hills', province: 'Punjab' }
+      location: {
+        city: 'Islamabad',
+        society: 'Margalla Foothills & Resort Enclaves',
+        province: 'Islamabad Capital Territory'
+      }
     }
   },
   {
-    id: 'slide-4',
-    categoryTag: 'Lahore DHA Phase 6 Landmark',
-    badgeColor: 'bg-purple-600 text-white',
-    title: 'DHA Phase 6 Main Boulevard Commercial Plaza',
-    subtitle: 'High Footfall Retail & Corporate Plaza in Lahore',
-    description: 'Prestigious commercial plaza directly on DHA Lahore Phase 6 Main Boulevard. 4 commercial floors, basement parking, modern glass & aluminum elevation, leased to multinational brands.',
-    price: 'PKR 18.0 Crore',
-    location: 'Lahore',
-    society: 'DHA Phase 6 Lahore',
-    imageUrl: 'https://images.unsplash.com/photo-1582407947304-fd86f028f716?auto=format&fit=crop&w=2000&q=85',
+    id: 'capsule-seq-11-hex-black',
+    categoryTag: 'Contemporary Modular Capsule',
+    badgeColor: 'bg-indigo-600 text-white',
+    title: 'Hex-Lit Matte-Black Executive Container Pod & Timber Pergola',
+    subtitle: 'Cyber-Modern Architectural Studio • Geometric Hex Ceiling Lighting',
+    description: 'Matte-charcoal architectural container pod featuring hexagonal ceiling light matrices, slatted cedar sun-pergola, and wrap-around frameless glass corners for executive offices or luxury guest suites.',
+    price: 'PKR 64 Lakh – 88 Lakh',
+    location: 'Islamabad / DHA / Bahria Town',
+    society: 'Executive Farmhouse & Commercial Hub',
+    imageUrl: 'https://www.genspark.ai/api/files/s/gbfFKIcB',
+    galleryImages: [
+      'https://www.genspark.ai/api/files/s/gbfFKIcB',
+      'https://www.genspark.ai/api/files/s/W2Z5zFao',
+      'https://www.genspark.ai/api/files/s/OypEiCb2'
+    ],
     tourRoomsCount: 4,
     isActive: true,
     order: 4,
-    features: ['Main Boulevard Front', 'Multinational Tenants', 'Capsule Elevator', 'LDA / DHA Approved'],
+    features: [
+      'Hexagonal Matrix Smart Dimmable LED Ceiling',
+      'Slatted Cedar Pergola & Composite Patio',
+      'Acoustic 42dB Noise-Reduction UPVC Glazing',
+      'Plug-and-Play Corporate Office or Resort Suite'
+    ],
     samplePropertyData: {
-      title: 'DHA Phase 6 Main Boulevard Commercial Plaza',
-      category: 'commercial',
-      location: { city: 'Lahore', society: 'DHA Phase 1-9 & Prism 9', province: 'Punjab' }
+      title: 'Hex-Lit Matte-Black Executive Container Pod',
+      category: 'modular',
+      location: {
+        city: 'Islamabad',
+        society: 'Executive Farmhouse & Commercial Hub',
+        province: 'Islamabad Capital Territory'
+      }
     }
   },
   {
-    id: 'slide-5',
-    categoryTag: 'Islamabad B-17 Multi Gardens',
-    badgeColor: 'bg-amber-600 text-white',
-    title: 'Margalla View Luxury Residence in Multi Gardens B-17',
-    subtitle: 'Direct M-1 Motorway & GT Road Access with CDA NOC',
-    description: 'Contemporary 1-Kanal smart residence in MPCHS Multi Gardens B-17 Islamabad. Surrounded by scenic Margalla foothills, dedicated botanical gardens, underground utilities, and Ri8Click smart home security.',
-    price: 'PKR 5.25 Crore',
-    location: 'Islamabad',
-    society: 'Multi Gardens (B-17)',
-    imageUrl: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=2000&q=85',
-    tourRoomsCount: 4,
+    id: 'capsule-seq-12-curved-studio',
+    categoryTag: 'Contemporary Modular Capsule',
+    badgeColor: 'bg-indigo-600 text-white',
+    title: 'Curved-Corner Glass Studio Pod — Minimalist White & Wood Edition',
+    subtitle: '270° Rounded Glass Facade • Integrated Recessed Deck',
+    description: 'Sleek white fluorocarbon aluminum shell paired with warm walnut cladding and 270-degree curved tempered glass, creating an effortless indoor-outdoor resort sanctuary.',
+    price: 'PKR 46 Lakh – 65 Lakh',
+    location: 'Taxila / Faisal Hills / Abbottabad',
+    society: 'Faisal Hills & Hill Station Enclaves',
+    imageUrl: 'https://www.genspark.ai/api/files/s/W2Z5zFao',
+    galleryImages: [
+      'https://www.genspark.ai/api/files/s/W2Z5zFao',
+      'https://www.genspark.ai/api/files/s/pSySUzgg',
+      'https://www.genspark.ai/api/files/s/bf0ebbb238de4f18ac5521303f36222c'
+    ],
+    tourRoomsCount: 3,
     isActive: true,
     order: 5,
-    features: ['MPCHS Approved Sector', 'Smart Biometric Lock', 'Italian Designer Kitchen', 'Dedicated M-1 Interchange'],
+    features: [
+      '270° Curved Tempered Panoramic Glazing',
+      'Zero On-Site Masonry — Delivered Complete',
+      'Smart Keyless Biometric Entry & Motorized Blinds',
+      'High-Density Polyurethane Thermal Core'
+    ],
     samplePropertyData: {
-      title: 'Margalla View Luxury Residence in B-17',
+      title: 'Curved-Corner Glass Studio Pod',
+      category: 'modular',
+      location: {
+        city: 'Taxila',
+        society: 'Faisal Hills & Hill Station Enclaves',
+        province: 'Punjab'
+      }
+    }
+  },
+  {
+    id: 'capsule-seq-13-v2124-duplex',
+    categoryTag: 'Contemporary Modular Capsule',
+    badgeColor: 'bg-indigo-600 text-white',
+    title: 'Model V2124 Double-Decker Stacked Space Capsule Villa',
+    subtitle: 'Two-Story Futuristic Capsule Residence • Upper Cantilevered Pod',
+    description: 'Flagship double-decker stacked space capsule villa combining two aerodynamic aerospace aluminum pods with an upper-level sky balcony, curved panoramic observation lounges, and smart home automation.',
+    price: 'PKR 1.35 Crore – 1.85 Crore',
+    location: 'Islamabad / Lahore / Karachi / Bhurban',
+    society: 'Premier Farmhouse & Resort Estates',
+    imageUrl: 'https://www.genspark.ai/api/files/s/bf0ebbb238de4f18ac5521303f36222c',
+    galleryImages: [
+      'https://www.genspark.ai/api/files/s/bf0ebbb238de4f18ac5521303f36222c',
+      'https://www.genspark.ai/api/files/s/7bb35bc10e1549908eb921611bd92685',
+      'https://www.genspark.ai/api/files/s/OypEiCb2'
+    ],
+    tourRoomsCount: 6,
+    isActive: true,
+    order: 6,
+    features: [
+      'Double-Story Stacked Aerospace Capsule Architecture',
+      '3 Bedrooms + Dual Panoramic Observation Lounges',
+      'Central Smart Touch-Panel & Voice Automation',
+      '50-Year Fluorocarbon Anti-Corrosion Shell'
+    ],
+    samplePropertyData: {
+      title: 'Model V2124 Double-Decker Stacked Space Capsule Villa',
+      category: 'modular',
+      location: {
+        city: 'Islamabad',
+        society: 'Premier Farmhouse & Resort Estates',
+        province: 'Islamabad Capital Territory'
+      }
+    }
+  },
+  {
+    id: 'capsule-seq-14-lakeside',
+    categoryTag: 'Contemporary Modular Capsule',
+    badgeColor: 'bg-indigo-600 text-white',
+    title: 'Lakeside Panorama Capsule — Waterfront & Hillside Edition',
+    subtitle: '38 Sq.M Aerodynamic Pod • Stargazing Skylight & Floating Deck',
+    description: 'Designed for waterfronts, dams, and scenic ridges across Pakistan. Features an aerodynamic curved shell, stargazing roof skylight, electric floor heating, and 4-hour crane installation.',
+    price: 'PKR 68 Lakh – 96 Lakh',
+    location: 'Khanpur Dam / Rawal Lake / Attabad Lake',
+    society: 'Waterfront & Eco-Resort Zone',
+    imageUrl: 'https://www.genspark.ai/api/files/s/7bb35bc10e1549908eb921611bd92685',
+    galleryImages: [
+      'https://www.genspark.ai/api/files/s/7bb35bc10e1549908eb921611bd92685',
+      'https://www.genspark.ai/api/files/s/bf0ebbb238de4f18ac5521303f36222c',
+      'https://www.genspark.ai/api/files/s/pSySUzgg'
+    ],
+    tourRoomsCount: 4,
+    isActive: true,
+    order: 7,
+    features: [
+      'Panoramic Stargazing Roof Skylight',
+      'Off-Grid Solar & Water Filtration Ready',
+      'Five-Star Hotel Grade Smart Wet/Dry Bath',
+      '100% Relocatable High-ROI Airbnb Asset'
+    ],
+    samplePropertyData: {
+      title: 'Lakeside Panorama Capsule — Waterfront Edition',
+      category: 'modular',
+      location: {
+        city: 'Islamabad',
+        society: 'Waterfront & Eco-Resort Zone',
+        province: 'Islamabad Capital Territory'
+      }
+    }
+  },
+  {
+    id: 'highrise-centaurus-citadel-isb',
+    categoryTag: 'Islamabad Highrise Projects',
+    badgeColor: 'bg-emerald-600 text-white',
+    title: 'The Centaurus & Citadel 7 Corporate Towers — Jinnah Avenue Blue Area',
+    subtitle: '656 FT / 42 Floors (#1 Ranked) & 272 FT / 20-Storey Corporate Landmark',
+    description: 'Verified Islamabad highrise inventory on Main Jinnah Avenue, Sector F-8 / Blue Area. Offering luxury sky penthouses, corporate office floors, and high-footfall retail showrooms with 9.5%+ annual rental yield.',
+    price: 'Shops PKR 1.1–3.0 Cr • Offices 2.0–3.5 Cr • Suites 3.0–6.0 Cr',
+    location: 'Main Jinnah Avenue, Sector F-8 / Blue Area, Islamabad',
+    society: 'Blue Area Corporate Zone',
+    imageUrl: 'https://towers.pk/wp-content/uploads/sites/2/2023/08/the-centaurus-islamabad-380x250.jpg',
+    galleryImages: [
+      'https://towers.pk/wp-content/uploads/sites/2/2023/08/the-centaurus-islamabad-380x250.jpg',
+      'https://towers.pk/wp-content/uploads/sites/2/2023/09/Citadel-7-by-Chakor-Ventures-in-Blue-Area-Islamabad-1-380x250.jpg',
+      'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1600&q=85'
+    ],
+    tourRoomsCount: 6,
+    isActive: true,
+    order: 8,
+    features: [
+      'Towers.pk #1 Ranked Islamabad Skyscraper (656 ft / 42 Floors)',
+      'Citadel 7: 272 ft / 20-Storey Corporate & Retail Complex',
+      'CDA Approved Freehold Commercial & Luxury Suites',
+      'Guaranteed Multinational Tenant Demand & High ROI'
+    ],
+    samplePropertyData: {
+      title: 'The Centaurus & Citadel 7 Corporate Towers',
+      category: 'commercial',
+      location: {
+        city: 'Islamabad',
+        society: 'Blue Area Corporate Zone',
+        province: 'Islamabad Capital Territory'
+      }
+    }
+  },
+  {
+    id: 'highrise-gigamall-wtc-isb',
+    categoryTag: 'Islamabad Highrise Projects',
+    badgeColor: 'bg-emerald-600 text-white',
+    title: 'Giga Mall (World Trade Center) & Goldcrest Highlife — DHA Phase 2',
+    subtitle: '279 FT / 14-Storey WTC Mall & 26-Storey Goldcrest Residential Towers',
+    description: 'Premier highrise commercial and luxury apartment complex on Main GT Road, DHA Phase 2 Islamabad. Home to international retail brands, WTCA-affiliated corporate floors, and serviced sky apartments.',
+    price: 'Offices PKR 2.0–15.0 Cr • Luxury Suites PKR 2.1–10.0 Cr',
+    location: 'DHA Phase 2, Main GT Road, Islamabad',
+    society: 'DHA Islamabad Phase 1-5',
+    imageUrl: 'https://towers.pk/wp-content/uploads/sites/2/2024/02/Giga-Mall-Islamabad-380x250.jpg',
+    galleryImages: [
+      'https://towers.pk/wp-content/uploads/sites/2/2024/02/Giga-Mall-Islamabad-380x250.jpg',
+      'https://towers.pk/wp-content/uploads/sites/2/2023/09/Goldcrest-Views-Islamabad-380x250.jpg',
+      'https://images.unsplash.com/photo-1582407947304-fd86f028f716?auto=format&fit=crop&w=1600&q=85'
+    ],
+    tourRoomsCount: 5,
+    isActive: true,
+    order: 9,
+    features: [
+      '279 ft / 14-Storey World Trade Center Mall & Corporate Hub',
+      'Adjacent Goldcrest Highlife 26-Storey Residential Towers',
+      'Direct Main GT Road N-5 & Islamabad Expressway Access',
+      'High-Yield Serviced Apartments & Retail Showrooms'
+    ],
+    samplePropertyData: {
+      title: 'Giga Mall (World Trade Center) & Goldcrest Highlife',
+      category: 'commercial',
+      location: {
+        city: 'Islamabad',
+        society: 'DHA Islamabad Phase 1-5',
+        province: 'Islamabad Capital Territory'
+      }
+    }
+  },
+  {
+    id: 'highrise-ufone-ise-bluearea',
+    categoryTag: 'Islamabad Highrise Projects',
+    badgeColor: 'bg-emerald-600 text-white',
+    title: 'Telecom (Ufone) Tower, ISE Towers & Saudi Pak Tower — Blue Area',
+    subtitle: '423 FT / 28 Floors (#2 Ranked) & 305 FT / 22-Storey Financial Hub',
+    description: 'Grade-A corporate office floors and financial headquarters along Jinnah Avenue F-7/G-7 Blue Area, Islamabad. Equipped with Tier-3 power backup, fiber-optic redundancy, and high-speed elevator banks.',
+    price: 'Offices PKR 50M–1.40 Cr • Floor Rent PKR 15.4L–16.2L/Mo',
+    location: 'Jinnah Avenue F-7 / G-7 Blue Area, Islamabad',
+    society: 'Blue Area Corporate Zone',
+    imageUrl: 'https://towers.pk/wp-content/uploads/sites/2/2023/08/Telecom-Tower-Islamabad-1-380x250.jpg',
+    galleryImages: [
+      'https://towers.pk/wp-content/uploads/sites/2/2023/08/Telecom-Tower-Islamabad-1-380x250.jpg',
+      'https://towers.pk/wp-content/uploads/sites/2/2023/08/ISE-Towers-Islamabad-380x250.jpg',
+      'https://towers.pk/wp-content/uploads/sites/2/2023/08/Saudi-Pak-Tower-Islamabad-1-380x250.jpg'
+    ],
+    tourRoomsCount: 5,
+    isActive: true,
+    order: 10,
+    features: [
+      'Telecom Tower: 423 ft / 28 Floors (#2 Tallest in Islamabad)',
+      'ISE Towers: 305 ft / 22-Storey Stock Exchange Financial Complex',
+      'Saudi Pak Tower: 263 ft / 20-Storey Iconic Corporate Landmark',
+      'Blue-Chip Multinational & Diplomatic Corporate Leases'
+    ],
+    samplePropertyData: {
+      title: 'Telecom Tower, ISE Towers & Saudi Pak Tower',
+      category: 'commercial',
+      location: {
+        city: 'Islamabad',
+        society: 'Blue Area Corporate Zone',
+        province: 'Islamabad Capital Territory'
+      }
+    }
+  },
+  {
+    id: 'highrise-skypark-constitution-isb',
+    categoryTag: 'Islamabad Highrise Projects',
+    badgeColor: 'bg-emerald-600 text-white',
+    title: 'One Constitution Avenue, Skypark One & Lignum Tower — Islamabad',
+    subtitle: '346 FT / 26-Storey Diplomatic Enclave & Gulberg Greens Skyscrapers',
+    description: 'Ultra-luxury lake-view residences at One Constitution Avenue alongside Skypark One in Gulberg Greens and Lignum Tower in DHA Phase 2. Engineered with Ri8click acoustic UPVC curtain walls.',
+    price: 'Luxury Units & Penthouses from PKR 1.45 Crore',
+    location: 'Constitution Ave / Gulberg Greens / DHA-2, Islamabad',
+    society: 'Gulberg Greens & Residencia',
+    imageUrl: 'https://towers.pk/wp-content/uploads/sites/2/2023/09/Skypark-One-Gulberg-Islamabad-380x250.jpg',
+    galleryImages: [
+      'https://towers.pk/wp-content/uploads/sites/2/2023/09/Skypark-One-Gulberg-Islamabad-380x250.jpg',
+      'https://towers.pk/wp-content/uploads/sites/2/2023/08/One-Constitution-Avenue-Islamabad-380x250.jpg',
+      'https://towers.pk/wp-content/uploads/sites/2/2023/09/Lignum-Tower-Islamabad-380x250.jpg'
+    ],
+    tourRoomsCount: 5,
+    isActive: true,
+    order: 11,
+    features: [
+      'One Constitution Ave: 346 ft / 26-Storey Twin Towers (#4 Ranked)',
+      'Skypark One Gulberg: 279 ft / 21-Storey Mixed-Use Landmark',
+      'Lignum Tower DHA-2: 279 ft / 20-Storey Luxury Residences',
+      'Panoramic Rawal Lake & Margalla Hills Views'
+    ],
+    samplePropertyData: {
+      title: 'One Constitution Avenue & Skypark One Islamabad',
+      category: 'commercial',
+      location: {
+        city: 'Islamabad',
+        society: 'Gulberg Greens & Residencia',
+        province: 'Islamabad Capital Territory'
+      }
+    }
+  },
+  {
+    id: 'highrise-statelife-greentrust-orchard-isb',
+    categoryTag: 'Islamabad Highrise Projects',
+    badgeColor: 'bg-emerald-600 text-white',
+    title: 'State Life Tower, Green Trust & Defence Executive Towers — Islamabad',
+    subtitle: '262 FT / 19-Storey Blue Area Corporate & DHA Executive Highrises',
+    description: 'Prime commercial shops, corporate offices, and executive apartments across State Life Tower, Green Trust Tower on Jinnah Avenue, and Defence Executive / Orchard Towers in DHA Islamabad.',
+    price: 'Shops PKR 4.5M–3.5 Cr • Offices PKR 80M–3.5 Cr • 8–9% Yield',
+    location: 'Jinnah Avenue Blue Area & DHA Phase 1, Islamabad',
+    society: 'Blue Area Corporate Zone',
+    imageUrl: 'https://towers.pk/wp-content/uploads/sites/2/2023/08/State-Life-Tower-Islamabad-380x250.jpg',
+    galleryImages: [
+      'https://towers.pk/wp-content/uploads/sites/2/2023/08/State-Life-Tower-Islamabad-380x250.jpg',
+      'https://towers.pk/wp-content/uploads/sites/2/2023/08/Green-Trust-Tower-Islamabad-380x250.jpg',
+      'https://towers.pk/wp-content/uploads/sites/2/2023/09/Defence-Executive-Apartments-Islamabad-380x250.jpg'
+    ],
+    tourRoomsCount: 5,
+    isActive: true,
+    order: 12,
+    features: [
+      'State Life Tower: 262 ft / 19 Floors (#17 Ranked in Islamabad)',
+      'Green Trust Tower: 229 ft / 18-Storey Corporate Building',
+      'Defence Executive & Orchard Towers: 18-Storey DHA Residences',
+      'Immediate Possession & Verified Rental Income'
+    ],
+    samplePropertyData: {
+      title: 'State Life Tower & Green Trust Tower Islamabad',
+      category: 'commercial',
+      location: {
+        city: 'Islamabad',
+        society: 'Blue Area Corporate Zone',
+        province: 'Islamabad Capital Territory'
+      }
+    }
+  },
+  {
+    id: 'prop-wp-1',
+    categoryTag: 'Properties (Plots & Houses)',
+    badgeColor: 'bg-blue-600 text-white',
+    title: 'Modern 1-Kanal Designer Villa & Possession Plots in Faisal Hills',
+    subtitle: '5 Master Suites • Spanish Porcelain • Ri8click German UPVC Glazing',
+    description: 'Architect-designed 1-Kanal contemporary villas and NOC-verified residential/commercial plots across Faisal Hills, Kohistan Enclave, Multi Gardens B-17, and DHA Islamabad.',
+    price: 'Plots from PKR 45 Lakh • Villas PKR 6.85 Crore+',
+    location: 'Taxila / Islamabad',
+    society: 'Faisal Hills Executive Block',
+    imageUrl: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1600&q=85',
+    galleryImages: [
+      'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1600&q=85',
+      'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=80'
+    ],
+    tourRoomsCount: 6,
+    isActive: true,
+    order: 13,
+    features: [
+      '100% NOC-Verified Plots (5M, 10M, 1 & 2 Kanal)',
+      '5 En-Suite Bedrooms + Imported Italian Kitchens',
+      'Ri8click UPVC Double Glazing & 10kW Hybrid Solar',
+      '2 Mins from Main GT Road N-5 & Margalla Highway'
+    ],
+    samplePropertyData: {
+      title: 'Modern 1-Kanal Designer Villa in Faisal Hills',
       category: 'residential',
-      location: { city: 'Islamabad', society: 'Multi Gardens (B-17)', province: 'Islamabad Capital Territory' }
+      location: {
+        city: 'Taxila',
+        society: 'Faisal Hills Executive Block',
+        province: 'Punjab'
+      }
+    }
+  },
+  {
+    id: 'prop-wp-2',
+    categoryTag: 'Properties (Plots & Houses)',
+    badgeColor: 'bg-blue-600 text-white',
+    title: 'Margalla View Constructed Estate & Multi Gardens B-17 Residences',
+    subtitle: 'Turnkey Grey Structure & Luxury Finishing • 10-Year Structural Warranty',
+    description: 'Brand-new double-storey luxury houses and corner plots facing the Margalla Hills in Multi Gardens B-17 and Kohistan Enclave, built with seismic RCC engineering.',
+    price: 'PKR 4.25 Crore – 7.40 Crore',
+    location: 'Islamabad / Taxila / Rawalpindi',
+    society: 'Multi Gardens B-17 & Kohistan Enclave',
+    imageUrl: 'https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=1600&q=85',
+    galleryImages: [
+      'https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=1600&q=85',
+      'https://images.unsplash.com/photo-1600585154526-990dced4db0d?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1200&q=80'
+    ],
+    tourRoomsCount: 5,
+    isActive: true,
+    order: 14,
+    features: [
+      'CDA / MPCHS Direct Transfer Ready',
+      'Fixed-Price Grey Structure & Turnkey Finishing',
+      '10-Year Structural & Waterproofing Warranty',
+      'Direct M-1 Motorway & GT Road Connectivity'
+    ],
+    samplePropertyData: {
+      title: 'Margalla View Constructed Estate & B-17 Residences',
+      category: 'residential',
+      location: {
+        city: 'Islamabad',
+        society: 'Multi Gardens (B-17)',
+        province: 'Islamabad Capital Territory'
+      }
+    }
+  },
+  {
+    id: 'upvc-wp-1',
+    categoryTag: 'German UPVC & Turnkey Engineering',
+    badgeColor: 'bg-amber-600 text-white',
+    title: 'Ri8click German UPVC Sliding Patio, Bi-Fold & French Door Systems',
+    subtitle: 'Acoustic 42dB Double/Triple Glazing • Cuts AC Energy Bills by 40%',
+    description: 'Factory-engineered German UPVC sliding patio doors, bi-fold panoramic walls, and French doors with heavy-duty 300kg roller tracks, EPDM weather seals, and multi-point security locks.',
+    price: 'PKR 1,850 – 3,400 / Sq. Ft. (Custom Factory Direct)',
+    location: 'Taxila / Islamabad / Nationwide Installation',
+    society: 'Ri8click UPVC Manufacturing Division',
+    imageUrl: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1600&q=85',
+    galleryImages: [
+      'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1600&q=85',
+      'https://images.unsplash.com/photo-1600566753376-12c8ab7fb75b?auto=format&fit=crop&w=1200&q=85',
+      'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=85'
+    ],
+    tourRoomsCount: 4,
+    isActive: true,
+    order: 15,
+    features: [
+      'Heavy-Duty 300kg Roller Tracks & EPDM Weather Gaskets',
+      'Blocks 42dB Highway Noise & Cuts AC Bills Up to 40%',
+      'Multi-Point German Security Locking Hardware',
+      '10-Year Factory Profile & Seal Warranty'
+    ],
+    samplePropertyData: {
+      title: 'Ri8click German UPVC Sliding Patio & Bi-Fold Doors',
+      category: 'projects',
+      location: {
+        city: 'Taxila',
+        society: 'Ri8click UPVC Manufacturing Division',
+        province: 'Punjab'
+      }
+    }
+  },
+  {
+    id: 'upvc-wp-2',
+    categoryTag: 'German UPVC & Turnkey Engineering',
+    badgeColor: 'bg-amber-600 text-white',
+    title: 'Tilt-&-Turn UPVC Windows, Acoustic Office Partitions & Wall Panels',
+    subtitle: 'UV-Stabilized German Profiles • Dustproof & Monsoon-Sealed',
+    description: 'Precision-welded casement and tilt-and-turn UPVC windows alongside acoustic glass office partitions and luxury interior wall panels for villas, plazas, and corporate towers.',
+    price: 'PKR 1,450 – 2,950 / Sq. Ft. (Installed with Warranty)',
+    location: 'Islamabad / Rawalpindi / Lahore',
+    society: 'Ri8click Architectural Products',
+    imageUrl: 'https://images.unsplash.com/photo-1600566753376-12c8ab7fb75b?auto=format&fit=crop&w=1600&q=85',
+    galleryImages: [
+      'https://images.unsplash.com/photo-1600566753376-12c8ab7fb75b?auto=format&fit=crop&w=1600&q=85',
+      'https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1200&q=85',
+      'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=85'
+    ],
+    tourRoomsCount: 4,
+    isActive: true,
+    order: 16,
+    features: [
+      'UV-Stabilized German UPVC Profiles (Non-Yellowing)',
+      '100% Monsoon Rain, Dust & Thermal Seal',
+      'Frameless Acoustic Corporate Office Glass Partitions',
+      'Free Site Measurement & 3D Quotation Across Pakistan'
+    ],
+    samplePropertyData: {
+      title: 'Tilt-&-Turn UPVC Windows & Acoustic Glass Partitions',
+      category: 'projects',
+      location: {
+        city: 'Islamabad',
+        society: 'Ri8click Architectural Products',
+        province: 'Islamabad Capital Territory'
+      }
     }
   }
 ];
@@ -1522,28 +1983,16 @@ export const INITIAL_BLOGS: BlogPost[] = [
     id: 'blog-1',
     title: 'Faisal Hills Taxila 2026 Price Trends & Executive Block Development Update',
     slug: 'faisal-hills-taxila-2026-price-trends-executive-block-development',
-    category: 'Market Trends',
-    excerpt: 'Complete analysis of residential and commercial plot appreciation in Faisal Hills Executive Block, Block A, B, C, and Commercial Broadway along GT Road N-5.',
-    content: `### Why Faisal Hills Taxila Leads Rawalpindi-Islamabad Corridor Growth
-
-Faisal Hills has transformed the Taxila and GT Road real estate landscape, offering CDA-standard infrastructure at highly competitive valuations. Backed by Zedem International, the society enjoys direct access from Main GT Road (N-5) and seamless connectivity to Islamabad Sector B-17 and the M-1 Motorway.
-
-#### Key Investment Highlights for 2026:
-1. **Executive Block Rapid Possession**: Over 650+ luxury villas are either completed or under active construction, driving strong end-user demand.
-2. **Commercial Broadway Boom**: High-rise commercial plots on the 225-ft wide boulevard have recorded 28% capital appreciation over the past 14 months.
-3. **Margalla Highway Connectivity**: The upcoming connector link to Margalla Avenue reduces travel time to Islamabad F-10/F-11 to under 18 minutes.
-
-#### Current Market Price Brackets:
-- **5 Marla Residential**: PKR 42 Lakh – PKR 68 Lakh (Block C to Executive Block)
-- **10 Marla Residential**: PKR 78 Lakh – PKR 1.25 Crore
-- **1 Kanal Residential**: PKR 1.45 Crore – PKR 2.35 Crore`,
-    coverImage: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=1200&q=85',
+    category: 'Faisal Hills Updates',
+    excerpt: 'An in-depth analysis of plot and villa appreciation across Faisal Hills Executive Block, Block A, B, C, and Commercial Broadway in 2026.',
+    content: `Faisal Hills Taxila, backed by Zedem International, has cemented its position as the fastest-growing RDA-approved housing society along Main GT Road N-5 and the Margalla Hills corridor.\n\n### Key Development Highlights in 2026:\n1. **Executive Block & Block A Maturity:** Over 650+ luxury villas are now completed or under active construction, with full underground electricity, Sui Gas availability, operational schools, parks, and grand mosques.\n2. **Commercial Broadway Boom:** 4-Marla and 8-Marla commercial plots on the 225-ft Main Boulevard have recorded a 28% capital appreciation over the past 12 months due to new multi-storey corporate plazas and brand outlets.\n3. **Margalla Highway Connectivity:** Direct signal-free connectivity toward Islamabad Sector D-12 and E-11 has reduced commute times to Blue Area Islamabad to under 20 minutes.\n\n### Current Market Valuation Guide:\n- **5-Marla Residential Plot:** PKR 42 Lakh – PKR 65 Lakh (depending on block & location)\n- **10-Marla Residential Plot:** PKR 78 Lakh – PKR 1.15 Crore\n- **1-Kanal Residential Plot:** PKR 1.35 Crore – PKR 2.10 Crore\n- **1-Kanal Designer Constructed Villa:** PKR 6.20 Crore – PKR 7.50 Crore\n\nContact **ri8click Certified Advisors** at +92 336-5666727 for verified corner plots, possession-ready land, or turnkey construction quotes.`,
+    coverImage: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1200&q=80',
     authorName: 'Malik Zeeshan',
+    authorRole: 'Senior Property Analyst - Taxila & Islamabad',
     authorAvatar: PAKISTAN_REGIONAL_AGENT_AVATARS.malikZeeshan_Taxila,
-    authorRole: 'Senior Faisal Hills Investment Advisor',
     publishedAt: '2026-08-28',
     readingTime: '5 min read',
-    tags: ['Faisal Hills', 'Taxila Real Estate', 'Executive Block', 'Property Rates 2026', 'GT Road'],
+    tags: ['Faisal Hills', 'Taxila Real Estate', 'Executive Block', 'Investment 2026'],
     viewsCount: 3420,
     isFeatured: true,
     status: 'published'
@@ -1553,24 +2002,15 @@ Faisal Hills has transformed the Taxila and GT Road real estate landscape, offer
     title: 'DHA Lahore vs. DHA Islamabad: Where Should Overseas Pakistanis Invest?',
     slug: 'dha-lahore-vs-dha-islamabad-overseas-investment-comparison',
     category: 'Investment Guides',
-    excerpt: 'Comparing rental yields, commercial plaza ROI, and 3-to-5 year capital appreciation between DHA Lahore Phase 6/Prism 9 and DHA Islamabad Phase 2 & 5.',
-    content: `### Strategic Portfolio Allocation for Overseas Investors
-
-Overseas Pakistanis remain the backbone of high-value real estate transactions in Pakistan. Choosing between **DHA Lahore** and **DHA Islamabad-Rawalpindi** depends on whether your primary goal is immediate rental cashflow or medium-term land appreciation.
-
-#### 1. Commercial Plazas & Rental Yield
-- **DHA Lahore Phase 6 & 8**: Offers mature commercial boulevards with multinational retail tenants generating **7.5% to 9.2% annual rental yield** plus annual 10% rent escalation.
-- **DHA Islamabad Phase 2 (Main GT Road)**: Situated between Giga Mall and Rawalpindi/Islamabad arteries, commercial offices and luxury serviced apartments command exceptional occupancy.
-
-#### 2. Residential Plot Growth
-- **DHA Phase 9 Prism (Lahore)** and **DHA Phase 5 (Islamabad)** provide the strongest 3-year capital gain potential as possession opens across new sectors.`,
-    coverImage: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=85',
+    excerpt: 'Comparing rental yields, capital appreciation, infrastructure maturity, and commercial high-rise ROI between DHA Lahore and DHA Islamabad.',
+    content: `For Overseas Pakistanis seeking secure, dollar-hedged real estate assets in Pakistan, **DHA Lahore (Phases 6, 7, 8 & Prism 9)** and **DHA Islamabad (Phases 2, 3 & 5)** remain the gold standard.\n\n### 1. Capital Appreciation Potential\n- **DHA Lahore Prism 9 & Phase 7:** Offers massive horizontal expansion and direct Ring Road connectivity, making 10-Marla and 1-Kanal plots ideal for 2-to-4 year medium-term capital gains.\n- **DHA Islamabad Phase 2 (Main GT Road):** Dominated by high-rise commercial towers, World Trade Center (Giga Mall), and luxury serviced apartments with strong demand from diplomatic and corporate tenants.\n\n### 2. Rental Yield Comparison\n- Constructed luxury villas in DHA give an average **4.5% to 5.5%** annual rental yield.\n- Commercial retail shops and furnished corporate apartments in approved high-rises deliver **8.5% to 11%** annual rental returns plus steady capital growth.\n\nSpeak with our certified brokerage network on **ri8click.com** for 100% NOC-verified files and direct transfer plots.`,
+    coverImage: 'https://images.unsplash.com/photo-1582407947304-fd86f028f716?auto=format&fit=crop&w=1200&q=80',
     authorName: 'Engr. Haris Farooq',
+    authorRole: 'Head of Commercial & Overseas Advisory',
     authorAvatar: PAKISTAN_REGIONAL_AGENT_AVATARS.engrHarisFarooq_Islamabad,
-    authorRole: 'Commercial Portfolio Director',
     publishedAt: '2026-08-24',
     readingTime: '6 min read',
-    tags: ['DHA Lahore', 'DHA Islamabad', 'Overseas Pakistanis', 'Rental Yield', 'Commercial Plazas'],
+    tags: ['DHA Islamabad', 'DHA Lahore', 'Overseas Investors', 'Commercial ROI'],
     viewsCount: 2890,
     isFeatured: true,
     status: 'published'
@@ -1578,87 +2018,53 @@ Overseas Pakistanis remain the backbone of high-value real estate transactions i
   {
     id: 'blog-3',
     title: 'Multi Gardens B-17 (MPCHS) Sector G & C-18 Interchange Connectivity',
-    slug: 'multi-gardens-b17-mpchs-motorway-interchange-update',
-    category: 'Project Updates',
-    excerpt: 'How the dedicated M-1 Motorway interchange and Margalla Avenue extension are reshaping property values in MPCHS Multi Gardens B-17 Islamabad.',
-    content: `### Multi Gardens B-17: The Gateway to Islamabad
-
-Managed by MPCHS, Multi Gardens B-17 bridges Taxila GT Road with the M-1 Motorway, offering scenic views of the Margalla Hills and peaceful family living in Islamabad.
-
-#### Sector G Highlights
-- Located directly at the entrance from the Motorway connector.
-- Modern sewerage, wide 80ft to 120ft boulevards, and dedicated commercial centers.
-- Fast construction of schools, hospitals, and hypermarkets.
-
-#### Construction Quality Standards
-Modern home builders in B-17 are increasingly adopting soundproof acoustic UPVC double glazing to eliminate highway noise while providing thermal efficiency during Islamabad’s extreme summer heat.`,
-    coverImage: 'https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=1200&q=85',
+    slug: 'multi-gardens-b17-mpchs-sector-g-interchange-update',
+    category: 'Market Trends',
+    excerpt: 'How the dedicated M-1 Motorway interchange and Margalla Avenue extension are transforming Multi Gardens B-17 property values.',
+    content: `MPCHS Multi Gardens B-17 has evolved into one of Islamabad's most livable and liquid real estate markets. Situated at the foot of the Margalla Hills with direct access to both Main GT Road N-5 and the Peshawar-Islamabad M-1 Motorway, B-17 attracts both end-users and institutional builders.\n\n### Why B-17 Continues to Outperform:\n- **CDA & MPCHS Reliability:** Clean land titles and fast transfer procedures.\n- **Turnkey House Demand:** 7-Marla, 10-Marla, and 1-Kanal constructed houses in Blocks B, C, E, and F enjoy immediate buyer and tenant occupancy.\n- **Commercial Markaz Growth:** High-rise commercial plots in B-17 are attracting hospitals, educational campuses, and national retail brands.`,
+    coverImage: 'https://images.unsplash.com/photo-1600585154526-990dced4db0d?auto=format&fit=crop&w=1200&q=80',
     authorName: 'Chaudhry Bilal',
+    authorRole: 'Director Sales - B-17 & Taxila Corridor',
     authorAvatar: PAKISTAN_REGIONAL_AGENT_AVATARS.chaudhryBilal_FaisalHills,
-    authorRole: 'Regional Property Specialist',
     publishedAt: '2026-08-20',
     readingTime: '4 min read',
-    tags: ['Multi Gardens B-17', 'MPCHS', 'Islamabad Real Estate', 'Sector G', 'Margalla Avenue'],
+    tags: ['Multi Gardens B-17', 'MPCHS', 'Islamabad Plots', 'M-1 Motorway'],
     viewsCount: 2150,
     isFeatured: false,
     status: 'published'
   },
   {
     id: 'blog-4',
-    title: 'The Rise of Curved Container Capsule Smart Houses in Pakistan: Costs, Approvals & Turnkey Setup',
-    slug: 'curved-container-capsule-smart-houses-pakistan-costs-setup',
-    category: 'Modular Housing',
-    excerpt: 'Everything you need to know about purchasing and deploying aerospace-grade curved glass capsule pods and modular container villas in Pakistan.',
-    content: `### Revolutionizing Residential & Glamping Architecture
-
-Prefabricated modular living has arrived in Pakistan. Pioneered by Ri8Click Modular Housing, space capsule homes and curved container pods offer a high-tech alternative to traditional 12-month brick-and-mortar construction.
-
-#### Key Advantages of Ri8Click Smart Capsules:
-1. **7-Day Deployment**: Ready-to-live units built in factory conditions and crane-mounted on your plot or farmhouse.
-2. **Aerospace Curved Alloy Body**: 270-degree wraparound curved panoramic glass, stargazing skylight, and thermal insulation from -20°C to +55°C.
-3. **Turnkey Luxury**: Equipped with complete IoT voice automation, designer wet/dry bathroom, climate control, and king-size bedroom suite.
-
-#### Best Use Cases:
-- Private farmhouses in Chak Shahzad, Taxila, and Bedian Road Lahore.
-- Tourism & glamping resorts in Murree, Hunza, Skardu, and Khanpur Dam.
-- Rooftop penthouse suites and guest annexes.`,
-    coverImage: 'https://images.unsplash.com/photo-1510798831971-661eb04b3739?auto=format&fit=crop&w=1200&q=85',
+    title: 'The Rise of Curved Container & Space Capsule Smart Houses in Pakistan',
+    slug: 'rise-of-curved-container-space-capsule-smart-houses-pakistan',
+    category: 'Modular & Prefab Tech',
+    excerpt: 'Why resort owners, farmhouse investors, and modern families are switching to factory-built Space Capsule Pods with 7-day installation.',
+    content: `Traditional brick-and-mortar construction in hilly or remote tourist regions like Murree, Nathia Gali, Swat, Hunza, and Khanpur Dam often takes 18 to 24 months and suffers from severe cost overruns.\n\n### Enter Ri8Click Readymade Space Capsule & Modular Smart Homes:\n1. **Rapid 7-to-30 Day Turnkey Deployment:** Built in a precision factory environment with galvanized steel frames and aviation-grade aluminum shells, then crane-installed on your site in hours.\n2. **270° Panoramic Low-E Double Glazing:** Engineered with **Ri8Click German UPVC** thermal windows that withstand -20°C snow to +55°C summer heat while cutting air-conditioning bills by 40%.\n3. **100% Relocatable Asset:** Unlike conventional concrete structures, a Space Capsule Pod can be unbolted and transported to a new plot whenever you wish.\n4. **High Airbnb & Resort ROI:** Tourist glamping pods and farmhouse suites generate PKR 25,000 to PKR 45,000 per night in northern resorts, recovering their entire capital cost within 18 to 24 months.`,
+    coverImage: 'https://images.unsplash.com/photo-1518780664697-55e3ad937233?auto=format&fit=crop&w=1200&q=85',
     authorName: 'Engr. Haris Farooq',
+    authorRole: 'Lead Modular & Prefab Architect',
     authorAvatar: PAKISTAN_REGIONAL_AGENT_AVATARS.engrHarisFarooq_Islamabad,
-    authorRole: 'Prefab & Modular Systems Lead',
     publishedAt: '2026-08-15',
     readingTime: '5 min read',
-    tags: ['Modular Houses', 'Space Capsule', 'Curved Containers', 'Glamping Pods', 'Taxila'],
+    tags: ['Space Capsule House', 'Modular Homes Pakistan', 'Glamping Pods', 'UPVC Windows'],
     viewsCount: 4120,
     isFeatured: true,
     status: 'published'
   },
   {
     id: 'blog-5',
-    title: 'Faisal Town Phase 2 vs. Faisal Town (F-18): Long-Term Capital Appreciation Guide',
-    slug: 'faisal-town-phase-2-vs-faisal-town-f18-investment-guide',
-    category: 'Investment Guides',
-    excerpt: 'Detailed comparison of Zedem International projects: Faisal Town F-18 on G.T. Road versus the upcoming mega development of Faisal Town Phase 2 near Thalian Interchange.',
-    content: `### Evaluating Zedem International’s Flagship Projects
-
-Chaudhry Abdul Majeed and Zedem International have maintained an exceptional reputation for timely delivery and high investor returns. Let's compare Faisal Town F-18 and Faisal Town Phase 2.
-
-#### Faisal Town F-18: Fully Developed & Inhabited
-- **Current Status**: 100% developed with thousands of families residing.
-- **Commercial Hotspots**: High rental returns on plaza offices and shopping outlets.
-- **Ideal For**: Immediate house construction and steady rental income.
-
-#### Faisal Town Phase 2: High Growth Frontier
-- **Location**: Adjacent to M-2 Motorway near Thalian Interchange and Chakri Road connector.
-- **Scale**: Massive master project spanning tens of thousands of Kanals.
-- **Ideal For**: Long-term capital multiplication over 3 to 7 years with affordable installment structures.`,
-    coverImage: 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=1200&q=85',
+    title: 'How German Double-Glazed UPVC Windows Cut Pakistani Summer AC Bills by 40%',
+    slug: 'german-double-glazed-upvc-windows-cut-ac-bills-pakistan',
+    category: 'Construction & UPVC',
+    excerpt: 'A technical breakdown of single-pane aluminum vs. Ri8Click multi-chamber UPVC thermal and acoustic glazing for villas and plazas.',
+    content: `With rising electricity tariffs across Pakistan, up to **45% of a home's cooling energy** is lost through poorly sealed single-pane aluminum windows.\n\n### Why Builders & Homeowners Are Upgrading to Ri8Click UPVC:\n- **Multi-Chamber Thermal Insulation:** Non-conductive UPVC profiles paired with argon-filled double-glazed Low-E glass keep indoor temperatures up to 8°C cooler in peak June/July heat.\n- **42dB Acoustic Soundproofing:** Essential for commercial plazas on Main GT Road N-5 and villas near busy boulevards.\n- **Monsoon & Dust Sealing:** EPDM double weather gaskets completely block dust storms and monsoon water seepage.\n- **10-Year UV Warranty:** Specifically formulated with titanium dioxide to prevent yellowing or warping under intense Pakistani sunlight.`,
+    coverImage: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=1200&q=80',
     authorName: 'Malik Zeeshan',
+    authorRole: 'Senior Property & Construction Advisor',
     authorAvatar: PAKISTAN_REGIONAL_AGENT_AVATARS.malikZeeshan_Taxila,
-    authorRole: 'Senior Property Analyst',
     publishedAt: '2026-08-10',
     readingTime: '4 min read',
-    tags: ['Faisal Town', 'F-18', 'Faisal Town Phase 2', 'Zedem International', 'Islamabad'],
+    tags: ['UPVC Windows', 'Energy Efficiency', 'Turnkey Construction', 'Taxila'],
     viewsCount: 1980,
     isFeatured: false,
     status: 'published'
@@ -1667,107 +2073,103 @@ Chaudhry Abdul Majeed and Zedem International have maintained an exceptional rep
 
 export const INITIAL_SITE_PORTIONS: SiteSectionPortion[] = [
   {
-    id: 'portion-top-bar',
-    key: 'top_announcement_bar',
-    name: 'Top Verification & Announcement Bar',
-    title: 'Official ri8click Portal Notice',
-    subtitle: 'Verified Brokerage • Official Consortium Network',
-    isEnabled: true,
+    id: 'top_announcement_bar',
+    name: 'Top Announcement & Contact Ribbon',
+    title: 'Pakistan’s #1 Verified Real Estate & Modular Smart Home Consortium',
+    subtitle: 'Faisal Hills • Taxila • Islamabad • Lahore — Direct Verified Listings',
+    isVisible: true,
     order: 1,
-    description: 'Header notification bar with live phone, WhatsApp, and watermark status.'
+    badgeText: 'LIVE PORTAL',
+    themeStyle: 'dark'
   },
   {
-    id: 'portion-hero-slider',
-    key: 'hero_slider',
-    name: 'Top "Scrollytelling" Full-Screen Banner',
-    title: 'Immersive Scrollytelling Property Showcase',
-    subtitle: 'High-Impact Verified Hero Slider with 3D Walkthrough Integrations',
-    isEnabled: true,
+    id: 'hero_slider',
+    name: '360° Hero Showroom & Crystal Portfolio Deck',
+    title: 'Ri8click Consortium — Capsule Smart Homes, Highrises & Verified Properties',
+    subtitle: 'Interactive architectural camera deck & virtual walkthroughs',
+    isVisible: true,
     order: 2,
-    badge: 'Core Feature',
-    description: 'Full-screen cinematic slides highlighting top commercial, villa, and capsule homes.'
+    badgeText: '360° SHOWROOM',
+    themeStyle: 'dark'
   },
   {
-    id: 'portion-search-bar',
-    key: 'search_bar',
-    name: 'Multi-Filter Search Bar',
-    title: 'Precision Property Search Engine',
-    subtitle: 'Filter by Province, City (Taxila, Islamabad, Lahore), Society, Type, Price, Beds',
-    isEnabled: true,
+    id: 'search_bar',
+    name: 'Smart Location & Category Filter Bar',
+    title: 'Search Verified Properties Across Pakistan',
+    subtitle: 'Filter by Province, City, Housing Society, Category & Budget',
+    isVisible: true,
     order: 3,
-    description: 'Elevated multi-parameter search console with real-time result counting.'
+    themeStyle: 'light'
   },
   {
-    id: 'portion-properties-grid',
-    key: 'properties_grid',
-    name: 'Main Verified Properties Grid',
-    title: 'Featured Verified Portfolios (95% Core Focus)',
-    subtitle: '100% Watermarked listings with agent direct WhatsApp and live view counters.',
-    isEnabled: true,
+    id: 'properties_grid',
+    name: 'Featured Watermarked Property Listings Grid',
+    title: 'Verified Properties & Investment Opportunities',
+    subtitle: '100% Physically Vetted & Ri8click Watermark Protected Listings',
+    isVisible: true,
     order: 4,
-    badge: '95% Primary Space',
-    description: 'Primary residential and commercial listings catalog.'
+    badgeText: 'VERIFIED INVENTORY',
+    themeStyle: 'light'
   },
   {
-    id: 'portion-commercial-showcase',
-    key: 'commercial_showcase',
-    name: 'Commercial Plazas & Corporate Hub',
-    title: 'Commercial Plazas, High-Rise Towers & Retail Shops',
-    subtitle: 'Institutional investment opportunities in Taxila, Faisal Hills, and Islamabad.',
-    isEnabled: true,
+    id: 'commercial_showcase',
+    name: 'High-ROI Commercial Plazas & Highrises Showcase',
+    title: 'Prime Commercial Plazas, Corporate Towers & Retail Shops',
+    subtitle: 'High-footfall commercial investments in Faisal Hills, Blue Area & Lahore',
+    isVisible: true,
     order: 5,
-    description: 'Dedicated commercial portfolio section with ROI yields.'
+    badgeText: 'HIGH ROI COMMERCIAL',
+    themeStyle: 'dark'
   },
   {
-    id: 'portion-modular-showcase',
-    key: 'modular_showcase',
-    name: 'Readymade Capsule & Modular Smart Houses',
-    title: 'Curved Container Pods & Aerospace Space Capsules',
-    subtitle: 'Turnkey prefab smart homes deployed in 7 to 30 days across Pakistan.',
-    isEnabled: true,
+    id: 'modular_showcase',
+    name: 'Readymade Space Capsule & Modular Smart Homes Showcase',
+    title: 'Readymade Space Capsule & Curved Container Smart Houses',
+    subtitle: 'Factory-engineered aerospace aluminum & UPVC smart homes deployed in 7–30 days',
+    isVisible: true,
     order: 6,
-    badge: 'PropTech Innovation',
-    description: 'Dedicated prefab capsule smart homes showcase.'
+    badgeText: 'MODULAR INNOVATION',
+    themeStyle: 'gradient'
   },
   {
-    id: 'portion-news-blogs',
-    key: 'news_blogs_section',
-    name: 'Real Estate News, Market Trends & Blogs',
-    title: 'Latest Real Estate Insights & Project News',
-    subtitle: 'Faisal Hills, DHA, Multi Gardens B-17, and Pakistan property analysis.',
-    isEnabled: true,
+    id: 'news_blogs_section',
+    name: 'Real Estate Market Insights & Construction Blog',
+    title: 'Market Intelligence, Society Updates & Construction Guides',
+    subtitle: 'Latest price trends across Faisal Hills, DHA, Multi Gardens B-17 & Modular Tech',
+    isVisible: true,
     order: 7,
-    description: 'Editorial insights, NOC updates, and investment advisory articles.'
+    badgeText: 'MARKET INSIGHTS',
+    themeStyle: 'light'
   },
   {
-    id: 'portion-agencies-network',
-    key: 'agencies_network',
-    name: 'Multi-Agent & Certified Brokerage Network',
-    title: 'Certified Real Estate Agencies & Partners',
-    subtitle: 'Browse listings by certified brokerages with quota tracking.',
-    isEnabled: true,
+    id: 'agencies_network',
+    name: 'Certified Agencies & Regional Real Estate Advisors',
+    title: 'Certified Agencies & Verified Regional Property Advisors',
+    subtitle: 'Authorized brokerage partners across Taxila, Islamabad, Rawalpindi & Lahore',
+    isVisible: true,
     order: 8,
-    description: 'Directory of registered brokerages and realtors.'
+    badgeText: 'CERTIFIED NETWORK',
+    themeStyle: 'light'
   },
   {
-    id: 'portion-consortium-showcase',
-    key: 'consortium_showcase',
-    name: 'Consortium Corporate Group Showcase',
-    title: 'Ri8Click Real Estate Consortium Group',
-    subtitle: 'Turnkey Construction, UPVC Manufacturing, Modular Living & PropTech.',
-    isEnabled: true,
+    id: 'consortium_showcase',
+    name: 'Ri8click 5-Pillar Consortium Divisions',
+    title: 'The Ri8click Consortium — End-to-End Real Estate & Engineering Ecosystem',
+    subtitle: 'Real Estate Brokerage • Modular Capsule Homes • Turnkey Construction • German UPVC • PropTech AI',
+    isVisible: true,
     order: 9,
-    description: 'Professional group divisions backing all developments.'
+    badgeText: 'CONSORTIUM GROUP',
+    themeStyle: 'dark'
   },
   {
-    id: 'portion-cta-banner',
-    key: 'cta_banner',
-    name: 'Custom Order & Direct WhatsApp CTA',
-    title: 'Have Land in Taxila, Islamabad, or Lahore?',
-    subtitle: 'Connect directly with our senior property advisors on WhatsApp.',
-    isEnabled: true,
+    id: 'cta_banner',
+    name: 'Bottom Executive Consultation & WhatsApp CTA Banner',
+    title: 'Ready to Buy, Sell, or Deploy a Space Capsule Smart Home?',
+    subtitle: 'Connect directly with our executive advisory desk or post your property with instant watermark protection.',
+    isVisible: true,
     order: 10,
-    description: 'High-converting call to action block.'
+    badgeText: '24/7 ADVISORY',
+    themeStyle: 'accent'
   }
 ];
 
