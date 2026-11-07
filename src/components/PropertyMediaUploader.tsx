@@ -2,20 +2,13 @@ import React, { useState, useRef } from 'react';
 import {
   Upload,
   Image as ImageIcon,
-  Link2,
   X,
   Video,
-  Sparkles,
   CheckCircle2,
   AlertCircle,
-  Lock,
   Film,
-  Trash2,
-  Play,
-  ShieldCheck,
   ArrowLeft,
-  ArrowRight,
-  Star
+  ArrowRight
 } from 'lucide-react';
 import WatermarkBadge from './WatermarkBadge';
 
@@ -33,11 +26,11 @@ interface PropertyMediaUploaderProps {
 const SAMPLE_IMAGES = [
   {
     label: 'Capsule Forest Pod Q3',
-    url: 'https://www.genspark.ai/api/files/s/pSySUzgg'
+    url: 'https://images.unsplash.com/photo-1518780664697-55e3ad937233?auto=format&fit=crop&w=1200&q=85'
   },
   {
     label: 'Capsule L-Loft K5',
-    url: 'https://www.genspark.ai/api/files/s/OypEiCb2'
+    url: 'https://images.unsplash.com/photo-1510798831971-661eb04b3739?auto=format&fit=crop&w=1200&q=85'
   },
   {
     label: 'Faisal Hills Villa',
@@ -397,7 +390,6 @@ export const PropertyMediaUploader: React.FC<PropertyMediaUploaderProps> = ({
           </div>
         )}
 
-        {/* Attached Images Grid */}
         {images.length > 0 && (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
             {images.map((imgUrl, idx) => (
@@ -460,7 +452,7 @@ export const PropertyMediaUploader: React.FC<PropertyMediaUploaderProps> = ({
         )}
       </div>
 
-      {/* 2. VIRTUAL TOUR SHORT MOVIE CLIP / VIDEO UPLOADER (FUNCTIONAL FOR ALL POSTS) */}
+      {/* 2. VIRTUAL TOUR SHORT MOVIE CLIP / VIDEO UPLOADER */}
       <div className="p-4 bg-indigo-950/5 rounded-2xl border border-indigo-200/80 space-y-3.5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
@@ -535,7 +527,6 @@ export const PropertyMediaUploader: React.FC<PropertyMediaUploaderProps> = ({
                 onChange={e => {
                   const val = sanitizeMediaUrl(e.target.value);
                   setVideoUrlInput(val);
-                  // Auto-sync immediately so user never loses video if they click Publish directly
                   onChangeVideoUrl(val);
                   if (onChangeVideoTitle && !videoTitle && val) {
                     onChangeVideoTitle('3D Virtual Tour Walkthrough');
@@ -599,7 +590,6 @@ export const PropertyMediaUploader: React.FC<PropertyMediaUploaderProps> = ({
           </div>
         )}
 
-        {/* Live Video Preview */}
         {videoUrl && (
           <div className="rounded-xl overflow-hidden bg-slate-950 border border-indigo-500/40 relative">
             <div className="px-3 py-1.5 bg-indigo-950 text-indigo-200 text-[11px] font-bold flex items-center justify-between">
