@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import {
   Plus,
   Trash2,
@@ -7,19 +7,25 @@ import {
   EyeOff,
   ArrowUp,
   ArrowDown,
+  Image as ImageIcon,
+  CheckCircle2,
+  Sparkles,
+  Save,
+  X,
+  Layers,
+  MapPin,
+  Tag,
+  Upload,
+  Star,
   ArrowLeft,
   ArrowRight,
-  X,
-  Image as ImageIcon,
-  Sparkles,
-  MapPin,
-  Save,
   RotateCcw,
-  Star,
-  UploadCloud,
-  Check
+  BookmarkPlus,
+  FolderPlus,
+  Search
 } from 'lucide-react';
 import { HeroSlide } from '../types';
+import { INITIAL_HERO_SLIDES } from '../data/mockData';
 
 interface AdminBannerManagerProps {
   slides: HeroSlide[];
@@ -29,107 +35,95 @@ interface AdminBannerManagerProps {
 interface PresetImageItem {
   id: string;
   name: string;
+  category: string;
   url: string;
   fallbackUrl: string;
-  category: string;
 }
 
-export const INITIAL_PRESET_IMAGES: PresetImageItem[] = [
+const INITIAL_PRESET_IMAGES: PresetImageItem[] = [
   {
     id: 'preset-q3',
-    name: 'Q3 Pitched-Roof Modular Forest Cabin Pod',
+    name: 'Model Q3 Forest Cabin Pod',
+    category: 'Capsule Pod',
     url: 'https://www.genspark.ai/api/files/s/pSySUzgg',
-    fallbackUrl:
-      'https://images.unsplash.com/photo-1518780664697-55e3ad937233?auto=format&fit=crop&w=2000&q=85',
-    category: 'modular'
+    fallbackUrl: 'https://images.unsplash.com/photo-1518780664697-55e3ad937233?auto=format&fit=crop&w=1200&q=85'
   },
   {
     id: 'preset-loft',
-    name: 'L-Shaped Dual-Container Loft & Interior Cutaway',
+    name: 'Model K5 L-Shaped Loft Container',
+    category: 'Container Villa',
     url: 'https://www.genspark.ai/api/files/s/OypEiCb2',
-    fallbackUrl:
-      'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=2000&q=85',
-    category: 'modular'
+    fallbackUrl: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1200&q=85'
   },
   {
     id: 'preset-rooftop',
-    name: 'Rooftop Terrace Container Villa & Timber Deck',
-    url: 'https://www.genspark.ai/api/files/s/3jIuxLrV',
-    fallbackUrl:
-      'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=2000&q=85',
-    category: 'modular'
+    name: 'Sky-Deck Rooftop Container Villa',
+    category: 'Container Villa',
+    url: 'https://www.genspark.ai/api/files/s/I6HwjuLB',
+    fallbackUrl: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=85'
   },
   {
     id: 'preset-hex',
-    name: 'Hex-Lit Matte-Black Designer Container Pod',
-    url: 'https://www.genspark.ai/api/files/s/K4lfut6W',
-    fallbackUrl:
-      'https://images.unsplash.com/photo-1600585154526-990dced4db0d?auto=format&fit=crop&w=2000&q=85',
-    category: 'modular'
+    name: 'Hex-Lit Matte-Black Executive Pod',
+    category: 'Capsule Pod',
+    url: 'https://www.genspark.ai/api/files/s/gbfFKIcB',
+    fallbackUrl: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=85'
   },
   {
     id: 'preset-studio',
-    name: 'Curved-Corner Glass Executive Container Studio',
-    url: 'https://www.genspark.ai/api/files/s/bl8vngPB',
-    fallbackUrl:
-      'https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=2000&q=85',
-    category: 'modular'
+    name: 'Curved-Corner Glass Studio Pod',
+    category: 'Capsule Pod',
+    url: 'https://www.genspark.ai/api/files/s/W2Z5zFao',
+    fallbackUrl: 'https://images.unsplash.com/photo-1518780664697-55e3ad937233?auto=format&fit=crop&w=1200&q=85'
   },
   {
     id: 'preset-v2124',
-    name: 'V2124 Double-Decker Stacked Capsule Villa',
-    url: 'https://www.genspark.ai/api/files/s/u84KzdvI',
-    fallbackUrl:
-      'https://images.unsplash.com/photo-1600566753376-12c8ab7fb75b?auto=format&fit=crop&w=2000&q=85',
-    category: 'modular'
+    name: 'Model V2124 Double-Decker Capsule',
+    category: 'Duplex Capsule',
+    url: 'https://www.genspark.ai/api/files/s/bf0ebbb238de4f18ac5521303f36222c',
+    fallbackUrl: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1200&q=85'
   },
   {
     id: 'preset-lakeside',
-    name: 'Lakeside Curved-Glass Observation Capsule Pod',
-    url: 'https://www.genspark.ai/api/files/s/I6HwjuLB',
-    fallbackUrl:
-      'https://images.unsplash.com/photo-1600585152915-d208bec867a1?auto=format&fit=crop&w=2000&q=85',
-    category: 'modular'
+    name: 'Lakeside Panorama Capsule',
+    category: 'Capsule Pod',
+    url: 'https://www.genspark.ai/api/files/s/7bb35bc10e1549908eb921611bd92685',
+    fallbackUrl: 'https://images.unsplash.com/photo-1518780664697-55e3ad937233?auto=format&fit=crop&w=1200&q=85'
   },
   {
     id: 'preset-faisal-villa',
-    name: 'Faisal Hills 1-Kanal Villa (Taxila / Margalla)',
-    url: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=2000&q=85',
-    fallbackUrl:
-      'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=2000&q=85',
-    category: 'residential'
+    name: 'Faisal Hills 1-Kanal Designer Villa',
+    category: 'Luxury Villa',
+    url: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1600&q=85',
+    fallbackUrl: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1200&q=80'
   },
   {
     id: 'preset-centaurus',
-    name: 'Islamabad Blue Area Highrise / The Centaurus',
-    url: 'https://towers.pk/wp-content/uploads/2023/11/Centaurus_Mall-1.webp',
-    fallbackUrl:
-      'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=2000&q=85',
-    category: 'commercial'
+    name: 'The Centaurus & Blue Area Highrise',
+    category: 'Highrise',
+    url: 'https://towers.pk/wp-content/uploads/sites/2/2023/08/the-centaurus-islamabad-380x250.jpg',
+    fallbackUrl: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=85'
   },
   {
     id: 'preset-upvc',
-    name: 'Ri8click UPVC Sliding Patio Doors & Thermal Glazing',
-    url: 'https://images.unsplash.com/photo-1600585152220-90363fe7e115?auto=format&fit=crop&w=2000&q=85',
-    fallbackUrl:
-      'https://images.unsplash.com/photo-1600585152220-90363fe7e115?auto=format&fit=crop&w=2000&q=85',
-    category: 'projects'
+    name: 'German UPVC Sliding Patio Glass',
+    category: 'UPVC & Interior',
+    url: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1600&q=85',
+    fallbackUrl: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80'
   },
   {
     id: 'preset-b17',
-    name: 'Multi Gardens B-17 Sector G Margalla Residence',
-    url: 'https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=2000&q=85',
-    fallbackUrl:
-      'https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=2000&q=85',
-    category: 'residential'
+    name: 'Multi Gardens B-17 Lake View Villa',
+    category: 'Luxury Villa',
+    url: 'https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=1600&q=85',
+    fallbackUrl: 'https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=1200&q=80'
   },
   {
     id: 'preset-dha-lahore',
-    name: 'Lahore DHA Phase 6 Commercial Boulevard Highrise',
-    url: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=2000&q=85',
-    fallbackUrl:
-      'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=2000&q=85',
-    category: 'commercial'
+    name: 'Corporate Commercial Plaza',
+    category: 'Highrise',
+    url: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1600&q=85',
+    fallbackUrl: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80'
   }
 ];
 
@@ -138,17 +132,18 @@ export const AdminBannerManager: React.FC<AdminBannerManagerProps> = ({
   onUpdateSlides
 }) => {
   const [editingSlide, setEditingSlide] = useState<HeroSlide | null>(null);
-  const [isCreatingNew, setIsCreatingNew] = useState<boolean>(false);
-  const [presetImages, setPresetImages] = useState<PresetImageItem[]>(INITIAL_PRESET_IMAGES);
-  const [presetClickMode, setPresetClickMode] = useState<'replace_cover' | 'append_gallery'>(
-    'append_gallery'
-  );
-  const [additionalImageUrlInput, setAdditionalImageUrlInput] = useState<string>('');
-  const [newPresetNameInput, setNewPresetNameInput] = useState<string>('');
-  const localFileInputRef = useRef<HTMLInputElement | null>(null);
+  const [isCreatingNew, setIsCreatingNew] = useState(false);
+  const [searchFilter, setSearchFilter] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [statusNotice, setStatusNotice] = useState<string | null>(null);
 
-  // Form State for create/edit
-  const [formData, setFormData] = useState<Partial<HeroSlide>>({
+  const [presetImages, setPresetImages] = useState<PresetImageItem[]>(INITIAL_PRESET_IMAGES);
+  const [presetClickMode, setPresetClickMode] = useState<'replace_cover' | 'append_gallery'>('append_gallery');
+  const [newPresetNameInput, setNewPresetNameInput] = useState('');
+  const [additionalImageUrlInput, setAdditionalImageUrlInput] = useState('');
+
+  const [formData, setFormData] = useState<HeroSlide>({
+    id: '',
     categoryTag: 'Contemporary Modular Capsule',
     badgeColor: 'bg-indigo-600 text-white',
     title: '',
@@ -158,40 +153,54 @@ export const AdminBannerManager: React.FC<AdminBannerManagerProps> = ({
     location: 'Taxila / Islamabad',
     society: 'Faisal Hills & Resort Estates',
     imageUrl: INITIAL_PRESET_IMAGES[0].url,
-    galleryImages: [
-      INITIAL_PRESET_IMAGES[0].url,
-      INITIAL_PRESET_IMAGES[5].url,
-      INITIAL_PRESET_IMAGES[6].url
-    ],
+    galleryImages: [INITIAL_PRESET_IMAGES[0].url],
     tourRoomsCount: 4,
     isActive: true,
-    features: [
-      'Aerospace Capsule Shell',
-      'Ri8Click UPVC Glazing',
-      'Smart IoT Controls',
-      'Turnkey Delivery'
-    ]
+    order: slides.length + 1,
+    features: ['270° Panoramic Low-E Glass', 'Ri8click UPVC Thermal Glazing', 'Turnkey 7-Day Setup'],
+    samplePropertyData: {
+      title: '',
+      category: 'modular',
+      location: {
+        city: 'Taxila',
+        society: 'Faisal Hills',
+        province: 'Punjab'
+      }
+    }
   });
 
-  const [featureInput, setFeatureInput] = useState<string>('');
+  const [featureInput, setFeatureInput] = useState('');
 
-  // Synchronize primary imageUrl and galleryImages list
-  const syncSlideGallery = (nextGallery: string[], fallbackPrimary?: string) => {
-    const cleanGallery = nextGallery.filter(Boolean);
-    const primary = cleanGallery[0] || fallbackPrimary || '';
-    setFormData(prev => ({
-      ...prev,
-      imageUrl: primary,
-      galleryImages: cleanGallery
-    }));
+  const showToast = (msg: string) => {
+    setStatusNotice(msg);
+    setTimeout(() => setStatusNotice(null), 4000);
   };
 
-  const currentSlideGallery: string[] =
-    formData.galleryImages && formData.galleryImages.length > 0
-      ? formData.galleryImages
-      : formData.imageUrl
-      ? [formData.imageUrl]
-      : [];
+  const sortedSlides = [...slides].sort((a, b) => (a.order ?? 999) - (b.order ?? 999));
+
+  const filteredSlides = sortedSlides.filter(s => {
+    const matchesSearch =
+      !searchFilter.trim() ||
+      s.title.toLowerCase().includes(searchFilter.toLowerCase()) ||
+      s.subtitle.toLowerCase().includes(searchFilter.toLowerCase()) ||
+      s.categoryTag.toLowerCase().includes(searchFilter.toLowerCase()) ||
+      s.society.toLowerCase().includes(searchFilter.toLowerCase());
+
+    if (!matchesSearch) return false;
+    if (categoryFilter === 'all') return true;
+    const cat = s.samplePropertyData?.category || 'modular';
+    return cat === categoryFilter;
+  });
+
+  const syncSlideGallery = (gallery: string[], fallbackCover = '') => {
+    const cleaned = gallery.map(u => u.trim()).filter(Boolean);
+    const primaryCover = cleaned[0] || fallbackCover || '';
+    setFormData(prev => ({
+      ...prev,
+      imageUrl: primaryCover,
+      galleryImages: cleaned.length > 0 ? cleaned : primaryCover ? [primaryCover] : []
+    }));
+  };
 
   const handleStartCreate = () => {
     setFormData({
@@ -202,27 +211,22 @@ export const AdminBannerManager: React.FC<AdminBannerManagerProps> = ({
       subtitle: '',
       description: '',
       price: 'PKR 68 Lakh',
-      location: 'Islamabad / Taxila',
-      society: 'Faisal Hills (Executive Block)',
-      imageUrl: presetImages[0]?.url || INITIAL_PRESET_IMAGES[0].url,
-      galleryImages: [
-        presetImages[0]?.url || INITIAL_PRESET_IMAGES[0].url,
-        presetImages[5]?.url || INITIAL_PRESET_IMAGES[5].url,
-        presetImages[6]?.url || INITIAL_PRESET_IMAGES[6].url
-      ],
+      location: 'Taxila / Islamabad',
+      society: 'Faisal Hills & Resort Estates',
+      imageUrl: INITIAL_PRESET_IMAGES[0].url,
+      galleryImages: [INITIAL_PRESET_IMAGES[0].url],
       tourRoomsCount: 4,
       isActive: true,
       order: slides.length + 1,
-      features: [
-        'Aerospace Capsule Shell',
-        'Ri8Click UPVC Windows',
-        'Solar Backup',
-        'Margalla View'
-      ],
+      features: ['270° Curved UPVC Glass', 'Smart Voice Automation', 'Crane Installed'],
       samplePropertyData: {
-        title: 'New Featured Capsule / Property',
+        title: '',
         category: 'modular',
-        location: { city: 'Taxila', society: 'Faisal Hills', province: 'Punjab' }
+        location: {
+          city: 'Taxila',
+          society: 'Faisal Hills',
+          province: 'Punjab'
+        }
       }
     });
     setIsCreatingNew(true);
@@ -230,103 +234,144 @@ export const AdminBannerManager: React.FC<AdminBannerManagerProps> = ({
   };
 
   const handleStartEdit = (slide: HeroSlide) => {
-    const initialGallery =
+    const existingGallery =
       slide.galleryImages && slide.galleryImages.length > 0
         ? slide.galleryImages
         : slide.imageUrl
         ? [slide.imageUrl]
         : [];
-    setEditingSlide(slide);
+
     setFormData({
       ...slide,
-      imageUrl: initialGallery[0] || slide.imageUrl,
-      galleryImages: initialGallery
+      galleryImages: existingGallery,
+      features: [...(slide.features || [])],
+      samplePropertyData: slide.samplePropertyData || {
+        title: slide.title,
+        category: 'modular',
+        location: {
+          city: slide.location || 'Taxila',
+          society: slide.society || 'Faisal Hills',
+          province: 'Punjab'
+        }
+      }
     });
+    setEditingSlide(slide);
     setIsCreatingNew(false);
   };
 
-  // Add image to current slide's gallery
-  const handleAddImageToSlide = (urlToAdd: string) => {
-    const trimmed = urlToAdd.trim();
+  const handleAddImageToSlide = (url: string) => {
+    const trimmed = url.trim();
     if (!trimmed) return;
+    const currentGallery =
+      formData.galleryImages && formData.galleryImages.length > 0
+        ? [...formData.galleryImages]
+        : formData.imageUrl
+        ? [formData.imageUrl]
+        : [];
+
     if (presetClickMode === 'replace_cover') {
-      const rest = currentSlideGallery.slice(1).filter(u => u !== trimmed);
-      syncSlideGallery([trimmed, ...rest]);
-    } else {
-      if (currentSlideGallery.includes(trimmed)) {
-        // Move to cover if already present
-        const rest = currentSlideGallery.filter(u => u !== trimmed);
-        syncSlideGallery([trimmed, ...rest]);
+      if (currentGallery.length === 0) {
+        syncSlideGallery([trimmed]);
       } else {
-        syncSlideGallery([...currentSlideGallery, trimmed]);
+        const rest = currentGallery.slice(1).filter(u => u !== trimmed);
+        syncSlideGallery([trimmed, ...rest]);
+      }
+    } else {
+      if (!currentGallery.includes(trimmed)) {
+        syncSlideGallery([...currentGallery, trimmed]);
+      } else {
+        syncSlideGallery(currentGallery);
       }
     }
   };
 
-  // Upload local image files into slide gallery
-  const handleLocalFileUpload = (files: FileList | null) => {
+  const handleLocalFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
     if (!files || files.length === 0) return;
-    const validFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
-    if (validFiles.length === 0) return;
 
-    Promise.all(
-      validFiles.map(
-        file =>
-          new Promise<string>((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = e => resolve((e.target?.result as string) || '');
-            reader.onerror = () => reject(new Error('Failed to read file'));
-            reader.readAsDataURL(file);
-          })
-      )
-    ).then(dataUrls => {
-      const validUrls = dataUrls.filter(Boolean);
-      syncSlideGallery([...currentSlideGallery, ...validUrls]);
-      if (localFileInputRef.current) localFileInputRef.current.value = '';
+    Array.from(files).forEach((file: File) => {
+      const reader = new FileReader();
+      reader.onload = event => {
+        const dataUrl = event.target?.result as string;
+        if (dataUrl) {
+          setFormData(prev => {
+            const existing =
+              prev.galleryImages && prev.galleryImages.length > 0
+                ? [...prev.galleryImages]
+                : prev.imageUrl
+                ? [prev.imageUrl]
+                : [];
+            const updated = [...existing, dataUrl];
+            return {
+              ...prev,
+              imageUrl: updated[0],
+              galleryImages: updated
+            };
+          });
+        }
+      };
+      reader.readAsDataURL(file);
     });
+
+    e.target.value = '';
   };
 
-  // Remove a single image at index from the current slide
-  const handleRemoveSlideImageAt = (idxToRemove: number) => {
-    const next = currentSlideGallery.filter((_, i) => i !== idxToRemove);
-    syncSlideGallery(next, '');
+  const handleRemoveSlideImageAt = (idx: number) => {
+    const currentGallery =
+      formData.galleryImages && formData.galleryImages.length > 0
+        ? [...formData.galleryImages]
+        : formData.imageUrl
+        ? [formData.imageUrl]
+        : [];
+
+    const nextGallery = currentGallery.filter((_, i) => i !== idx);
+    syncSlideGallery(nextGallery, '');
   };
 
-  // Move an image left or right in the current slide's sequence
   const handleMoveSlideImage = (idx: number, direction: 'left' | 'right') => {
+    const currentGallery =
+      formData.galleryImages && formData.galleryImages.length > 0
+        ? [...formData.galleryImages]
+        : formData.imageUrl
+        ? [formData.imageUrl]
+        : [];
+
     const targetIdx = direction === 'left' ? idx - 1 : idx + 1;
-    if (targetIdx < 0 || targetIdx >= currentSlideGallery.length) return;
-    const next = [...currentSlideGallery];
-    const temp = next[idx];
-    next[idx] = next[targetIdx];
-    next[targetIdx] = temp;
-    syncSlideGallery(next);
+    if (targetIdx < 0 || targetIdx >= currentGallery.length) return;
+
+    const swapped = [...currentGallery];
+    const temp = swapped[idx];
+    swapped[idx] = swapped[targetIdx];
+    swapped[targetIdx] = temp;
+    syncSlideGallery(swapped);
   };
 
-  // Set any image in the slide's gallery as the #1 Cover Image
   const handleMakeCoverImage = (idx: number) => {
-    if (idx === 0) return;
-    const chosen = currentSlideGallery[idx];
-    const rest = currentSlideGallery.filter((_, i) => i !== idx);
-    syncSlideGallery([chosen, ...rest]);
+    const currentGallery =
+      formData.galleryImages && formData.galleryImages.length > 0
+        ? [...formData.galleryImages]
+        : formData.imageUrl
+        ? [formData.imageUrl]
+        : [];
+
+    if (idx <= 0 || idx >= currentGallery.length) return;
+    const chosen = currentGallery[idx];
+    const remaining = currentGallery.filter((_, i) => i !== idx);
+    syncSlideGallery([chosen, ...remaining]);
   };
 
-  // Save custom URL to Quick-Select Presets
   const handleSaveCurrentUrlToPresets = () => {
-    const urlToSave = (additionalImageUrlInput || formData.imageUrl || '').trim();
+    const urlToSave = formData.imageUrl.trim();
     if (!urlToSave) return;
-    const name =
-      newPresetNameInput.trim() ||
-      formData.title?.trim() ||
-      `Custom Preset #${presetImages.length + 1}`;
+    const label = newPresetNameInput.trim() || formData.title.trim() || `Custom Slide #${presetImages.length + 1}`;
     const newPreset: PresetImageItem = {
       id: `preset-custom-${Date.now()}`,
-      name,
+      name: label,
+      category: 'Custom Saved',
       url: urlToSave,
-      fallbackUrl: INITIAL_PRESET_IMAGES[0].fallbackUrl,
-      category: 'modular'
+      fallbackUrl: INITIAL_PRESET_IMAGES[0].fallbackUrl
     };
-    setPresetImages([newPreset, ...presetImages]);
+    setPresetImages(prev => [newPreset, ...prev]);
     setNewPresetNameInput('');
   };
 
@@ -339,166 +384,241 @@ export const AdminBannerManager: React.FC<AdminBannerManagerProps> = ({
     e.stopPropagation();
     const targetIdx = direction === 'left' ? idx - 1 : idx + 1;
     if (targetIdx < 0 || targetIdx >= presetImages.length) return;
-    const copy = [...presetImages];
-    const temp = copy[idx];
-    copy[idx] = copy[targetIdx];
-    copy[targetIdx] = temp;
-    setPresetImages(copy);
+    const updated = [...presetImages];
+    const temp = updated[idx];
+    updated[idx] = updated[targetIdx];
+    updated[targetIdx] = temp;
+    setPresetImages(updated);
   };
 
   const handleSaveForm = (e: React.FormEvent) => {
     e.preventDefault();
-    const finalGallery =
-      currentSlideGallery.length > 0
-        ? currentSlideGallery
-        : formData.imageUrl
-        ? [formData.imageUrl]
-        : [];
-    const primaryImageUrl = finalGallery[0] || formData.imageUrl || '';
-
-    if (!formData.title || !primaryImageUrl) {
+    if (!formData.title.trim() || !formData.imageUrl.trim()) {
       alert('Please provide a Banner Title and at least 1 Image.');
       return;
     }
 
+    const ensuredGallery =
+      formData.galleryImages && formData.galleryImages.length > 0
+        ? formData.galleryImages
+        : [formData.imageUrl];
+
+    const updatedSlide: HeroSlide = {
+      ...formData,
+      imageUrl: ensuredGallery[0],
+      galleryImages: ensuredGallery,
+      tourRoomsCount: Math.max(ensuredGallery.length, formData.tourRoomsCount || 3),
+      samplePropertyData: {
+        title: formData.title,
+        category: formData.samplePropertyData?.category || 'modular',
+        location: {
+          city: formData.location.split('/')[0]?.trim() || 'Taxila',
+          society: formData.society || 'Faisal Hills',
+          province: 'Punjab'
+        }
+      }
+    };
+
     if (isCreatingNew) {
-      const newSlide: HeroSlide = {
-        id: `slide-${Date.now()}`,
-        categoryTag: formData.categoryTag || 'Featured Property',
-        badgeColor: formData.badgeColor || 'bg-blue-600 text-white',
-        title: formData.title || '',
-        subtitle: formData.subtitle || '',
-        description: formData.description || '',
-        price: formData.price || 'PKR 5 Crore',
-        location: formData.location || 'Taxila',
-        society: formData.society || 'Faisal Hills',
-        imageUrl: primaryImageUrl,
-        galleryImages: finalGallery,
-        tourRoomsCount: finalGallery.length || formData.tourRoomsCount || 3,
-        isActive: formData.isActive !== false,
-        order: slides.length + 1,
-        features:
-          formData.features && formData.features.length > 0
-            ? formData.features
-            : ['Prime Location', 'Ri8Click UPVC Glazing', 'Watermarked Listing'],
-        samplePropertyData: formData.samplePropertyData || {
-          title: formData.title,
-          category: 'modular',
-          location: { city: 'Taxila', society: 'Faisal Hills', province: 'Punjab' }
-        }
-      };
-      onUpdateSlides([...slides, newSlide]);
-      setIsCreatingNew(false);
+      const nextSlides = [...sortedSlides, updatedSlide].map((s, idx) => ({
+        ...s,
+        order: idx + 1
+      }));
+      onUpdateSlides(nextSlides);
+      showToast(`Added "${updatedSlide.title}" to Portfolio Deck & Hero Banner!`);
     } else if (editingSlide) {
-      const updated = slides.map(s => {
-        if (s.id === editingSlide.id) {
-          return {
-            ...s,
-            ...formData,
-            imageUrl: primaryImageUrl,
-            galleryImages: finalGallery,
-            tourRoomsCount: finalGallery.length || s.tourRoomsCount,
-            features: formData.features || s.features
-          } as HeroSlide;
-        }
-        return s;
-      });
-      onUpdateSlides(updated);
-      setEditingSlide(null);
+      const nextSlides = sortedSlides.map(s => (s.id === updatedSlide.id ? updatedSlide : s));
+      onUpdateSlides(nextSlides);
+      showToast(`Updated "${updatedSlide.title}" across all live browsers!`);
     }
+
+    setIsCreatingNew(false);
+    setEditingSlide(null);
   };
 
-  // Direct image sequence management on existing slide cards without opening full modal
-  const handleQuickRotateSlideCover = (slide: HeroSlide) => {
+  const handleQuickRotateSlide = (slide: HeroSlide) => {
     const gallery =
       slide.galleryImages && slide.galleryImages.length > 1
-        ? slide.galleryImages
+        ? [...slide.galleryImages]
         : [slide.imageUrl];
     if (gallery.length <= 1) return;
     const rotated = [...gallery.slice(1), gallery[0]];
-    onUpdateSlides(
-      slides.map(s =>
-        s.id === slide.id ? { ...s, imageUrl: rotated[0], galleryImages: rotated } : s
-      )
+    const updated = sortedSlides.map(s =>
+      s.id === slide.id
+        ? { ...s, imageUrl: rotated[0], galleryImages: rotated }
+        : s
     );
+    onUpdateSlides(updated);
+    showToast(`Rotated primary cover photo for "${slide.title}".`);
   };
 
   const handleDeleteSlide = (id: string) => {
+    const target = slides.find(s => s.id === id);
     if (slides.length <= 1) {
-      alert('You must have at least 1 hero banner slide.');
+      alert('At least 1 slide must remain in the Portfolio Deck.');
       return;
     }
-    if (window.confirm('Are you sure you want to delete this banner slide?')) {
-      const remaining = slides
-        .filter(s => s.id !== id)
-        .map((s, idx) => ({ ...s, order: idx + 1 }));
-      onUpdateSlides(remaining);
-      if (editingSlide?.id === id) setEditingSlide(null);
+    const updated = sortedSlides
+      .filter(s => s.id !== id)
+      .map((s, idx) => ({ ...s, order: idx + 1 }));
+    onUpdateSlides(updated);
+    if (editingSlide?.id === id) {
+      setEditingSlide(null);
     }
+    showToast(`Removed "${target?.title || 'Slide'}" from Portfolio Deck & Hero Banner.`);
   };
 
   const handleToggleActive = (id: string) => {
-    onUpdateSlides(slides.map(s => (s.id === id ? { ...s, isActive: !s.isActive } : s)));
+    const target = sortedSlides.find(s => s.id === id);
+    const activeCount = sortedSlides.filter(s => s.isActive).length;
+    if (target?.isActive && activeCount <= 1) {
+      alert('At least 1 slide must stay Active in the Portfolio Deck.');
+      return;
+    }
+    const updated = sortedSlides.map(s => (s.id === id ? { ...s, isActive: !s.isActive } : s));
+    onUpdateSlides(updated);
+    showToast(
+      target?.isActive
+        ? `Hidden "${target.title}" from live Portfolio Deck.`
+        : `Activated "${target?.title}" in live Portfolio Deck.`
+    );
   };
 
-  const handleMoveOrder = (index: number, direction: 'up' | 'down') => {
-    const targetIndex = direction === 'up' ? index - 1 : index + 1;
-    if (targetIndex < 0 || targetIndex >= slides.length) return;
+  const handleMoveOrder = (slideId: string, direction: 'up' | 'down') => {
+    const currentIndex = sortedSlides.findIndex(s => s.id === slideId);
+    if (currentIndex === -1) return;
+    const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    if (targetIndex < 0 || targetIndex >= sortedSlides.length) return;
 
-    const newSlides = [...slides];
-    const temp = newSlides[index];
-    newSlides[index] = newSlides[targetIndex];
-    newSlides[targetIndex] = temp;
+    const reordered = [...sortedSlides];
+    const temp = reordered[currentIndex];
+    reordered[currentIndex] = reordered[targetIndex];
+    reordered[targetIndex] = temp;
 
-    const reordered = newSlides.map((s, idx) => ({ ...s, order: idx + 1 }));
-    onUpdateSlides(reordered);
+    const normalized = reordered.map((s, idx) => ({ ...s, order: idx + 1 }));
+    onUpdateSlides(normalized);
+    showToast(`Moved "${temp.title.slice(0, 32)}..." to Position #${targetIndex + 1} in Portfolio Deck.`);
+  };
+
+  const handleMoveToPosition = (slideId: string, newOneBasedPosition: number) => {
+    const currentIndex = sortedSlides.findIndex(s => s.id === slideId);
+    if (currentIndex === -1) return;
+    const clampedIndex = Math.max(0, Math.min(sortedSlides.length - 1, newOneBasedPosition - 1));
+    if (currentIndex === clampedIndex) return;
+
+    const reordered = [...sortedSlides];
+    const [movedItem] = reordered.splice(currentIndex, 1);
+    reordered.splice(clampedIndex, 0, movedItem);
+
+    const normalized = reordered.map((s, idx) => ({ ...s, order: idx + 1 }));
+    onUpdateSlides(normalized);
+    showToast(`Moved "${movedItem.title.slice(0, 32)}..." to Position #${clampedIndex + 1}.`);
+  };
+
+  const handleResetToDefaultDeck = () => {
+    if (
+      window.confirm(
+        'Restore all 16 default Portfolio Deck & Hero Banner slides (Capsules, Highrises, Villas & UPVC)?'
+      )
+    ) {
+      onUpdateSlides(INITIAL_HERO_SLIDES);
+      showToast('Restored default 16-slide Portfolio Deck sequence.');
+    }
   };
 
   const handleAddFeature = () => {
     if (!featureInput.trim()) return;
-    const current = formData.features || [];
-    setFormData({ ...formData, features: [...current, featureInput.trim()] });
+    setFormData(prev => ({
+      ...prev,
+      features: [...prev.features, featureInput.trim()]
+    }));
     setFeatureInput('');
   };
 
   const handleRemoveFeature = (idx: number) => {
-    const current = formData.features || [];
-    setFormData({ ...formData, features: current.filter((_, i) => i !== idx) });
+    setFormData(prev => ({
+      ...prev,
+      features: prev.features.filter((_, i) => i !== idx)
+    }));
   };
+
+  const currentSlideGallery =
+    formData.galleryImages && formData.galleryImages.length > 0
+      ? formData.galleryImages
+      : formData.imageUrl
+      ? [formData.imageUrl]
+      : [];
 
   return (
     <div className="space-y-6">
-      {/* Header bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-xl border border-slate-200 shadow-2xs">
+      {/* Header */}
+      <div  className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs">
         <div>
-          <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-blue-600" />
-            <span>Hero Banner &amp; Capsule Showcase Slide Manager</span>
+          <div className="inline-flex items-center gap-2 text-blue-600 font-bold text-xs uppercase tracking-wider mb-1">
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Hero Banner &amp; Crystal Portfolio Deck Manager</span>
+          </div>
+          <h3 className="text-lg font-extrabold text-slate-900">
+            Top Hero Banner &amp; Portfolio Deck Sequence ({slides.filter(s => s.isActive).length} Active / {slides.length} Total)
           </h3>
           <p className="text-xs text-slate-500 mt-0.5">
-            Add, update, reorder, and delete full-screen hero slides and easily manage each slide&apos;s multi-image sequence (reorder photos, set cover, or delete images).
+            Every slide below directly controls both the Top Hero Banner and the Crystal Portfolio Deck (including Model Q3 Forest Cabin Pod, Capsules, Highrises, Plots &amp; UPVC).
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={handleStartCreate}
-          className="px-4 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider text-white bg-blue-600 hover:bg-blue-500 transition-colors flex items-center gap-2 shadow-2xs shrink-0 self-start sm:self-auto cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Add New Banner Slide</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+          <button
+            type="button"
+            onClick={handleResetToDefaultDeck}
+            className="flex items-center gap-1.5 px-3 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-all cursor-pointer"
+            title="Restore all 16 default Portfolio Deck slides"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>Restore Default 16 Slides</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleStartCreate}
+            className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold rounded-xl shadow-md transition-all cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Add New Banner / Deck Slide</span>
+          </button>
+        </div>
       </div>
 
-      {/* Slide Edit / Create Form Modal Card */}
+      {statusNotice && (
+        <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center justify-between shadow-xs">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>{statusNotice}</span>
+          </div>
+          <button onClick={() => setStatusNotice(null)} className="text-emerald-600 hover:text-emerald-900">
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
+      {/* Create / Edit Slide Modal Form */}
       {(isCreatingNew || editingSlide) && (
-        <div className="bg-white rounded-xl border-2 border-blue-500/40 p-5 sm:p-6 space-y-5 shadow-lg animate-in fade-in duration-200">
-          <div className="flex items-center justify-between border-b border-slate-200 pb-3">
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-blue-600" />
-              <h4 className="text-sm font-bold text-slate-900">
-                {isCreatingNew ? 'Create New Banner Slide' : `Edit Slide: ${editingSlide?.title}`}
-              </h4>
+        <form
+          onSubmit={handleSaveForm}
+          className="bg-white p-6 rounded-2xl border-2 border-blue-500/30 shadow-xl space-y-5"
+        >
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+                <Layers className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="font-bold text-slate-900 text-sm">
+                  {isCreatingNew ? 'Create New Portfolio Deck & Hero Slide' : `Editing Slide: ${editingSlide?.title}`}
+                </h4>
+                <p className="text-xs text-slate-500">
+                  Changes sync immediately to the Hero Banner and Portfolio Deck for all visitors.
+                </p>
+              </div>
             </div>
             <button
               type="button"
@@ -506,680 +626,631 @@ export const AdminBannerManager: React.FC<AdminBannerManagerProps> = ({
                 setIsCreatingNew(false);
                 setEditingSlide(null);
               }}
-              className="p-1 rounded text-slate-400 hover:text-slate-600 cursor-pointer"
+              className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
 
-          <form onSubmit={handleSaveForm} className="space-y-5">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Title */}
-              <div className="space-y-1 md:col-span-2">
-                <label className="text-xs font-semibold text-slate-700">Banner Main Title *</label>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="md:col-span-2">
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Slide Headline / Model Title *
+              </label>
+              <input
+                type="text"
+                required
+                value={formData.title}
+                onChange={e => setFormData({ ...formData, title: e.target.value })}
+                placeholder="e.g. Model Q3 Forest Cabin Pod — Panoramic Glass"
+                className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 focus:border-blue-600 focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Portfolio Deck Tab Category
+              </label>
+              <select
+                value={formData.samplePropertyData?.category || 'modular'}
+                onChange={e =>
+                  setFormData({
+                    ...formData,
+                    samplePropertyData: {
+                      title: formData.title,
+                      category: e.target.value as any,
+                      location: formData.samplePropertyData?.location || {
+                        city: 'Taxila',
+                        society: 'Faisal Hills',
+                        province: 'Punjab'
+                      }
+                    }
+                  })
+                }
+                className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 focus:border-blue-600 focus:outline-none bg-white font-semibold"
+              >
+                <option value="modular">Capsules (Container &amp; Capsule Houses)</option>
+                <option value="commercial">Highrise (Islamabad Highrise Projects)</option>
+                <option value="residential">Plots/Villas (Properties &amp; Houses)</option>
+                <option value="projects">UPVC (German UPVC &amp; Engineering)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Subtitle / Technical Specs
+              </label>
+              <input
+                type="text"
+                value={formData.subtitle}
+                onChange={e => setFormData({ ...formData, subtitle: e.target.value })}
+                placeholder="e.g. Compact Luxury Capsule Pod • 28–38 Sq.M"
+                className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 focus:border-blue-600 focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Category Badge Text
+              </label>
+              <input
+                type="text"
+                value={formData.categoryTag}
+                onChange={e => setFormData({ ...formData, categoryTag: e.target.value })}
+                placeholder="e.g. Contemporary Modular Capsule"
+                className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 focus:border-blue-600 focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Formatted Valuation / Price
+              </label>
+              <input
+                type="text"
+                value={formData.price}
+                onChange={e => setFormData({ ...formData, price: e.target.value })}
+                placeholder="e.g. PKR 48 Lakh – 68 Lakh"
+                className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 focus:border-blue-600 focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                City / Region
+              </label>
+              <input
+                type="text"
+                value={formData.location}
+                onChange={e => setFormData({ ...formData, location: e.target.value })}
+                placeholder="e.g. Taxila / Islamabad"
+                className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 focus:border-blue-600 focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Society / Sector Badge
+              </label>
+              <input
+                type="text"
+                value={formData.society}
+                onChange={e => setFormData({ ...formData, society: e.target.value })}
+                placeholder="e.g. Faisal Hills Executive Block"
+                className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 focus:border-blue-600 focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Badge Color Theme
+              </label>
+              <select
+                value={formData.badgeColor}
+                onChange={e => setFormData({ ...formData, badgeColor: e.target.value })}
+                className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 focus:border-blue-600 focus:outline-none bg-white"
+              >
+                <option value="bg-indigo-600 text-white">Indigo (Modular / Capsules)</option>
+                <option value="bg-emerald-600 text-white">Emerald (Highrise / Commercial)</option>
+                <option value="bg-blue-600 text-white">Royal Blue (Residential / Villas)</option>
+                <option value="bg-amber-600 text-white">Amber Gold (UPVC / Engineering)</option>
+                <option value="bg-rose-600 text-white">Crimson Rose (Hot Deal)</option>
+              </select>
+            </div>
+
+            <div className="md:col-span-3">
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Description (1–2 Sentences)
+              </label>
+              <textarea
+                rows={2}
+                value={formData.description}
+                onChange={e => setFormData({ ...formData, description: e.target.value })}
+                className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 focus:border-blue-600 focus:outline-none"
+              />
+            </div>
+          </div>
+
+          {/* Multi-Image Gallery & Sequence Manager */}
+          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/90 space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <label className="block text-xs font-extrabold text-slate-800">
+                  Slide Pictures &amp; Image Sequence ({currentSlideGallery.length} Attached)
+                </label>
+                <p className="text-[11px] text-slate-500">
+                  Image #1 is the Main Cover. Reorder with arrows, set cover, or delete any photo.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold cursor-pointer shadow-xs transition-all">
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>Upload From Computer</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleLocalFileUpload}
+                    className="hidden"
+                  />
+                </label>
+                {currentSlideGallery.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (window.confirm('Clear all images from this slide?')) {
+                        syncSlideGallery([], '');
+                      }
+                    }}
+                    className="px-2.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold border border-rose-200 cursor-pointer"
+                  >
+                    Clear All
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {currentSlideGallery.length > 0 && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                {currentSlideGallery.map((imgUrl, idx) => (
+                  <div
+                    key={`${imgUrl}-${idx}`}
+                    className={`group relative rounded-xl overflow-hidden border-2 bg-slate-900 transition-all ${
+                      idx === 0 ? 'border-amber-500 ring-2 ring-amber-400/30' : 'border-slate-200'
+                    }`}
+                  >
+                    <div className="h-24 w-full relative">
+                      <img
+                        src={imgUrl}
+                        alt={`Slide Angle ${idx + 1}`}
+                        onError={e => {
+                          (e.target as HTMLImageElement).src = INITIAL_PRESET_IMAGES[0].fallbackUrl;
+                        }}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute top-1.5 left-1.5 flex items-center gap-1">
+                        <span
+                          className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded shadow-xs ${
+                            idx === 0 ? 'bg-amber-400 text-slate-950' : 'bg-slate-900/80 text-white'
+                          }`}
+                        >
+                          {idx === 0 ? '#1 COVER' : `#${idx + 1}`}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveSlideImageAt(idx)}
+                        className="absolute top-1.5 right-1.5 p-1 rounded-lg bg-rose-600/90 hover:bg-rose-600 text-white shadow-xs cursor-pointer"
+                        title="Delete this image"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
+
+                    <div className="p-1.5 bg-white flex items-center justify-between gap-1 border-t border-slate-100">
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          disabled={idx === 0}
+                          onClick={() => handleMoveSlideImage(idx, 'left')}
+                          className="p-1 rounded bg-slate-100 hover:bg-slate-200 disabled:opacity-30 text-slate-700 cursor-pointer"
+                        >
+                          <ArrowLeft className="w-3 h-3" />
+                        </button>
+                        <button
+                          type="button"
+                          disabled={idx === currentSlideGallery.length - 1}
+                          onClick={() => handleMoveSlideImage(idx, 'right')}
+                          className="p-1 rounded bg-slate-100 hover:bg-slate-200 disabled:opacity-30 text-slate-700 cursor-pointer"
+                        >
+                          <ArrowRight className="w-3 h-3" />
+                        </button>
+                      </div>
+
+                      {idx !== 0 ? (
+                        <button
+                          type="button"
+                          onClick={() => handleMakeCoverImage(idx)}
+                          className="px-1.5 py-0.5 rounded bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-[10px] font-bold flex items-center gap-0.5 cursor-pointer"
+                        >
+                          <Star className="w-2.5 h-2.5 fill-amber-500 text-amber-500" />
+                          <span>Set Cover</span>
+                        </button>
+                      ) : (
+                        <span className="text-[10px] font-bold text-emerald-700 px-1">Primary</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Direct URL Input & Add */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  Primary Cover Image URL (#1) *
+                </label>
                 <input
                   type="text"
                   required
-                  value={formData.title || ''}
-                  onChange={e => setFormData({ ...formData, title: e.target.value })}
-                  placeholder="e.g. Model V2124 Double-Decker Stacked Space Capsule Villa"
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
+                  value={formData.imageUrl}
+                  onChange={e => {
+                    const val = e.target.value;
+                    const rest = currentSlideGallery.slice(1);
+                    syncSlideGallery(val ? [val, ...rest] : rest, val);
+                  }}
+                  placeholder="https://... or data:image/..."
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white focus:border-blue-600 focus:outline-none"
                 />
               </div>
 
-              {/* Subtitle */}
-              <div className="space-y-1 md:col-span-2">
-                <label className="text-xs font-semibold text-slate-700">Subtitle / Tagline</label>
-                <input
-                  type="text"
-                  value={formData.subtitle || ''}
-                  onChange={e => setFormData({ ...formData, subtitle: e.target.value })}
-                  placeholder="e.g. Futuristic Two-Story Capsule Home with 270° Curved UPVC Glazing"
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              {/* Category Tag */}
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-700">Category Tag</label>
-                <input
-                  type="text"
-                  value={formData.categoryTag || ''}
-                  onChange={e => setFormData({ ...formData, categoryTag: e.target.value })}
-                  placeholder="e.g. Contemporary Modular Capsule"
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              {/* Badge Color */}
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-700">Badge Color Style</label>
-                <select
-                  value={formData.badgeColor || 'bg-blue-600 text-white'}
-                  onChange={e => setFormData({ ...formData, badgeColor: e.target.value })}
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:outline-hidden focus:ring-2 focus:ring-blue-500 bg-white"
-                >
-                  <option value="bg-indigo-600 text-white">Indigo / Purple (Modular / Capsules)</option>
-                  <option value="bg-blue-600 text-white">Blue Accent (Residential / Luxury)</option>
-                  <option value="bg-emerald-600 text-white">Emerald Green (Highrise / High ROI)</option>
-                  <option value="bg-amber-600 text-white">Amber Gold (UPVC / Margalla Hillside)</option>
-                  <option value="bg-rose-600 text-white">Rose Red (Exclusive Deal)</option>
-                </select>
-              </div>
-
-              {/* Price */}
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-700">Formatted Price</label>
-                <input
-                  type="text"
-                  value={formData.price || ''}
-                  onChange={e => setFormData({ ...formData, price: e.target.value })}
-                  placeholder="e.g. PKR 68 Lakh or PKR 1.35 Crore"
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              {/* Location & Society */}
-              <div className="space-y-1">
-                <label className="text-xs font-semibold text-slate-700">Location &amp; Society</label>
-                <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  Append Extra Gallery Image URL
+                </label>
+                <div className="flex gap-1.5">
                   <input
                     type="text"
-                    value={formData.location || ''}
-                    onChange={e => setFormData({ ...formData, location: e.target.value })}
-                    placeholder="e.g. Islamabad / Taxila"
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
+                    value={additionalImageUrlInput}
+                    onChange={e => setAdditionalImageUrlInput(e.target.value)}
+                    placeholder="Paste another image URL..."
+                    className="flex-1 px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white focus:border-blue-600 focus:outline-none"
                   />
-                  <input
-                    type="text"
-                    value={formData.society || ''}
-                    onChange={e => setFormData({ ...formData, society: e.target.value })}
-                    placeholder="e.g. Faisal Hills (Executive Block)"
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
-                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!additionalImageUrlInput.trim()) return;
+                      syncSlideGallery([...currentSlideGallery, additionalImageUrlInput.trim()]);
+                      setAdditionalImageUrlInput('');
+                    }}
+                    className="px-3 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl shrink-0 cursor-pointer"
+                  >
+                    + Add URL
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick-Select Presets */}
+            <div className="pt-2 border-t border-slate-200/80 space-y-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="text-[11px] font-extrabold text-slate-700 uppercase tracking-wider">
+                  Quick-Select Preset Library ({presetImages.length})
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setPresetClickMode('append_gallery')}
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border cursor-pointer ${
+                      presetClickMode === 'append_gallery'
+                        ? 'bg-blue-600 text-white border-blue-600'
+                        : 'bg-white text-slate-600 border-slate-200'
+                    }`}
+                  >
+                    Click = Append to Slide
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPresetClickMode('replace_cover')}
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border cursor-pointer ${
+                      presetClickMode === 'replace_cover'
+                        ? 'bg-amber-500 text-slate-950 border-amber-500'
+                        : 'bg-white text-slate-600 border-slate-200'
+                    }`}
+                  >
+                    Click = Replace Cover
+                  </button>
                 </div>
               </div>
 
-              {/* Description */}
-              <div className="space-y-1 md:col-span-2">
-                <label className="text-xs font-semibold text-slate-700">
-                  Description (1-2 sentences)
-                </label>
-                <textarea
-                  rows={2}
-                  value={formData.description || ''}
-                  onChange={e => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Detailed architectural specifications and highlights..."
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              {/* ================================================================
-                  BANNER PICTURES / MULTI-IMAGE SEQUENCE & GALLERY MANAGER
-                 ================================================================ */}
-              <div className="md:col-span-2 bg-slate-50 rounded-xl border border-slate-200 p-4 space-y-4">
-                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-3">
-                  <div>
-                    <label className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                      <ImageIcon className="w-4 h-4 text-blue-600" />
-                      <span>
-                        Slide Pictures &amp; Image Sequence ({currentSlideGallery.length} Attached)
-                      </span>
-                    </label>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
-                      Image #1 is the main banner cover. Use <strong>← / →</strong> to change sequence, <strong>Set Cover</strong> to make primary, or <strong>Delete</strong> to remove any image.
-                    </p>
+              <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2 max-h-40 overflow-y-auto p-1">
+                {presetImages.map((preset, idx) => (
+                  <div
+                    key={preset.id}
+                    onClick={() => handleAddImageToSlide(preset.url)}
+                    className="group relative rounded-xl overflow-hidden border border-slate-200 hover:border-blue-500 cursor-pointer h-16 bg-slate-900"
+                  >
+                    <img
+                      src={preset.url}
+                      alt={preset.name}
+                      onError={e => {
+                        (e.target as HTMLImageElement).src = preset.fallbackUrl;
+                      }}
+                      className="w-full h-full object-cover opacity-90 group-hover:opacity-100"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-transparent to-transparent" />
+                    <div className="absolute bottom-1 left-1.5 right-1.5 text-[9.5px] font-bold text-white truncate">
+                      {preset.name}
+                    </div>
                   </div>
+                ))}
+              </div>
+            </div>
+          </div>
 
-                  {currentSlideGallery.length > 0 && (
+          {/* Features Manager */}
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1.5">
+              Feature Bullet Badges
+            </label>
+            <div className="flex gap-2 mb-2.5">
+              <input
+                type="text"
+                value={featureInput}
+                onChange={e => setFeatureInput(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleAddFeature();
+                  }
+                }}
+                placeholder="e.g. 270° Curved UPVC Glass or Turnkey 7-Day Setup"
+                className="flex-1 px-3.5 py-2 text-xs rounded-xl border border-slate-200 focus:border-blue-600 focus:outline-none"
+              />
+              <button
+                type="button"
+                onClick={handleAddFeature}
+                className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl cursor-pointer"
+              >
+                + Add Feature
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {formData.features.map((feat, idx) => (
+                <span
+                  key={idx}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-xs font-semibold"
+                >
+                  <span>{feat}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveFeature(idx)}
+                    className="text-blue-400 hover:text-rose-600"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={() => {
+                setIsCreatingNew(false);
+                setEditingSlide(null);
+              }}
+              className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50 cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md cursor-pointer"
+            >
+              <Save className="w-4 h-4" />
+              <span>{isCreatingNew ? 'Save & Publish Slide' : 'Update Slide Changes'}</span>
+            </button>
+          </div>
+        </form>
+      )}
+
+      {/* Filter & Search Bar for Portfolio Deck Slides */}
+      <div className="bg-white p-4 rounded-2xl border border-slate-200/80 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        <div className="relative flex-1">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            value={searchFilter}
+            onChange={e => setSearchFilter(e.target.value)}
+            placeholder="Search slides (e.g. Model Q3 Forest Cabin Pod, Centaurus, UPVC)..."
+            className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-200 focus:border-blue-600 focus:outline-none"
+          />
+        </div>
+
+        <div className="flex flex-wrap items-center gap-1.5">
+          {[
+            { id: 'all', label: `All (${slides.length})` },
+            {
+              id: 'modular',
+              label: `Capsules (${slides.filter(s => (s.samplePropertyData?.category || 'modular') === 'modular').length})`
+            },
+            {
+              id: 'commercial',
+              label: `Highrises (${slides.filter(s => s.samplePropertyData?.category === 'commercial').length})`
+            },
+            {
+              id: 'residential',
+              label: `Villas/Plots (${slides.filter(s => s.samplePropertyData?.category === 'residential').length})`
+            },
+            {
+              id: 'projects',
+              label: `UPVC (${slides.filter(s => s.samplePropertyData?.category === 'projects').length})`
+            }
+          ].map(tab => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setCategoryFilter(tab.id)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                categoryFilter === tab.id
+                  ? 'bg-slate-900 text-white'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Slides Sequence List */}
+      <div className="space-y-3">
+        {filteredSlides.map(slide => {
+          const globalIdx = sortedSlides.findIndex(s => s.id === slide.id);
+          const slideGallery =
+            slide.galleryImages && slide.galleryImages.length > 0
+              ? slide.galleryImages
+              : [slide.imageUrl];
+
+          return (
+            <div
+              key={slide.id}
+              className={`bg-white rounded-2xl border p-4 transition-all flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 ${
+                slide.isActive
+                  ? 'border-slate-200/90 shadow-xs'
+                  : 'border-slate-200/50 bg-slate-50/60 opacity-65'
+              }`}
+            >
+              <div className="flex items-start sm:items-center gap-4 min-w-0 flex-1">
+                <div className="relative w-28 h-20 rounded-xl overflow-hidden shrink-0 bg-slate-900 border border-slate-200">
+                  <img
+                    src={slide.imageUrl}
+                    alt={slide.title}
+                    onError={e => {
+                      (e.target as HTMLImageElement).src = INITIAL_PRESET_IMAGES[0].fallbackUrl;
+                    }}
+                    className="w-full h-full object-cover"
+                  />
+                  <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded bg-slate-900/85 text-amber-300 font-black text-[10px]">
+                    #{globalIdx + 1}
+                  </span>
+                  {slideGallery.length > 1 && (
                     <button
                       type="button"
-                      onClick={() => {
-                        if (window.confirm('Clear all images from this banner slide?')) {
-                          syncSlideGallery([], '');
-                        }
-                      }}
-                      className="px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 text-[11px] font-semibold flex items-center gap-1 cursor-pointer"
+                      onClick={() => handleQuickRotateSlide(slide)}
+                      className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-blue-600/90 hover:bg-blue-600 text-white font-bold text-[9px] flex items-center gap-0.5 shadow-xs cursor-pointer"
+                      title="Click to cycle next photo as cover"
                     >
-                      <Trash2 className="w-3 h-3" />
-                      <span>Clear All Slide Images</span>
+                      <RotateCcw className="w-2.5 h-2.5" />
+                      <span>{slideGallery.length}</span>
                     </button>
                   )}
                 </div>
 
-                {/* Active Images Sequence Strip for This Banner Slide */}
-                {currentSlideGallery.length === 0 ? (
-                  <div className="p-6 rounded-xl border-2 border-dashed border-slate-300 bg-white text-center space-y-1">
-                    <ImageIcon className="w-7 h-7 text-slate-400 mx-auto" />
-                    <div className="text-xs font-semibold text-slate-700">
-                      No Images Attached to This Banner Slide
-                    </div>
-                    <div className="text-[11px] text-slate-500">
-                      Click any Quick-Select preset below, paste an image URL, or upload from your computer.
-                    </div>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                    {currentSlideGallery.map((imgUrl, idx) => (
-                      <div
-                        key={`${imgUrl}-${idx}`}
-                        className={`group relative rounded-xl overflow-hidden border-2 bg-white shadow-2xs flex flex-col justify-between transition-all ${
-                          idx === 0
-                            ? 'border-blue-600 ring-2 ring-blue-500/20'
-                            : 'border-slate-200 hover:border-slate-300'
-                        }`}
-                      >
-                        <div className="relative h-24 bg-slate-900 overflow-hidden">
-                          <img
-                            src={imgUrl}
-                            alt={`Slide Photo ${idx + 1}`}
-                            onError={e => {
-                              e.currentTarget.src = INITIAL_PRESET_IMAGES[0].fallbackUrl;
-                            }}
-                            className="w-full h-full object-cover"
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/30" />
-
-                          {/* Sequence Number / Cover Badge */}
-                          <span
-                            className={`absolute top-1.5 left-1.5 px-2 py-0.5 rounded text-[9.5px] font-extrabold uppercase tracking-wider ${
-                              idx === 0
-                                ? 'bg-blue-600 text-white shadow-xs'
-                                : 'bg-slate-900/80 text-white'
-                            }`}
-                          >
-                            {idx === 0 ? '#1 COVER' : `#${idx + 1}`}
-                          </span>
-
-                          {/* Delete Single Image Button */}
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveSlideImageAt(idx)}
-                            className="absolute top-1.5 right-1.5 p-1 rounded-md bg-rose-600/90 hover:bg-rose-600 text-white shadow-xs cursor-pointer"
-                            title="Remove this image from slide"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </button>
-                        </div>
-
-                        {/* Reorder Sequence & Make Cover Bar */}
-                        <div className="p-1.5 bg-slate-50 border-t border-slate-200 flex items-center justify-between gap-1">
-                          <div className="flex items-center gap-1">
-                            <button
-                              type="button"
-                              disabled={idx === 0}
-                              onClick={() => handleMoveSlideImage(idx, 'left')}
-                              className="p-1 rounded bg-white hover:bg-slate-200 text-slate-700 border border-slate-200 disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
-                              title="Move image earlier in sequence"
-                            >
-                              <ArrowLeft className="w-3 h-3" />
-                            </button>
-                            <button
-                              type="button"
-                              disabled={idx === currentSlideGallery.length - 1}
-                              onClick={() => handleMoveSlideImage(idx, 'right')}
-                              className="p-1 rounded bg-white hover:bg-slate-200 text-slate-700 border border-slate-200 disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
-                              title="Move image later in sequence"
-                            >
-                              <ArrowRight className="w-3 h-3" />
-                            </button>
-                          </div>
-
-                          {idx !== 0 ? (
-                            <button
-                              type="button"
-                              onClick={() => handleMakeCoverImage(idx)}
-                              className="px-2 py-0.5 rounded bg-amber-100 hover:bg-amber-200 text-amber-800 text-[9.5px] font-bold flex items-center gap-1 cursor-pointer"
-                              title="Set as #1 Main Cover Image"
-                            >
-                              <Star className="w-2.5 h-2.5 fill-current" />
-                              <span>Set Cover</span>
-                            </button>
-                          ) : (
-                            <span className="text-[9.5px] font-bold text-blue-600 px-1.5">
-                              Primary Cover
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Primary Cover URL Input + Add URL / Upload Local Image Controls */}
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-2.5 pt-2">
-                  <div className="md:col-span-6 space-y-1">
-                    <label className="text-[11px] font-semibold text-slate-700">
-                      Primary Cover Image URL (#1) *
-                    </label>
-                    <div className="flex gap-1.5">
-                      <input
-                        type="url"
-                        value={formData.imageUrl || ''}
-                        onChange={e => {
-                          const val = e.target.value;
-                          if (currentSlideGallery.length <= 1) {
-                            syncSlideGallery(val ? [val] : [], val);
-                          } else {
-                            syncSlideGallery([val, ...currentSlideGallery.slice(1)], val);
-                          }
-                        }}
-                        placeholder="https://..."
-                        className="flex-1 px-3 py-2 text-xs rounded-lg border border-slate-300 bg-white focus:outline-hidden focus:ring-2 focus:ring-blue-500"
-                      />
-                      {formData.imageUrl && (
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveSlideImageAt(0)}
-                          className="px-2.5 py-2 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 text-xs font-semibold cursor-pointer"
-                          title="Remove current cover image"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="md:col-span-6 space-y-1">
-                    <label className="text-[11px] font-semibold text-slate-700">
-                      Add Another Image by URL or Local Upload
-                    </label>
-                    <div className="flex gap-1.5">
-                      <input
-                        type="url"
-                        value={additionalImageUrlInput}
-                        onChange={e => setAdditionalImageUrlInput(e.target.value)}
-                        placeholder="Paste image URL to add to sequence..."
-                        className="flex-1 px-3 py-2 text-xs rounded-lg border border-slate-300 bg-white focus:outline-hidden focus:ring-2 focus:ring-blue-500"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (!additionalImageUrlInput.trim()) return;
-                          syncSlideGallery([
-                            ...currentSlideGallery,
-                            additionalImageUrlInput.trim()
-                          ]);
-                          setAdditionalImageUrlInput('');
-                        }}
-                        className="px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shrink-0 cursor-pointer"
-                      >
-                        + Add URL
-                      </button>
-                      <input
-                        ref={localFileInputRef}
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        className="hidden"
-                        onChange={e => handleLocalFileUpload(e.target.files)}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => localFileInputRef.current?.click()}
-                        className="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold flex items-center gap-1 shrink-0 cursor-pointer"
-                        title="Upload photos from your computer"
-                      >
-                        <UploadCloud className="w-3.5 h-3.5" />
-                        <span>Upload</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Preset Quick Selectors with Sequence & Delete Controls */}
-                <div className="space-y-2 pt-3 border-t border-slate-200">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="text-[11px] font-bold text-slate-700">
-                      Quick-Select Contemporary Capsule Houses, UPVC &amp; Landmark Photography:
-                    </span>
-
-                    <div className="flex items-center gap-2">
-                      {/* Click Mode Toggle */}
-                      <div className="inline-flex rounded-lg bg-slate-200 p-0.5 text-[10px] font-semibold">
-                        <button
-                          type="button"
-                          onClick={() => setPresetClickMode('append_gallery')}
-                          className={`px-2 py-1 rounded-md cursor-pointer transition-all ${
-                            presetClickMode === 'append_gallery'
-                              ? 'bg-white text-blue-600 shadow-2xs'
-                              : 'text-slate-600'
-                          }`}
-                        >
-                          Click = Add to Slide Sequence
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setPresetClickMode('replace_cover')}
-                          className={`px-2 py-1 rounded-md cursor-pointer transition-all ${
-                            presetClickMode === 'replace_cover'
-                              ? 'bg-white text-blue-600 shadow-2xs'
-                              : 'text-slate-600'
-                          }`}
-                        >
-                          Click = Replace Cover
-                        </button>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => setPresetImages(INITIAL_PRESET_IMAGES)}
-                        className="px-2 py-1 rounded-lg bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 text-[10px] font-semibold flex items-center gap-1 cursor-pointer"
-                        title="Reset Preset Library"
-                      >
-                        <RotateCcw className="w-3 h-3" />
-                        <span>Reset Presets</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Save custom preset bar */}
-                  <div className="flex flex-wrap items-center gap-2 bg-white p-2 rounded-lg border border-slate-200">
-                    <input
-                      type="text"
-                      value={newPresetNameInput}
-                      onChange={e => setNewPresetNameInput(e.target.value)}
-                      placeholder="Optional preset label (e.g. Custom Capsule View)..."
-                      className="flex-1 min-w-[180px] px-2.5 py-1 text-xs rounded border border-slate-200"
-                    />
-                    <button
-                      type="button"
-                      onClick={handleSaveCurrentUrlToPresets}
-                      className="px-2.5 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-semibold cursor-pointer"
-                    >
-                      + Save Current Cover URL to Presets
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    {presetImages.map((preset, idx) => {
-                      const isIncluded = currentSlideGallery.includes(preset.url);
-                      const isCover = formData.imageUrl === preset.url;
-                      return (
-                        <div
-                          key={preset.id}
-                          onClick={() => handleAddImageToSlide(preset.url)}
-                          className={`group relative p-2 rounded-lg border text-left transition-all flex flex-col gap-1 cursor-pointer ${
-                            isCover
-                              ? 'border-blue-600 bg-blue-50/60 ring-1 ring-blue-600'
-                              : isIncluded
-                              ? 'border-emerald-500 bg-emerald-50/40'
-                              : 'border-slate-200 bg-white hover:border-slate-300'
-                          }`}
-                        >
-                          <div className="relative w-full h-14 overflow-hidden rounded bg-slate-900">
-                            <img
-                              src={preset.url}
-                              alt={preset.name}
-                              onError={e => {
-                                const target = e.currentTarget;
-                                if (preset.fallbackUrl && target.src !== preset.fallbackUrl) {
-                                  target.src = preset.fallbackUrl;
-                                }
-                              }}
-                              className="w-full h-full object-cover brightness-105 contrast-[1.05]"
-                            />
-                            {isIncluded && (
-                              <span className="absolute top-1 left-1 px-1.5 py-0.2 rounded bg-emerald-600 text-white text-[9px] font-bold flex items-center gap-0.5">
-                                <Check className="w-2.5 h-2.5" />
-                                {isCover
-                                  ? 'Cover'
-                                  : `#${currentSlideGallery.indexOf(preset.url) + 1}`}
-                              </span>
-                            )}
-
-                            {/* Preset Reorder & Delete Overlay Controls */}
-                            <div className="absolute top-1 right-1 hidden group-hover:flex items-center gap-0.5 bg-black/75 rounded p-0.5">
-                              <button
-                                type="button"
-                                disabled={idx === 0}
-                                onClick={e => handleMovePreset(idx, 'left', e)}
-                                className="p-0.5 text-white hover:text-amber-300 disabled:opacity-30"
-                                title="Move preset left"
-                              >
-                                <ArrowLeft className="w-2.5 h-2.5" />
-                              </button>
-                              <button
-                                type="button"
-                                disabled={idx === presetImages.length - 1}
-                                onClick={e => handleMovePreset(idx, 'right', e)}
-                                className="p-0.5 text-white hover:text-amber-300 disabled:opacity-30"
-                                title="Move preset right"
-                              >
-                                <ArrowRight className="w-2.5 h-2.5" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={e => handleDeletePreset(preset.id, e)}
-                                className="p-0.5 text-rose-300 hover:text-rose-400"
-                                title="Remove from presets"
-                              >
-                                <X className="w-2.5 h-2.5" />
-                              </button>
-                            </div>
-                          </div>
-                          <span className="text-[10px] font-medium text-slate-700 truncate">
-                            {preset.name}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-
-              {/* Bullet Features Manager */}
-              <div className="space-y-2 md:col-span-2">
-                <label className="text-xs font-semibold text-slate-700">Feature Bullet Badges</label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={featureInput}
-                    onChange={e => setFeatureInput(e.target.value)}
-                    placeholder="e.g. 270° Curved UPVC Glass or Turnkey 7-Day Setup"
-                    className="flex-1 px-3 py-1.5 text-xs rounded-lg border border-slate-300 focus:outline-hidden"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleAddFeature}
-                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-white hover:bg-slate-700 cursor-pointer"
-                  >
-                    Add Feature
-                  </button>
-                </div>
-
-                <div className="flex flex-wrap gap-1.5 pt-1">
-                  {formData.features?.map((feat, idx) => (
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2 mb-1">
                     <span
-                      key={idx}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium bg-slate-100 text-slate-700 border border-slate-200"
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${slide.badgeColor}`}
                     >
-                      <span>{feat}</span>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveFeature(idx)}
-                        className="text-slate-400 hover:text-red-500 cursor-pointer"
-                      >
-                        ✕
-                      </button>
+                      {slide.categoryTag}
                     </span>
-                  ))}
+                    <span className="text-xs font-extrabold text-blue-600">{slide.price}</span>
+                    <span className="text-[11px] text-slate-400 flex items-center gap-1">
+                      <MapPin className="w-3 h-3" />
+                      {slide.society}, {slide.location}
+                    </span>
+                  </div>
+                  <h4 className="font-bold text-slate-900 text-sm truncate">{slide.title}</h4>
+                  <p className="text-xs text-slate-500 line-clamp-1 mt-0.5">{slide.description}</p>
                 </div>
               </div>
-            </div>
 
-            {/* Form Action Buttons */}
-            <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-200">
-              <button
-                type="button"
-                onClick={() => {
-                  setIsCreatingNew(false);
-                  setEditingSlide(null);
-                }}
-                className="px-4 py-2 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100 cursor-pointer"
-              >
-                Cancel
-              </button>
-
-              <button
-                type="submit"
-                className="px-5 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider text-white bg-blue-600 hover:bg-blue-500 transition-all flex items-center gap-2 shadow-2xs cursor-pointer"
-              >
-                <Save className="w-4 h-4" />
-                <span>{isCreatingNew ? 'Save & Publish Slide' : 'Update Slide Changes'}</span>
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {/* Slide Items List */}
-      <div className="space-y-3">
-        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
-          Active Slides in Sequence ({slides.length})
-        </h4>
-
-        <div className="space-y-3">
-          {slides.map((slide, index) => {
-            const slideGallery =
-              slide.galleryImages && slide.galleryImages.length > 0
-                ? slide.galleryImages
-                : [slide.imageUrl];
-            return (
-              <div
-                key={slide.id}
-                className={`bg-white rounded-xl border transition-all p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${
-                  slide.isActive
-                    ? 'border-slate-200 shadow-2xs hover:border-slate-300'
-                    : 'border-slate-200 bg-slate-50 opacity-60'
-                }`}
-              >
-                {/* Left Thumbnail & Info */}
-                <div className="flex items-start sm:items-center gap-3.5 flex-1 min-w-0">
-                  <div className="relative w-24 h-16 sm:w-28 sm:h-20 rounded-lg overflow-hidden shrink-0 border border-slate-200 bg-slate-900 group">
-                    <img
-                      src={slide.imageUrl}
-                      alt={slide.title}
-                      onError={e => {
-                        e.currentTarget.src = INITIAL_PRESET_IMAGES[0].fallbackUrl;
-                      }}
-                      className="w-full h-full object-cover brightness-105 contrast-[1.04]"
-                    />
-                    <div className="absolute top-1 left-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-black/70 text-white">
-                      #{index + 1}
-                    </div>
-                    {slideGallery.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => handleQuickRotateSlideCover(slide)}
-                        className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-blue-600/90 hover:bg-blue-500 text-white text-[9px] font-bold cursor-pointer"
-                        title="Click to cycle next photo in this slide's sequence as Cover"
-                      >
-                        {slideGallery.length} Photos ↻
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="space-y-1 min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span
-                        className={`px-2 py-0.5 rounded text-[10px] font-bold ${slide.badgeColor}`}
-                      >
-                        {slide.categoryTag}
-                      </span>
-                      <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                        {slide.price}
-                      </span>
-                      <span className="text-[11px] text-slate-500 flex items-center gap-1">
-                        <MapPin className="w-3 h-3 text-slate-400" />
-                        {slide.society}, {slide.location}
-                      </span>
-                    </div>
-
-                    <h4 className="text-sm font-bold text-slate-900 truncate">{slide.title}</h4>
-
-                    <p className="text-xs text-slate-500 line-clamp-1">{slide.description}</p>
-
-                    <div className="flex flex-wrap gap-1.5 pt-0.5">
-                      {slide.features?.slice(0, 3).map((feat, fidx) => (
-                        <span
-                          key={fidx}
-                          className="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded"
-                        >
-                          • {feat}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
+              {/* Direct Sequence & Action Controls */}
+              <div className="flex flex-wrap items-center gap-1.5 self-end lg:self-center shrink-0">
+                {/* Direct Position Jump Selector */}
+                <div className="flex items-center gap-1 mr-1">
+                  <span className="text-[10px] font-bold text-slate-400">Pos:</span>
+                  <select
+                    value={globalIdx + 1}
+                    onChange={e => handleMoveToPosition(slide.id, Number(e.target.value))}
+                    className="px-2 py-1.5 rounded-lg border border-slate-200 bg-slate-50 text-xs font-extrabold text-slate-700 cursor-pointer"
+                    title="Jump slide directly to position"
+                  >
+                    {sortedSlides.map((_, posIdx) => (
+                      <option key={posIdx} value={posIdx + 1}>
+                        #{posIdx + 1}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
-                {/* Right Operations Controls */}
-                <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center">
-                  {/* Order Controls */}
-                  <div className="flex items-center bg-slate-100 rounded-lg p-0.5 border border-slate-200 mr-1">
-                    <button
-                      type="button"
-                      onClick={() => handleMoveOrder(index, 'up')}
-                      disabled={index === 0}
-                      className="p-1 rounded text-slate-500 hover:text-slate-900 disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
-                      title="Move slide up"
-                    >
-                      <ArrowUp className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleMoveOrder(index, 'down')}
-                      disabled={index === slides.length - 1}
-                      className="p-1 rounded text-slate-500 hover:text-slate-900 disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
-                      title="Move slide down"
-                    >
-                      <ArrowDown className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
+                <button
+                  type="button"
+                  onClick={() => handleMoveOrder(slide.id, 'up')}
+                  disabled={globalIdx === 0}
+                  className="p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-30 cursor-pointer"
+                  title="Move Up in Portfolio Deck"
+                >
+                  <ArrowUp className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleMoveOrder(slide.id, 'down')}
+                  disabled={globalIdx === sortedSlides.length - 1}
+                  className="p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-30 cursor-pointer"
+                  title="Move Down in Portfolio Deck"
+                >
+                  <ArrowDown className="w-3.5 h-3.5" />
+                </button>
 
-                  {/* Toggle Active */}
-                  <button
-                    type="button"
-                    onClick={() => handleToggleActive(slide.id)}
-                    className={`p-2 rounded-lg text-xs font-semibold border transition-colors flex items-center gap-1 cursor-pointer ${
-                      slide.isActive
-                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
-                        : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
-                    }`}
-                    title={slide.isActive ? 'Disable slide' : 'Enable slide'}
-                  >
-                    {slide.isActive ? (
+                <button
+                  type="button"
+                  onClick={() => handleToggleActive(slide.id)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 border cursor-pointer ${
+                    slide.isActive
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                      : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
+                  }`}
+                >
+                  {slide.isActive ? (
+                    <>
                       <Eye className="w-3.5 h-3.5" />
-                    ) : (
+                      <span>Active</span>
+                    </>
+                  ) : (
+                    <>
                       <EyeOff className="w-3.5 h-3.5" />
-                    )}
-                    <span className="text-[11px]">{slide.isActive ? 'Active' : 'Hidden'}</span>
-                  </button>
+                      <span>Hidden</span>
+                    </>
+                  )}
+                </button>
 
-                  {/* Edit Slide & Manage Pictures */}
-                  <button
-                    type="button"
-                    onClick={() => handleStartEdit(slide)}
-                    className="p-2 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-blue-50 hover:text-blue-700 border border-slate-200 transition-colors cursor-pointer"
-                    title="Edit slide & manage image sequence"
-                  >
-                    <Edit3 className="w-3.5 h-3.5" />
-                  </button>
+                <button
+                  type="button"
+                  onClick={() => handleStartEdit(slide)}
+                  className="px-3 py-1.5 rounded-lg border border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 text-xs font-bold flex items-center gap-1 cursor-pointer"
+                >
+                  <Edit3 className="w-3.5 h-3.5" />
+                  <span>Edit</span>
+                </button>
 
-                  {/* Delete */}
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteSlide(slide.id)}
-                    className="p-2 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-red-50 hover:text-red-600 border border-slate-200 transition-colors cursor-pointer"
-                    title="Delete slide"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => handleDeleteSlide(slide.id)}
+                  className="px-2.5 py-1.5 rounded-lg border border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100 text-xs font-bold flex items-center gap-1 cursor-pointer"
+                  title="Remove slide from Portfolio Deck"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Remove</span>
+                </button>
               </div>
-            );
-          })}
-        </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
