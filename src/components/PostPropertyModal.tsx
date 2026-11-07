@@ -417,6 +417,37 @@ export const PostPropertyModal: React.FC<PostPropertyModalProps> = ({
                     )}
                   </div>
 
+                  //========= change location code added =========
+                <div className="sm:col-span-2">
+                  <LocationPickerMap
+                    location={{
+                      province,
+                      city,
+                      society,
+                      address,
+                      latitude,
+                      longitude,
+                      nearbyLandmarks: nearbyLandmarksInput
+                        .split(',')
+                        .map(s => s.trim())
+                        .filter(Boolean)
+                    }}
+                    onChangeLocation={updatedLoc => {
+                      if (updatedLoc.city) setCity(updatedLoc.city);
+                      if (updatedLoc.society) setSociety(updatedLoc.society);
+                      if (updatedLoc.address !== undefined) setAddress(updatedLoc.address);
+                      if (updatedLoc.latitude !== undefined) setLatitude(updatedLoc.latitude);
+                      if (updatedLoc.longitude !== undefined) setLongitude(updatedLoc.longitude);
+                      if (updatedLoc.nearbyLandmarks) {
+                        setNearbyLandmarksInput(updatedLoc.nearbyLandmarks.join(', '));
+                      }
+                    }}
+                    provinceCityData={provinceCityData}
+                  />
+                </div>
+
+                  //==== end change location ========
+
                   {showQuickAddLocation && (
                     <div className="p-3 bg-white rounded-xl border border-blue-200 space-y-2.5 shadow-xs">
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
