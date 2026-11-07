@@ -7,21 +7,17 @@ import {
   EyeOff,
   ArrowUp,
   ArrowDown,
-  Image as ImageIcon,
   CheckCircle2,
   Sparkles,
   Save,
   X,
   Layers,
   MapPin,
-  Tag,
   Upload,
   Star,
   ArrowLeft,
   ArrowRight,
   RotateCcw,
-  BookmarkPlus,
-  FolderPlus,
   Search
 } from 'lucide-react';
 import { HeroSlide } from '../types';
@@ -45,49 +41,49 @@ const INITIAL_PRESET_IMAGES: PresetImageItem[] = [
     id: 'preset-q3',
     name: 'Model Q3 Forest Cabin Pod',
     category: 'Capsule Pod',
-    url: 'https://www.genspark.ai/api/files/s/pSySUzgg',
+    url: 'https://images.unsplash.com/photo-1518780664697-55e3ad937233?auto=format&fit=crop&w=1200&q=85',
     fallbackUrl: 'https://images.unsplash.com/photo-1518780664697-55e3ad937233?auto=format&fit=crop&w=1200&q=85'
   },
   {
     id: 'preset-loft',
     name: 'Model K5 L-Shaped Loft Container',
     category: 'Container Villa',
-    url: 'https://www.genspark.ai/api/files/s/OypEiCb2',
+    url: 'https://images.unsplash.com/photo-1510798831971-661eb04b3739?auto=format&fit=crop&w=1200&q=85',
     fallbackUrl: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1200&q=85'
   },
   {
     id: 'preset-rooftop',
     name: 'Sky-Deck Rooftop Container Villa',
     category: 'Container Villa',
-    url: 'https://www.genspark.ai/api/files/s/I6HwjuLB',
+    url: 'https://images.unsplash.com/photo-1600585154526-990dced4db0d?auto=format&fit=crop&w=1200&q=85',
     fallbackUrl: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=85'
   },
   {
     id: 'preset-hex',
     name: 'Hex-Lit Matte-Black Executive Pod',
     category: 'Capsule Pod',
-    url: 'https://www.genspark.ai/api/files/s/gbfFKIcB',
+    url: 'https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=1200&q=85',
     fallbackUrl: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=85'
   },
   {
     id: 'preset-studio',
     name: 'Curved-Corner Glass Studio Pod',
     category: 'Capsule Pod',
-    url: 'https://www.genspark.ai/api/files/s/W2Z5zFao',
+    url: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1200&q=85',
     fallbackUrl: 'https://images.unsplash.com/photo-1518780664697-55e3ad937233?auto=format&fit=crop&w=1200&q=85'
   },
   {
     id: 'preset-v2124',
     name: 'Model V2124 Double-Decker Capsule',
     category: 'Duplex Capsule',
-    url: 'https://www.genspark.ai/api/files/s/bf0ebbb238de4f18ac5521303f36222c',
+    url: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=85',
     fallbackUrl: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1200&q=85'
   },
   {
     id: 'preset-lakeside',
     name: 'Lakeside Panorama Capsule',
     category: 'Capsule Pod',
-    url: 'https://www.genspark.ai/api/files/s/7bb35bc10e1549908eb921611bd92685',
+    url: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=1200&q=85',
     fallbackUrl: 'https://images.unsplash.com/photo-1518780664697-55e3ad937233?auto=format&fit=crop&w=1200&q=85'
   },
   {
@@ -101,7 +97,7 @@ const INITIAL_PRESET_IMAGES: PresetImageItem[] = [
     id: 'preset-centaurus',
     name: 'The Centaurus & Blue Area Highrise',
     category: 'Highrise',
-    url: 'https://towers.pk/wp-content/uploads/sites/2/2023/08/the-centaurus-islamabad-380x250.jpg',
+    url: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1600&q=85',
     fallbackUrl: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=85'
   },
   {
@@ -122,7 +118,7 @@ const INITIAL_PRESET_IMAGES: PresetImageItem[] = [
     id: 'preset-dha-lahore',
     name: 'Corporate Commercial Plaza',
     category: 'Highrise',
-    url: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1600&q=85',
+    url: 'https://images.unsplash.com/photo-1582407947304-fd86f028f716?auto=format&fit=crop&w=1600&q=85',
     fallbackUrl: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=80'
   }
 ];
@@ -137,9 +133,8 @@ export const AdminBannerManager: React.FC<AdminBannerManagerProps> = ({
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [statusNotice, setStatusNotice] = useState<string | null>(null);
 
-  const [presetImages, setPresetImages] = useState<PresetImageItem[]>(INITIAL_PRESET_IMAGES);
+  const [presetImages] = useState<PresetImageItem[]>(INITIAL_PRESET_IMAGES);
   const [presetClickMode, setPresetClickMode] = useState<'replace_cover' | 'append_gallery'>('append_gallery');
-  const [newPresetNameInput, setNewPresetNameInput] = useState('');
   const [additionalImageUrlInput, setAdditionalImageUrlInput] = useState('');
 
   const [formData, setFormData] = useState<HeroSlide>({
@@ -360,37 +355,6 @@ export const AdminBannerManager: React.FC<AdminBannerManagerProps> = ({
     syncSlideGallery([chosen, ...remaining]);
   };
 
-  const handleSaveCurrentUrlToPresets = () => {
-    const urlToSave = formData.imageUrl.trim();
-    if (!urlToSave) return;
-    const label = newPresetNameInput.trim() || formData.title.trim() || `Custom Slide #${presetImages.length + 1}`;
-    const newPreset: PresetImageItem = {
-      id: `preset-custom-${Date.now()}`,
-      name: label,
-      category: 'Custom Saved',
-      url: urlToSave,
-      fallbackUrl: INITIAL_PRESET_IMAGES[0].fallbackUrl
-    };
-    setPresetImages(prev => [newPreset, ...prev]);
-    setNewPresetNameInput('');
-  };
-
-  const handleDeletePreset = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setPresetImages(prev => prev.filter(p => p.id !== id));
-  };
-
-  const handleMovePreset = (idx: number, direction: 'left' | 'right', e: React.MouseEvent) => {
-    e.stopPropagation();
-    const targetIdx = direction === 'left' ? idx - 1 : idx + 1;
-    if (targetIdx < 0 || targetIdx >= presetImages.length) return;
-    const updated = [...presetImages];
-    const temp = updated[idx];
-    updated[idx] = updated[targetIdx];
-    updated[targetIdx] = temp;
-    setPresetImages(updated);
-  };
-
   const handleSaveForm = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title.trim() || !formData.imageUrl.trim()) {
@@ -552,8 +516,7 @@ export const AdminBannerManager: React.FC<AdminBannerManagerProps> = ({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div  className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs">
-        <div>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs">        <div>
           <div className="inline-flex items-center gap-2 text-blue-600 font-bold text-xs uppercase tracking-wider mb-1">
             <Sparkles className="w-3.5 h-3.5" />
             <span>Hero Banner &amp; Crystal Portfolio Deck Manager</span>
@@ -966,7 +929,7 @@ export const AdminBannerManager: React.FC<AdminBannerManagerProps> = ({
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2 max-h-40 overflow-y-auto p-1">
-                {presetImages.map((preset, idx) => (
+                {presetImages.map(preset => (
                   <div
                     key={preset.id}
                     onClick={() => handleAddImageToSlide(preset.url)}
@@ -1171,7 +1134,6 @@ export const AdminBannerManager: React.FC<AdminBannerManagerProps> = ({
 
               {/* Direct Sequence & Action Controls */}
               <div className="flex flex-wrap items-center gap-1.5 self-end lg:self-center shrink-0">
-                {/* Direct Position Jump Selector */}
                 <div className="flex items-center gap-1 mr-1">
                   <span className="text-[10px] font-bold text-slate-400">Pos:</span>
                   <select
