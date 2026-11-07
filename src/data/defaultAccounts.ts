@@ -247,3 +247,6 @@ export const initialUserAccounts: UserAccount[] = [
     }
   }
 ];
+// Add this line at the bottom of src/data/defaultAccounts.ts (after initialUserAccounts):
+export const DEFAULT_USER_ACCOUNTS: UserAccount[] = initialUserAccounts;
+
