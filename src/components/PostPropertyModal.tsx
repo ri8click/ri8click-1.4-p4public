@@ -83,7 +83,7 @@ export const PostPropertyModal: React.FC<PostPropertyModalProps> = ({
 
   const isQuotaReached =
     !userIsSuperAdmin &&
-    (currentAgency.totalPosts || 0) >= (currentAgency.postLimit || 25);
+    ((currentAgency as any).totalPosts || 0) >= ((currentAgency as any).postLimit || 25);
 
   const selectedProvinceData = provinceCityData.find(p => p.province === province);
   const selectedCityData = selectedProvinceData?.cities.find(c => c.name === city);
@@ -234,7 +234,6 @@ export const PostPropertyModal: React.FC<PostPropertyModalProps> = ({
     };
 
     onAddProperty(newProp);
-    // Reset fields after posting
     setTitle('');
     setTagline('');
     setDescription('');
@@ -263,7 +262,6 @@ export const PostPropertyModal: React.FC<PostPropertyModalProps> = ({
         </div>
 
         <div className="p-6 overflow-y-auto space-y-5">
-          {/* Agency Status Banner */}
           <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <img
@@ -401,7 +399,6 @@ export const PostPropertyModal: React.FC<PostPropertyModalProps> = ({
                   </select>
                 </div>
 
-                {/* Location Selector with Inline Quick-Add */}
                 <div className="sm:col-span-2 p-3.5 bg-blue-50/50 rounded-2xl border border-blue-100 space-y-3">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
@@ -524,7 +521,6 @@ export const PostPropertyModal: React.FC<PostPropertyModalProps> = ({
                   </div>
                 </div>
 
-                {/* Location Map Pin Picker */}
                 <div className="sm:col-span-2">
                   <LocationPickerMap
                     city={city}
@@ -636,7 +632,6 @@ export const PostPropertyModal: React.FC<PostPropertyModalProps> = ({
                   </div>
                 )}
 
-                {/* Media & Video Walkthrough Uploader */}
                 <div className="sm:col-span-2">
                   <PropertyMediaUploader
                     images={images}
