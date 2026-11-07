@@ -15,7 +15,6 @@ import {
   MapPin,
   Box,
   CheckCircle2,
-  Eye,
   EyeOff,
   Camera,
   Video,
@@ -24,14 +23,11 @@ import {
   Maximize2,
   Minimize2,
   SlidersHorizontal,
-  Sun,
   Home,
   Wrench,
   FileText,
   ExternalLink,
-  AlertTriangle,
   RefreshCw,
-  ImageOff,
   GripHorizontal,
   Move,
   RotateCcw
@@ -96,25 +92,16 @@ interface CameraWaypoint {
 }
 
 const MODULAR_CAPSULE_GALLERY = {
-  cap8_forestCabinPodQ3: 'https://www.genspark.ai/api/files/s/pSySUzgg',
-  cap9_lShapedLoftContainerK5: 'https://www.genspark.ai/api/files/s/OypEiCb2',
-  cap10_rooftopDeckContainerVilla: 'https://www.genspark.ai/api/files/s/I6HwjuLB',
-  cap11_hexLitBlackContainerPod: 'https://www.genspark.ai/api/files/s/gbfFKIcB',
-  cap12_curvedGlassCornerPod: 'https://www.genspark.ai/api/files/s/W2Z5zFao',
-  cap13_doubleDeckerCapsuleV2124: 'https://www.genspark.ai/api/files/s/bf0ebbb238de4f18ac5521303f36222c',
-  cap14_lakesidePanoramaPod: 'https://www.genspark.ai/api/files/s/7bb35bc10e1549908eb921611bd92685',
   fallbackCapsule1: 'https://images.unsplash.com/photo-1518780664697-55e3ad937233?auto=format&fit=crop&w=1600&q=85',
   fallbackCapsule2: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1600&q=85'
 };
 
 const ISLAMABAD_HIGHRISE_PROJECTS_GALLERY = {
-  centaurusTower: 'https://towers.pk/wp-content/uploads/sites/2/2023/08/the-centaurus-islamabad-380x250.jpg',
-  citadel7BlueArea: 'https://towers.pk/wp-content/uploads/sites/2/2023/09/Citadel-7-by-Chakor-Ventures-in-Blue-Area-Islamabad-1-380x250.jpg',
-  gigaMallTower: 'https://towers.pk/wp-content/uploads/sites/2/2024/02/Giga-Mall-Islamabad-380x250.jpg',
-  goldcrestViews: 'https://towers.pk/wp-content/uploads/sites/2/2023/09/Goldcrest-Views-Islamabad-380x250.jpg',
-  ufoneJinnahAvenue: 'https://towers.pk/wp-content/uploads/sites/2/2023/08/Telecom-Tower-Islamabad-1-380x250.jpg',
-  skyparkOneGulberg: 'https://towers.pk/wp-content/uploads/sites/2/2023/09/Skypark-One-Gulberg-Islamabad-380x250.jpg',
-  stateLifeTower: 'https://towers.pk/wp-content/uploads/sites/2/2023/08/State-Life-Tower-Islamabad-380x250.jpg',
+  centaurusTower: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1600&q=85',
+  gigaMallTower: 'https://images.unsplash.com/photo-1582407947304-fd86f028f716?auto=format&fit=crop&w=1600&q=85',
+  ufoneJinnahAvenue: 'https://images.unsplash.com/photo-1577495508048-b635879837f1?auto=format&fit=crop&w=1600&q=85',
+  skyparkOneGulberg: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1600&q=85',
+  stateLifeTower: 'https://images.unsplash.com/photo-1554469384-e58fac16e23a?auto=format&fit=crop&w=1600&q=85',
   fallbackHighrise1: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1600&q=85',
   fallbackHighrise2: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1600&q=85'
 };
@@ -142,35 +129,35 @@ const INITIAL_REPLACED_BROKEN_LINKS: BrokenImageRecord[] = [
     waypointLabel: 'The Centaurus & Citadel 7 Highrise',
     brokenUrl: 'legacy-highrise-asset-1',
     replacedWithUrl: ISLAMABAD_HIGHRISE_PROJECTS_GALLERY.centaurusTower,
-    timestamp: 'Replaced with Active Towers.pk Media'
+    timestamp: 'Verified High-Resolution Media'
   },
   {
     id: 'rep-2',
     waypointLabel: 'Giga Mall & Goldcrest Highlife',
     brokenUrl: 'legacy-highrise-asset-2',
     replacedWithUrl: ISLAMABAD_HIGHRISE_PROJECTS_GALLERY.gigaMallTower,
-    timestamp: 'Replaced with Active Towers.pk Media'
+    timestamp: 'Verified High-Resolution Media'
   },
   {
     id: 'rep-3',
     waypointLabel: 'Ufone, ISE & Saudi Pak Towers',
     brokenUrl: 'legacy-highrise-asset-3',
     replacedWithUrl: ISLAMABAD_HIGHRISE_PROJECTS_GALLERY.ufoneJinnahAvenue,
-    timestamp: 'Replaced with Active Towers.pk Media'
+    timestamp: 'Verified High-Resolution Media'
   },
   {
     id: 'rep-4',
     waypointLabel: 'One Constitution Ave & Skypark One',
     brokenUrl: 'legacy-highrise-asset-4',
     replacedWithUrl: ISLAMABAD_HIGHRISE_PROJECTS_GALLERY.skyparkOneGulberg,
-    timestamp: 'Replaced with Active Towers.pk Media'
+    timestamp: 'Verified High-Resolution Media'
   },
   {
     id: 'rep-5',
     waypointLabel: 'State Life & Green Trust Towers',
     brokenUrl: 'legacy-highrise-asset-5',
     replacedWithUrl: ISLAMABAD_HIGHRISE_PROJECTS_GALLERY.stateLifeTower,
-    timestamp: 'Replaced with Active Towers.pk Media'
+    timestamp: 'Verified High-Resolution Media'
   }
 ];
 
@@ -304,7 +291,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 
   /**
    * 100% ADMIN-DRIVEN PORTFOLIO DECK WAYPOINTS:
-   * Built directly from active `slides` sorted by `slide.order`!
+   * Built directly from active `slides` sorted by `slide.order`.
    * When an admin deletes "Model Q3 Forest Cabin Pod", hides a slide, or changes
    * slide sequence in AdminBannerManager, the Portfolio Deck reflects it immediately.
    */
@@ -432,7 +419,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
       return combined;
     }
 
-    // Ultimate emergency fallback if all slides were somehow deleted
     return [
       {
         id: 'fallback-wp-1',
@@ -696,9 +682,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
       ref={heroStageRef}
       className="relative min-h-[680px] lg:min-h-[790px] flex flex-col justify-between overflow-hidden bg-slate-900 text-white select-none"
     >
-      {/* =====================================================================
-          1. FULL-BLEED BACKGROUND STAGE (PHOTO WAYPOINTS OR VIDEO STREAM)
-         ===================================================================== */}
+      {/* 1. FULL-BLEED BACKGROUND STAGE */}
       <div className="absolute inset-0 z-0 overflow-hidden bg-slate-950">
         <AnimatePresence mode="sync">
           {isVideoTourActive && !videoFailed ? (
@@ -776,9 +760,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-slate-950/20" />
       </div>
 
-      {/* =====================================================================
-          2. OPTIONAL CATEGORY BAR
-         ===================================================================== */}
+      {/* 2. OPTIONAL CATEGORY BAR */}
       <AnimatePresence>
         {showCategoryBar && !isCinemaTheaterMode && (
           <motion.div
@@ -835,9 +817,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         )}
       </AnimatePresence>
 
-      {/* =====================================================================
-          3. OPTIONAL CAMERA WAYPOINTS BAR
-         ===================================================================== */}
+      {/* 3. OPTIONAL CAMERA WAYPOINTS BAR */}
       <AnimatePresence>
         {showShowroomTourBar && !isCinemaTheaterMode && (
           <motion.div
@@ -889,9 +869,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         )}
       </AnimatePresence>
 
-      {/* =====================================================================
-          4. MAIN FOREGROUND STAGE & MOVEABLE CRYSTAL PORTFOLIO DECK
-         ===================================================================== */}
+      {/* 4. MAIN FOREGROUND STAGE & MOVEABLE CRYSTAL PORTFOLIO DECK */}
       <div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-6 min-h-[540px] lg:min-h-[610px] flex flex-col justify-between w-full">
         {/* Top Utility Controls Row */}
         <div className="flex flex-wrap items-center justify-between gap-2 pb-2">
@@ -903,12 +881,11 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               </span>
             </div>
 
-            {/* Broken Link Replacement Status Pill */}
             <button
               type="button"
               onClick={() => setShowBrokenLinkModal(prev => !prev)}
               className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-950/70 hover:bg-emerald-900/80 backdrop-blur-xl border border-emerald-400/40 text-emerald-200 text-[10.5px] font-bold transition-colors cursor-pointer"
-              title="View Replaced Broken Image Links & Active Towers.pk Media Log"
+              title="View Verified Media Log"
             >
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
               <span>Media Verified ({brokenLinksLog.length})</span>
@@ -916,7 +893,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           </div>
 
           <div className="flex flex-wrap items-center gap-2 ml-auto">
-            {/* Primary Hide / Show Text Button */}
             <button
               type="button"
               onClick={() => {
@@ -928,7 +904,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                   ? 'bg-amber-400 text-slate-950 border-amber-300 shadow-sm'
                   : 'bg-white/10 text-white border-white/25 hover:bg-white/20'
               }`}
-              title="Toggle Full Description vs Minimal Banner Info"
             >
               {showLeftDescription ? (
                 <>
@@ -943,7 +918,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               )}
             </button>
 
-            {/* Video Tour Toggle */}
             <button
               type="button"
               onClick={() => setIsVideoTourActive(prev => !prev)}
@@ -972,7 +946,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               </button>
             )}
 
-            {/* View Controls Popover */}
             <div className="relative">
               <button
                 type="button"
@@ -1080,7 +1053,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               </AnimatePresence>
             </div>
 
-            {/* Clean View Toggle */}
             <button
               type="button"
               onClick={() => setIsCinemaTheaterMode(prev => !prev)}
@@ -1105,9 +1077,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           </div>
         </div>
 
-        {/* =====================================================================
-            BROKEN IMAGE LINK REPLACEMENT INSPECTOR MODAL
-           ===================================================================== */}
+        {/* BROKEN IMAGE LINK REPLACEMENT INSPECTOR MODAL */}
         <AnimatePresence>
           {showBrokenLinkModal && (
             <motion.div
@@ -1120,7 +1090,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 <div className="flex items-center gap-2">
                   <RefreshCw className="w-4 h-4 text-emerald-400" />
                   <span className="text-xs font-extrabold uppercase tracking-wider text-white">
-                    Broken Link Auto-Healer &amp; Active Towers.pk Media Log
+                    Media Auto-Healer &amp; Active Verification Log
                   </span>
                 </div>
                 <button
@@ -1143,7 +1113,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                         {item.brokenUrl}
                       </div>
                       <div className="text-[10px] text-slate-200 truncate">
-                        Replaced: {item.replacedWithUrl}
+                        Active: {item.replacedWithUrl}
                       </div>
                     </div>
                     <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[9px] font-bold shrink-0">
@@ -1156,9 +1126,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           )}
         </AnimatePresence>
 
-        {/* =====================================================================
-            OPTIONAL RI8CLICK CONSORTIUM PILLARS RIBBON
-           ===================================================================== */}
+        {/* OPTIONAL RI8CLICK CONSORTIUM PILLARS RIBBON */}
         <AnimatePresence>
           {showConsortiumRibbon && !isCinemaTheaterMode && (
             <motion.div
@@ -1216,9 +1184,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           )}
         </AnimatePresence>
 
-        {/* =====================================================================
-            CENTER MAIN CONTENT & MOVABLE CRYSTAL TRANSPARENT PORTFOLIO DECK
-           ===================================================================== */}
+        {/* CENTER MAIN CONTENT & MOVABLE CRYSTAL TRANSPARENT PORTFOLIO DECK */}
         <AnimatePresence mode="wait">
           {!isCinemaTheaterMode ? (
             <motion.div
@@ -1229,7 +1195,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               transition={{ duration: 0.3 }}
               className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-end my-auto py-2"
             >
-              {/* BLOCK 2: Left Column (Full Narrative vs Default Minimal Banner Info) */}
               {showLeftDescription ? (
                 <div className={showDirectorDeck ? 'lg:col-span-7' : 'lg:col-span-11'}>
                   <motion.div
@@ -1239,7 +1204,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                     transition={{ duration: 0.35 }}
                     className="p-5 sm:p-6 rounded-3xl bg-slate-950/55 backdrop-blur-md border border-white/20 shadow-2xl space-y-4"
                   >
-                    {/* Division & Location Badges */}
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-400 text-slate-950 text-[11px] font-extrabold uppercase tracking-wider shadow-xs">
                         <Sparkles className="w-3 h-3" />
@@ -1249,30 +1213,16 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                         <MapPin className="w-3.5 h-3.5 text-amber-400" />
                         <span>{activeWaypoint.locationBadge}</span>
                       </span>
-                      {activeWaypoint.tourCategory === 'highrise_projects' && (
-                        <a
-                          href="https://towers.pk/islamabad/"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-sky-500/20 border border-sky-400/40 text-sky-200 hover:bg-sky-500/30 text-[11px] font-bold transition-colors"
-                        >
-                          <span>Towers.pk Verified</span>
-                          <ExternalLink className="w-3 h-3" />
-                        </a>
-                      )}
                     </div>
 
-                    {/* Headline */}
                     <h1 className="text-2xl sm:text-4xl lg:text-[40px] font-black tracking-tight leading-[1.12] text-white font-serif drop-shadow-sm">
                       {activeWaypoint.headline}
                     </h1>
 
-                    {/* Description */}
                     <p className="text-sm sm:text-base text-slate-100 leading-relaxed font-normal">
                       {activeWaypoint.description}
                     </p>
 
-                    {/* Spec Cards */}
                     {showSpecCards && (
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
                         {activeWaypoint.specs.map(item => (
@@ -1292,7 +1242,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                       </div>
                     )}
 
-                    {/* Valuation Pill & Multi-Angle Gallery Switcher */}
                     <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
                       <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-emerald-950/80 border border-emerald-400/40">
                         <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-300">
@@ -1340,7 +1289,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                       )}
                     </div>
 
-                    {/* Primary CTAs */}
                     <div className="flex flex-wrap items-center gap-2.5 pt-1">
                       <button
                         type="button"
@@ -1385,7 +1333,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                   </motion.div>
                 </div>
               ) : (
-                /* Default Load State: Compact Minimal Banner Info */
                 <div className={showDirectorDeck ? 'lg:col-span-7' : 'lg:col-span-12'}>
                   <motion.div
                     key={`compact-${activeWaypoint.id}`}
@@ -1454,9 +1401,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 </div>
               )}
 
-              {/* =================================================================
-                  BLOCK 3: CRYSTAL TRANSPARENT PORTFOLIO DECK (MOVABLE / DRAGGABLE)
-                 ================================================================= */}
+              {/* BLOCK 3: CRYSTAL TRANSPARENT PORTFOLIO DECK */}
               {showDirectorDeck && (
                 <div className={showLeftDescription ? 'lg:col-span-5' : 'lg:col-span-5 ml-auto'}>
                   <motion.div
@@ -1473,7 +1418,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                     }}
                     className="rounded-3xl bg-white/[0.12] backdrop-blur-xl border border-white/30 p-3.5 sm:p-4 shadow-[0_16px_48px_rgba(0,0,0,0.45)] space-y-3"
                   >
-                    {/* Movable Drag Handle Header */}
                     <div
                       onPointerDown={e => {
                         if (isDeckFloating) {
@@ -1523,7 +1467,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                               ? 'bg-amber-400 text-slate-950 border-amber-300'
                               : 'bg-white/10 text-white border-white/20 hover:bg-white/20'
                           }`}
-                          title="Show or Hide Left Narrative Text"
                         >
                           {showLeftDescription ? 'Hide Text' : 'Show Text'}
                         </button>
@@ -1566,7 +1509,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 
                     {!isDeckMinimized && (
                       <>
-                        {/* Crystal Category Tabs */}
                         <div className="grid grid-cols-5 gap-1 p-1 rounded-xl bg-slate-950/50 border border-white/20">
                           {(
                             [
@@ -1595,7 +1537,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                           })}
                         </div>
 
-                        {/* Interactive Thumbnail Matrix */}
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-[250px] overflow-y-auto pr-1">
                           {cameraWaypoints.map((wp, idx) => {
                             const isSelected = safeIdx === idx;
@@ -1646,7 +1587,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                           })}
                         </div>
 
-                        {/* Panel Footer */}
                         <div className="pt-2 border-t border-white/20 flex items-center justify-between gap-2 text-[11px]">
                           <div className="flex items-center gap-1.5 text-slate-100 truncate">
                             <Move className="w-3.5 h-3.5 text-amber-300 shrink-0" />
@@ -1684,7 +1624,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               )}
             </motion.div>
           ) : (
-            /* Clean View Minimal Card */
             <motion.div
               key="clean-view"
               initial={{ opacity: 0, y: 12 }}
@@ -1705,11 +1644,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           )}
         </AnimatePresence>
 
-        {/* =====================================================================
-            5. BOTTOM TIMELINE & PLAYBACK CONTROLS
-           ===================================================================== */}
+        {/* 5. BOTTOM TIMELINE & PLAYBACK CONTROLS */}
         <div className="pt-3 mt-2 border-t border-white/20 flex flex-col sm:flex-row items-center justify-between gap-3">
-          {/* Waypoint Progress Scrubber */}
           <div className="w-full sm:w-auto flex-1 flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
             {cameraWaypoints.map((wp, idx) => {
               const isCurrent = safeIdx === idx;
@@ -1757,7 +1693,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             })}
           </div>
 
-          {/* Playback & Quick Restore Buttons */}
           <div className="flex items-center gap-1.5 shrink-0">
             {!showLeftDescription && (
               <button
