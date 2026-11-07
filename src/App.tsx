@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { Navbar } from './components/Navbar';
 import { HeroSection } from './components/HeroSection';
 import { SearchFilterBar } from './components/SearchFilterBar';
@@ -6,1256 +6,886 @@ import { PropertyCard } from './components/PropertyCard';
 import { PropertyDetailModal } from './components/PropertyDetailModal';
 import { CommercialShowcase } from './components/CommercialShowcase';
 import { ModularHomesShowcase } from './components/ModularHomesShowcase';
-import { ConsortiumShowcase } from './components/ConsortiumShowcase';
 import { AgenciesSection, resolvePakistanAgentAvatar } from './components/AgenciesSection';
+import { ConsortiumShowcase } from './components/ConsortiumShowcase';
 import { NewsBlogsSection } from './components/NewsBlogsSection';
 import { BlogDetailModal } from './components/BlogDetailModal';
+import { AdminHubModal } from './components/AdminHubModal';
 import { PostPropertyModal } from './components/PostPropertyModal';
 import { ScheduleTourModal } from './components/ScheduleTourModal';
 import { SavedPropertiesModal } from './components/SavedPropertiesModal';
-import { AdminHubModal, AdminTabType } from './components/AdminHubModal';
 import { VirtualTour3DModal } from './components/VirtualTour3DModal';
-import { AuthRoleModal } from './components/AuthRoleModal';
-import { AuthLoginModal } from './components/AuthLoginModal';
 import { AiChatbot } from './components/AiChatbot';
 import { FloatingWhatsApp } from './components/FloatingWhatsApp';
 import { ScrollToTop } from './components/ScrollToTop';
 import { Footer } from './components/Footer';
+import { AuthLoginModal } from './components/AuthLoginModal';
+import { AuthRoleModal } from './components/AuthRoleModal';
 import { AdvibeListingPage } from './components/advibe/AdvibeListingPage';
 import { AdvibeProjectScrollyPage } from './components/advibe/AdvibeProjectScrollyPage';
 
 import {
-  initialProperties,
-  initialAgencies,
-  initialProvinceCityData,
-  initialConsortiumDivisions,
-  initialHeroSlides,
-  initialBlogPosts,
-  initialSitePortions
+  INITIAL_PROPERTIES,
+  INITIAL_AGENCIES,
+  INITIAL_PROVINCE_CITIES,
+  CONSORTIUM_DIVISIONS,
+  INITIAL_HERO_SLIDES,
+  INITIAL_BLOGS,
+  INITIAL_SITE_PORTIONS
 } from './data/mockData';
+import { DEFAULT_USER_ACCOUNTS, UserAccount } from './data/defaultAccounts';
 import { initialAdvibeProjects, initialAdvibeLeads } from './data/advibeDemoData';
-import { initialUserAccounts, UserAccount } from './data/defaultAccounts';
 import {
   Property,
   AgencyAccount,
   ProvinceCityData,
-  SearchFilterState,
   HeroSlide,
   BlogPost,
   SiteSectionPortion,
+  FilterState,
+  PropertyCategory,
   AdVibeProject,
   AdVibeLead
 } from './types';
-import { Sparkles, SlidersHorizontal, RotateCcw } from 'lucide-react';
+import { SlidersHorizontal, Sparkles, Plus, RefreshCw } from 'lucide-react';
 
-function sanitizeAgenciesToPakistanRegion(list: AgencyAccount[]): AgencyAccount[] {
-  return list.map((ag, idx) => {
-    const cleanAvatar = resolvePakistanAgentAvatar(
-      ag.avatar || ag.logo,
-      `${ag.id} ${ag.name} ${ag.companyName}`,
-      idx
-    );
-    return {
-      ...ag,
-      avatar: cleanAvatar,
-      logo: cleanAvatar
-    };
-  });
-}
+const DECK_SCHEMA_VERSION = 'ri8click_deck_v2_16slides';
 
-function sanitizePropertiesToPakistanRegion(list: Property[]): Property[] {
-  return list.map((prop, idx) => ({
-    ...prop,
-    agentAvatar: resolvePakistanAgentAvatar(
-      prop.agentAvatar,
-      `${prop.agencyId} ${prop.agentName} ${prop.agentCompany}`,
-      idx
-    )
+function sanitizePropertiesToPakistanAvatars(props: Property[]): Property[] {
+  if (!Array.isArray(props)) return INITIAL_PROPERTIES;
+  return props.map(p => ({
+    ...p,
+    agentAvatar: resolvePakistanAgentAvatar(p.agentAvatar, p.agencyId || p.agentName)
   }));
 }
 
+function sanitizeAgenciesToPakistanAvatars(agencies: AgencyAccount[]): AgencyAccount[] {
+  if (!Array.isArray(agencies)) return INITIAL_AGENCIES;
+  return agencies.map(a => {
+    const cleanAvatar = resolvePakistanAgentAvatar((a as any).avatar || a.logo, a.id);
+    return {
+      ...a,
+      logo: cleanAvatar,
+      avatar: cleanAvatar
+    } as AgencyAccount;
+  });
+}
+
+/**
+ * Ensures legacy 5-slide caches are upgraded to the full 16-slide Portfolio Deck
+ * on first migration, while respecting any subsequent Admin deletions/reordering.
+ */
+function loadInitialSlides(): HeroSlide[] {
+  try {
+    const migratedFlag = localStorage.getItem(DECK_SCHEMA_VERSION);
+    const saved = localStorage.getItem('ri8click_hero_slides');
+    if (saved && migratedFlag === 'true') {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+    localStorage.setItem(DECK_SCHEMA_VERSION, 'true');
+    localStorage.setItem('ri8click_hero_slides', JSON.stringify(INITIAL_HERO_SLIDES));
+  } catch {}
+  return INITIAL_HERO_SLIDES;
+}
+
 export function App() {
+  // ============================================================================
+  // UNIVERSAL PORTAL STATE (REAL-TIME SERVER + CROSS-BROWSER SYNCED)
+  // ============================================================================
   const [properties, setProperties] = useState<Property[]>(() => {
     try {
       const saved = localStorage.getItem('ri8click_properties_data');
-      if (saved) {
-        const parsed: Property[] = JSON.parse(saved);
-        const existingIds = new Set(parsed.map(p => p.id));
-        const missingDefaults = initialProperties.filter(p => !existingIds.has(p.id));
-        return sanitizePropertiesToPakistanRegion([...parsed, ...missingDefaults]);
-      }
-      return sanitizePropertiesToPakistanRegion(initialProperties);
-    } catch {
-      return sanitizePropertiesToPakistanRegion(initialProperties);
-    }
+      if (saved) return sanitizePropertiesToPakistanAvatars(JSON.parse(saved));
+    } catch {}
+    return INITIAL_PROPERTIES;
   });
 
   const [agencies, setAgencies] = useState<AgencyAccount[]>(() => {
     try {
       const saved = localStorage.getItem('ri8click_agencies_data');
-      if (saved) {
-        const parsed: AgencyAccount[] = JSON.parse(saved);
-        const existingIds = new Set(parsed.map(a => a.id));
-        const missingDefaults = initialAgencies.filter(a => !existingIds.has(a.id));
-        return sanitizeAgenciesToPakistanRegion([...parsed, ...missingDefaults]);
-      }
-      return sanitizeAgenciesToPakistanRegion(initialAgencies);
-    } catch {
-      return sanitizeAgenciesToPakistanRegion(initialAgencies);
-    }
+      if (saved) return sanitizeAgenciesToPakistanAvatars(JSON.parse(saved));
+    } catch {}
+    return INITIAL_AGENCIES;
   });
 
   const [provinceCityData, setProvinceCityData] = useState<ProvinceCityData[]>(() => {
     try {
       const saved = localStorage.getItem('ri8click_locations_data');
-      if (saved) {
-        const parsed: ProvinceCityData[] = JSON.parse(saved);
-        return parsed.length > 0 ? parsed : initialProvinceCityData;
-      }
-      return initialProvinceCityData;
-    } catch {
-      return initialProvinceCityData;
-    }
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return INITIAL_PROVINCE_CITIES;
   });
 
-  const [heroSlides, setHeroSlides] = useState<HeroSlide[]>(() => {
-    try {
-      const saved = localStorage.getItem('ri8click_hero_slides');
-      return saved ? JSON.parse(saved) : initialHeroSlides;
-    } catch {
-      return initialHeroSlides;
-    }
-  });
+  const [heroSlides, setHeroSlides] = useState<HeroSlide[]>(loadInitialSlides);
 
   const [blogs, setBlogs] = useState<BlogPost[]>(() => {
     try {
       const saved = localStorage.getItem('ri8click_blogs_data');
-      return saved ? JSON.parse(saved) : initialBlogPosts;
-    } catch {
-      return initialBlogPosts;
-    }
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return INITIAL_BLOGS;
   });
 
   const [sitePortions, setSitePortions] = useState<SiteSectionPortion[]>(() => {
     try {
       const saved = localStorage.getItem('ri8click_site_portions');
-      return saved ? JSON.parse(saved) : initialSitePortions;
-    } catch {
-      return initialSitePortions;
-    }
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return INITIAL_SITE_PORTIONS;
   });
 
   const [userAccounts, setUserAccounts] = useState<UserAccount[]>(() => {
     try {
       const saved = localStorage.getItem('ri8click_user_accounts');
-      if (saved) {
-        const parsed: UserAccount[] = JSON.parse(saved);
-        const existingIds = new Set(parsed.map(u => u.id));
-        const missingDefaults = initialUserAccounts.filter(u => !existingIds.has(u.id));
-        return [...parsed, ...missingDefaults].map((u, idx) => {
-          const defaultAcc = initialUserAccounts.find(d => d.id === u.id || d.username === u.username);
-          return {
-            ...u,
-            password: u.password || defaultAcc?.password || 'admin123',
-            avatar: resolvePakistanAgentAvatar(u.avatar, `${u.agencyId || ''} ${u.name}`, idx)
-          };
-        });
-      }
-      return initialUserAccounts;
-    } catch {
-      return initialUserAccounts;
-    }
-  });
-
-  const [consortiumDivisions] = useState(initialConsortiumDivisions);
-
-  const [currentUser, setCurrentUser] = useState<UserAccount | null>(() => {
-    try {
-      const saved = localStorage.getItem('ri8click_current_user');
-      return saved ? JSON.parse(saved) : null;
-    } catch {
-      return null;
-    }
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return DEFAULT_USER_ACCOUNTS;
   });
 
   const [advibeProjects, setAdvibeProjects] = useState<AdVibeProject[]>(() => {
     try {
       const saved = localStorage.getItem('ri8click_advibe_projects');
-      if (saved) {
-        const parsed: AdVibeProject[] = JSON.parse(saved);
-        const existingIds = new Set(parsed.map(p => p.id));
-        const missingDefaults = initialAdvibeProjects.filter(p => !existingIds.has(p.id));
-        return [...parsed, ...missingDefaults];
-      }
-      return initialAdvibeProjects;
-    } catch {
-      return initialAdvibeProjects;
-    }
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return initialAdvibeProjects;
   });
 
   const [advibeLeads, setAdvibeLeads] = useState<AdVibeLead[]>(() => {
     try {
       const saved = localStorage.getItem('ri8click_advibe_leads');
-      return saved ? JSON.parse(saved) : initialAdvibeLeads;
-    } catch {
-      return initialAdvibeLeads;
-    }
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return initialAdvibeLeads;
   });
 
-  // ==========================================================================
-  // UNIVERSAL SERVER STATE SYNC & REAL-TIME SSE STREAM
-  // ==========================================================================
-  const syncUniversalStateToServer = (payload: Record<string, any>) => {
+  const [currentUser, setCurrentUser] = useState<UserAccount | null>(() => {
+    try {
+      const saved = localStorage.getItem('ri8click_current_user');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return null;
+  });
+
+  const lastRevisionRef = useRef<number>(0);
+  const lastUpdatedAtRef = useRef<string>('');
+
+  const applyIncomingServerState = useCallback((remote: any) => {
+    if (!remote || typeof remote !== 'object') return;
+
+    if (typeof remote.revision === 'number') {
+      lastRevisionRef.current = remote.revision;
+    }
+    if (typeof remote.updatedAt === 'string') {
+      lastUpdatedAtRef.current = remote.updatedAt;
+    }
+
+    if (Array.isArray(remote.properties) && remote.properties.length > 0) {
+      const clean = sanitizePropertiesToPakistanAvatars(remote.properties);
+      setProperties(clean);
+      localStorage.setItem('ri8click_properties_data', JSON.stringify(clean));
+    }
+    if (Array.isArray(remote.agencies) && remote.agencies.length > 0) {
+      const clean = sanitizeAgenciesToPakistanAvatars(remote.agencies);
+      setAgencies(clean);
+      localStorage.setItem('ri8click_agencies_data', JSON.stringify(clean));
+    }
+    if (Array.isArray(remote.provinceCityData) && remote.provinceCityData.length > 0) {
+      setProvinceCityData(remote.provinceCityData);
+      localStorage.setItem('ri8click_locations_data', JSON.stringify(remote.provinceCityData));
+    }
+    if (Array.isArray(remote.heroSlides) && remote.heroSlides.length > 0) {
+      // If server still had old 5-slide seed (`slide-1`..`slide-5`), upgrade it to the 16-slide Portfolio Deck
+      const isLegacy5SlideSeed =
+        remote.heroSlides.length === 5 &&
+        remote.heroSlides.every((s: any) => /^slide-[1-5]$/.test(s.id));
+
+      if (!isLegacy5SlideSeed) {
+        setHeroSlides(remote.heroSlides);
+        localStorage.setItem('ri8click_hero_slides', JSON.stringify(remote.heroSlides));
+        localStorage.setItem(DECK_SCHEMA_VERSION, 'true');
+      }
+    }
+    if (Array.isArray(remote.blogs) && remote.blogs.length > 0) {
+      setBlogs(remote.blogs);
+      localStorage.setItem('ri8click_blogs_data', JSON.stringify(remote.blogs));
+    }
+    if (Array.isArray(remote.sitePortions) && remote.sitePortions.length > 0) {
+      setSitePortions(remote.sitePortions);
+      localStorage.setItem('ri8click_site_portions', JSON.stringify(remote.sitePortions));
+    }
+    if (Array.isArray(remote.userAccounts) && remote.userAccounts.length > 0) {
+      setUserAccounts(remote.userAccounts);
+      localStorage.setItem('ri8click_user_accounts', JSON.stringify(remote.userAccounts));
+    }
+    if (Array.isArray(remote.advibeProjects) && remote.advibeProjects.length > 0) {
+      setAdvibeProjects(remote.advibeProjects);
+      localStorage.setItem('ri8click_advibe_projects', JSON.stringify(remote.advibeProjects));
+    }
+    if (Array.isArray(remote.advibeLeads)) {
+      setAdvibeLeads(remote.advibeLeads);
+      localStorage.setItem('ri8click_advibe_leads', JSON.stringify(remote.advibeLeads));
+    }
+  }, []);
+
+  const pushStateToServer = useCallback((partialState: Record<string, any>) => {
+    // Save immediately to localStorage for instant UI & cross-tab sync
+    if (partialState.properties) {
+      localStorage.setItem('ri8click_properties_data', JSON.stringify(partialState.properties));
+    }
+    if (partialState.agencies) {
+      localStorage.setItem('ri8click_agencies_data', JSON.stringify(partialState.agencies));
+    }
+    if (partialState.provinceCityData) {
+      localStorage.setItem('ri8click_locations_data', JSON.stringify(partialState.provinceCityData));
+    }
+    if (partialState.heroSlides) {
+      localStorage.setItem('ri8click_hero_slides', JSON.stringify(partialState.heroSlides));
+      localStorage.setItem(DECK_SCHEMA_VERSION, 'true');
+    }
+    if (partialState.blogs) {
+      localStorage.setItem('ri8click_blogs_data', JSON.stringify(partialState.blogs));
+    }
+    if (partialState.sitePortions) {
+      localStorage.setItem('ri8click_site_portions', JSON.stringify(partialState.sitePortions));
+    }
+    if (partialState.userAccounts) {
+      localStorage.setItem('ri8click_user_accounts', JSON.stringify(partialState.userAccounts));
+    }
+    if (partialState.advibeProjects) {
+      localStorage.setItem('ri8click_advibe_projects', JSON.stringify(partialState.advibeProjects));
+    }
+    if (partialState.advibeLeads) {
+      localStorage.setItem('ri8click_advibe_leads', JSON.stringify(partialState.advibeLeads));
+    }
+
     fetch('/api/state', {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-user-role': currentUser?.role || 'customer',
-        'x-agency-id': currentUser?.agencyId || ''
-      },
-      body: JSON.stringify(payload)
-    }).catch(err => console.warn('Universal state sync notice:', err));
-  };
-
-  useEffect(() => {
-    fetch('/api/state')
-      .then(res => res.json())
-      .then(serverState => {
-        if (!serverState) return;
-        const seedPayload: Record<string, any> = {};
-
-        if (Array.isArray(serverState.properties) && serverState.properties.length > 0) {
-          const cleanProps = sanitizePropertiesToPakistanRegion(serverState.properties);
-          setProperties(cleanProps);
-          try {
-            localStorage.setItem('ri8click_properties_data', JSON.stringify(cleanProps));
-          } catch {}
-        } else {
-          seedPayload.properties = properties;
-        }
-
-        if (Array.isArray(serverState.agencies) && serverState.agencies.length > 0) {
-          const cleanAgencies = sanitizeAgenciesToPakistanRegion(serverState.agencies);
-          setAgencies(cleanAgencies);
-          try {
-            localStorage.setItem('ri8click_agencies_data', JSON.stringify(cleanAgencies));
-          } catch {}
-        } else {
-          seedPayload.agencies = agencies;
-        }
-
-        if (Array.isArray(serverState.provinceCityData) && serverState.provinceCityData.length > 0) {
-          setProvinceCityData(serverState.provinceCityData);
-          try {
-            localStorage.setItem('ri8click_locations_data', JSON.stringify(serverState.provinceCityData));
-          } catch {}
-        } else {
-          seedPayload.provinceCityData = provinceCityData;
-        }
-
-        if (Array.isArray(serverState.heroSlides) && serverState.heroSlides.length > 0) {
-          setHeroSlides(serverState.heroSlides);
-          try {
-            localStorage.setItem('ri8click_hero_slides', JSON.stringify(serverState.heroSlides));
-          } catch {}
-        } else {
-          seedPayload.heroSlides = heroSlides;
-        }
-
-        if (Array.isArray(serverState.blogs) && serverState.blogs.length > 0) {
-          setBlogs(serverState.blogs);
-          try {
-            localStorage.setItem('ri8click_blogs_data', JSON.stringify(serverState.blogs));
-          } catch {}
-        } else {
-          seedPayload.blogs = blogs;
-        }
-
-        if (Array.isArray(serverState.sitePortions) && serverState.sitePortions.length > 0) {
-          setSitePortions(serverState.sitePortions);
-          try {
-            localStorage.setItem('ri8click_site_portions', JSON.stringify(serverState.sitePortions));
-          } catch {}
-        } else {
-          seedPayload.sitePortions = sitePortions;
-        }
-
-        if (Array.isArray(serverState.userAccounts) && serverState.userAccounts.length > 0) {
-          const mergedAccounts = serverState.userAccounts.map((u: UserAccount, idx: number) => {
-            const localMatch = userAccounts.find(l => l.id === u.id || l.username === u.username);
-            const defaultMatch = initialUserAccounts.find(d => d.id === u.id || d.username === u.username);
-            return {
-              ...u,
-              password: u.password || localMatch?.password || defaultMatch?.password || 'admin123',
-              avatar: resolvePakistanAgentAvatar(u.avatar, `${u.agencyId || ''} ${u.name}`, idx)
-            };
-          });
-          setUserAccounts(mergedAccounts);
-          try {
-            localStorage.setItem('ri8click_user_accounts', JSON.stringify(mergedAccounts));
-          } catch {}
-        } else {
-          seedPayload.userAccounts = userAccounts;
-        }
-
-        if (Array.isArray(serverState.advibeProjects) && serverState.advibeProjects.length > 0) {
-          setAdvibeProjects(serverState.advibeProjects);
-          try {
-            localStorage.setItem('ri8click_advibe_projects', JSON.stringify(serverState.advibeProjects));
-          } catch {}
-        } else {
-          seedPayload.advibeProjects = advibeProjects;
-        }
-
-        if (Object.keys(seedPayload).length > 0) {
-          syncUniversalStateToServer(seedPayload);
-        }
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(partialState)
+    })
+      .then(res => (res.ok ? res.json() : null))
+      .then(data => {
+        if (data?.revision) lastRevisionRef.current = data.revision;
+        if (data?.updatedAt) lastUpdatedAtRef.current = data.updatedAt;
       })
       .catch(() => {});
+  }, []);
 
-    const evtSource = new EventSource('/api/state/stream');
-    evtSource.onmessage = event => {
+  // Multi-Layer Real-Time Sync: Initial Fetch + SSE Stream + 4-Second Polling Fallback + Window Focus + Storage Listener
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchLatestFromServer = async (seedIfEmpty = false) => {
       try {
-        const msg = JSON.parse(event.data);
-        if (msg.type === 'STATE_UPDATED' && msg.state) {
-          const st = msg.state;
-          if (Array.isArray(st.properties)) {
-            const cleanProps = sanitizePropertiesToPakistanRegion(st.properties);
-            setProperties(cleanProps);
-            try {
-              localStorage.setItem('ri8click_properties_data', JSON.stringify(cleanProps));
-            } catch {}
+        const res = await fetch(`/api/state?_t=${Date.now()}`, {
+          cache: 'no-store'
+        });
+        if (!res.ok) return;
+        const remote = await res.json();
+        if (!isMounted) return;
+
+        const hasRemoteData =
+          Array.isArray(remote?.properties) && remote.properties.length > 0;
+        const hasModernSlides =
+          Array.isArray(remote?.heroSlides) &&
+          remote.heroSlides.length > 0 &&
+          !(
+            remote.heroSlides.length === 5 &&
+            remote.heroSlides.every((s: any) => /^slide-[1-5]$/.test(s.id))
+          );
+
+        if (hasRemoteData) {
+          applyIncomingServerState(remote);
+          if (!hasModernSlides) {
+            pushStateToServer({ heroSlides: INITIAL_HERO_SLIDES });
           }
-          if (Array.isArray(st.agencies)) {
-            const cleanAgencies = sanitizeAgenciesToPakistanRegion(st.agencies);
-            setAgencies(cleanAgencies);
-            try {
-              localStorage.setItem('ri8click_agencies_data', JSON.stringify(cleanAgencies));
-            } catch {}
-          }
-          if (Array.isArray(st.provinceCityData)) {
-            setProvinceCityData(st.provinceCityData);
-            try {
-              localStorage.setItem('ri8click_locations_data', JSON.stringify(st.provinceCityData));
-            } catch {}
-          }
-          if (Array.isArray(st.heroSlides)) {
-            setHeroSlides(st.heroSlides);
-            try {
-              localStorage.setItem('ri8click_hero_slides', JSON.stringify(st.heroSlides));
-            } catch {}
-          }
-          if (Array.isArray(st.blogs)) {
-            setBlogs(st.blogs);
-            try {
-              localStorage.setItem('ri8click_blogs_data', JSON.stringify(st.blogs));
-            } catch {}
-          }
-          if (Array.isArray(st.sitePortions)) {
-            setSitePortions(st.sitePortions);
-            try {
-              localStorage.setItem('ri8click_site_portions', JSON.stringify(st.sitePortions));
-            } catch {}
-          }
-          if (Array.isArray(st.userAccounts)) {
-            setUserAccounts(prev =>
-              st.userAccounts.map((u: UserAccount, idx: number) => {
-                const existing = prev.find(p => p.id === u.id || p.username === u.username);
-                const def = initialUserAccounts.find(d => d.id === u.id || d.username === u.username);
-                return {
-                  ...u,
-                  password: u.password || existing?.password || def?.password || 'admin123',
-                  avatar: resolvePakistanAgentAvatar(u.avatar, `${u.agencyId || ''} ${u.name}`, idx)
-                };
-              })
-            );
-          }
-          if (Array.isArray(st.advibeProjects)) {
-            setAdvibeProjects(st.advibeProjects);
-            try {
-              localStorage.setItem('ri8click_advibe_projects', JSON.stringify(st.advibeProjects));
-            } catch {}
-          }
-          if (Array.isArray(st.advibeLeads)) {
-            setAdvibeLeads(st.advibeLeads);
-            try {
-              localStorage.setItem('ri8click_advibe_leads', JSON.stringify(st.advibeLeads));
-            } catch {}
-          }
+        } else if (seedIfEmpty) {
+          pushStateToServer({
+            properties,
+            agencies,
+            provinceCityData,
+            heroSlides,
+            blogs,
+            sitePortions,
+            userAccounts,
+            advibeProjects,
+            advibeLeads
+          });
         }
       } catch {}
     };
 
-    return () => {
-      evtSource.close();
-    };
-  }, []);
+    fetchLatestFromServer(true);
 
-  const [currentRole, setCurrentRole] = useState<'admin' | 'agency' | 'customer'>(() => {
-    return currentUser ? currentUser.role : 'customer';
-  });
-  const [currentAgencyId, setCurrentAgencyId] = useState<string>(() => {
-    return currentUser?.agencyId || 'agency-1';
-  });
-
-  const currentAgency = useMemo(() => {
-    return agencies.find(a => a.id === currentAgencyId) || agencies[0];
-  }, [agencies, currentAgencyId]);
-
-  const handleUserLogin = (user: UserAccount) => {
-    setCurrentUser(user);
-    setCurrentRole(user.role);
-    if (user.agencyId) {
-      setCurrentAgencyId(user.agencyId);
-    }
+    // 1. Server-Sent Events (SSE) for instant push
+    let eventSource: EventSource | null = null;
     try {
-      localStorage.setItem('ri8click_current_user', JSON.stringify(user));
+      eventSource = new EventSource('/api/state/stream');
+      eventSource.onmessage = event => {
+        try {
+          const payload = JSON.parse(event.data);
+          if (
+            (payload?.type === 'STATE_UPDATED' || payload?.type === 'INITIAL_STATE') &&
+            payload.state
+          ) {
+            applyIncomingServerState(payload.state);
+          }
+        } catch {}
+      };
     } catch {}
+
+    // 2. Lightweight 4-second polling fallback (guarantees updates even if proxy blocks SSE)
+    const pollInterval = setInterval(async () => {
+      try {
+        const vRes = await fetch(`/api/state/version?_t=${Date.now()}`, { cache: 'no-store' });
+        if (!vRes.ok) return;
+        const vData = await vRes.json();
+        if (
+          (vData.revision && vData.revision > lastRevisionRef.current) ||
+          (vData.updatedAt && vData.updatedAt !== lastUpdatedAtRef.current)
+        ) {
+          fetchLatestFromServer(false);
+        }
+      } catch {}
+    }, 4000);
+
+    // 3. Re-sync whenever user switches back to tab/window
+    const handleVisibilityOrFocus = () => {
+      if (document.visibilityState === 'visible') {
+        fetchLatestFromServer(false);
+      }
+    };
+    window.addEventListener('focus', handleVisibilityOrFocus);
+    document.addEventListener('visibilitychange', handleVisibilityOrFocus);
+
+    // 4. Cross-tab localStorage listener
+    const handleStorageEvent = (e: StorageEvent) => {
+      if (!e.newValue) return;
+      try {
+        if (e.key === 'ri8click_properties_data') {
+          setProperties(sanitizePropertiesToPakistanAvatars(JSON.parse(e.newValue)));
+        } else if (e.key === 'ri8click_hero_slides') {
+          setHeroSlides(JSON.parse(e.newValue));
+        } else if (e.key === 'ri8click_locations_data') {
+          setProvinceCityData(JSON.parse(e.newValue));
+        } else if (e.key === 'ri8click_agencies_data') {
+          setAgencies(sanitizeAgenciesToPakistanAvatars(JSON.parse(e.newValue)));
+        }
+      } catch {}
+    };
+    window.addEventListener('storage', handleStorageEvent);
+
+    return () => {
+      isMounted = false;
+      if (eventSource) eventSource.close();
+      clearInterval(pollInterval);
+      window.removeEventListener('focus', handleVisibilityOrFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityOrFocus);
+      window.removeEventListener('storage', handleStorageEvent);
+    };
+  }, [applyIncomingServerState, pushStateToServer]);
+
+  // Wrap state setters so every change immediately persists to server & broadcasts to all users
+  const handleUpdateProperties = useCallback(
+    (nextProps: Property[]) => {
+      const clean = sanitizePropertiesToPakistanAvatars(nextProps);
+      setProperties(clean);
+      pushStateToServer({ properties: clean });
+    },
+    [pushStateToServer]
+  );
+
+  const handleUpdateAgencies = useCallback(
+    (nextAgencies: AgencyAccount[]) => {
+      const clean = sanitizeAgenciesToPakistanAvatars(nextAgencies);
+      setAgencies(clean);
+      pushStateToServer({ agencies: clean });
+    },
+    [pushStateToServer]
+  );
+
+  const handleUpdateProvinceCityData = useCallback(
+    (nextLocations: ProvinceCityData[]) => {
+      setProvinceCityData(nextLocations);
+      pushStateToServer({ provinceCityData: nextLocations });
+    },
+    [pushStateToServer]
+  );
+
+  const handleUpdateHeroSlides = useCallback(
+    (nextSlides: HeroSlide[]) => {
+      setHeroSlides(nextSlides);
+      pushStateToServer({ heroSlides: nextSlides });
+    },
+    [pushStateToServer]
+  );
+
+  const handleUpdateBlogs = useCallback(
+    (nextBlogs: BlogPost[]) => {
+      setBlogs(nextBlogs);
+      pushStateToServer({ blogs: nextBlogs });
+    },
+    [pushStateToServer]
+  );
+
+  const handleUpdateSitePortions = useCallback(
+    (nextPortions: SiteSectionPortion[]) => {
+      setSitePortions(nextPortions);
+      pushStateToServer({ sitePortions: nextPortions });
+    },
+    [pushStateToServer]
+  );
+
+  const handleUpdateUserAccounts = useCallback(
+    (nextAccounts: UserAccount[]) => {
+      setUserAccounts(nextAccounts);
+      pushStateToServer({ userAccounts: nextAccounts });
+    },
+    [pushStateToServer]
+  );
+
+  const handleUpdateAdvibeProjects = useCallback(
+    (nextProjects: AdVibeProject[]) => {
+      setAdvibeProjects(nextProjects);
+      pushStateToServer({ advibeProjects: nextProjects });
+    },
+    [pushStateToServer]
+  );
+
+  const handleUpdateAdvibeLeads = useCallback(
+    (nextLeads: AdVibeLead[]) => {
+      setAdvibeLeads(nextLeads);
+      pushStateToServer({ advibeLeads: nextLeads });
+    },
+    [pushStateToServer]
+  );
+
+  useEffect(() => {
+    try {
+      if (currentUser) {
+        localStorage.setItem('ri8click_current_user', JSON.stringify(currentUser));
+      } else {
+        localStorage.removeItem('ri8click_current_user');
+      }
+    } catch {}
+  }, [currentUser]);
+
+  // ============================================================================
+  // UI & NAVIGATION STATE
+  // ============================================================================
+  const [activeView, setActiveView] = useState<'portal' | 'advibe_listing' | 'advibe_project'>('portal');
+  const [selectedAdvibeProject, setSelectedAdvibeProject] = useState<AdVibeProject | null>(null);
+
+  const [savedPropertyIds, setSavedPropertyIds] = useState<string[]>([]);
+  const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
+  const [selectedBlog, setSelectedBlog] = useState<BlogPost | null>(null);
+  const [tourProperty, setTourProperty] = useState<Property | null>(null);
+  const [virtual3DProperty, setVirtual3DProperty] = useState<Property | null>(null);
+
+  const [isPostModalOpen, setIsPostModalOpen] = useState(false);
+  const [isSavedModalOpen, setIsSavedModalOpen] = useState(false);
+  const [isAdminHubOpen, setIsAdminHubOpen] = useState(false);
+  const [adminInitialTab, setAdminInitialTab] = useState<any>('overview');
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [loginModalReason, setLoginModalReason] = useState<
+    'general' | 'admin_required' | 'agency_required'
+  >('general');
+  const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
+
+  const [userRole, setUserRole] = useState<'admin' | 'agency' | 'customer'>(() =>
+    currentUser ? currentUser.role : 'customer'
+  );
+  const [selectedAgencyId, setSelectedAgencyId] = useState<string>(() =>
+    currentUser?.agencyId ? currentUser.agencyId : 'agency-1'
+  );
+
+  const [filters, setFilters] = useState<FilterState>({
+    searchQuery: '',
+    province: 'all',
+    city: 'all',
+    society: 'all',
+    category: 'all',
+    purpose: 'all',
+    propertyType: 'all',
+    minPrice: 0,
+    maxPrice: 1000000000,
+    bedrooms: 'all',
+    sortBy: 'featured'
+  });
+
+  const handleUserLogin = (account: UserAccount) => {
+    setCurrentUser(account);
+    setUserRole(account.role);
+    if (account.agencyId) {
+      setSelectedAgencyId(account.agencyId);
+    }
+    if (loginModalReason === 'admin_required' && account.role === 'admin') {
+      setIsAdminHubOpen(true);
+    } else if (
+      loginModalReason === 'agency_required' &&
+      (account.role === 'admin' || account.role === 'agency')
+    ) {
+      setIsPostModalOpen(true);
+    }
+    setLoginModalReason('general');
   };
 
   const handleUserLogout = () => {
     setCurrentUser(null);
-    setCurrentRole('customer');
-    try {
-      localStorage.removeItem('ri8click_current_user');
-    } catch {}
+    setUserRole('customer');
+    setIsAdminHubOpen(false);
   };
 
-  const handleUpdateCurrentUser = (updatedUser: UserAccount) => {
-    setCurrentUser(updatedUser);
-    try {
-      localStorage.setItem('ri8click_current_user', JSON.stringify(updatedUser));
-    } catch {}
-    const nextUsers = userAccounts.map(u => (u.id === updatedUser.id ? updatedUser : u));
-    setUserAccounts(nextUsers);
-    try {
-      localStorage.setItem('ri8click_user_accounts', JSON.stringify(nextUsers));
-    } catch {}
-    syncUniversalStateToServer({ userAccounts: nextUsers });
-  };
-
-  const handleUpdateUserAccounts = (updatedUsers: UserAccount[]) => {
-    setUserAccounts(updatedUsers);
-    try {
-      localStorage.setItem('ri8click_user_accounts', JSON.stringify(updatedUsers));
-    } catch {}
-    syncUniversalStateToServer({ userAccounts: updatedUsers });
-  };
-
-  // Navigation & Modal States
-  const [activeTab, setActiveTab] = useState('properties');
-  const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
-  const [selectedBlog, setSelectedBlog] = useState<BlogPost | null>(null);
-  const [tourProperty, setTourProperty] = useState<Property | null>(null);
-  const [isPostModalOpen, setIsPostModalOpen] = useState(false);
-  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
-  const [loginModalReason, setLoginModalReason] = useState<
-    'general' | 'admin_required' | 'agency_required' | 'advibe_required'
-  >('general');
-  const [isSavedModalOpen, setIsSavedModalOpen] = useState(false);
-  const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
-  const [adminInitialTab, setAdminInitialTab] = useState<AdminTabType>('overview');
-  const [isAuthRoleModalOpen, setIsAuthRoleModalOpen] = useState(false);
-  const [virtualTourProperty, setVirtualTourProperty] = useState<Property | null>(null);
-
-  const [activeAdvibeSlug, setActiveAdvibeSlug] = useState<string | null>(() => {
-    if (typeof window !== 'undefined') {
-      const path = window.location.pathname;
-      if (path.startsWith('/advibe/')) {
-        return path.replace('/advibe/', '').split('/')[0] || null;
-      }
-    }
-    return null;
-  });
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (window.location.pathname === '/advibe' || window.location.pathname.startsWith('/advibe/')) {
-      setActiveTab('advibe');
-    }
-    const handlePopState = () => {
-      const p = window.location.pathname;
-      if (p.startsWith('/advibe/')) {
-        setActiveAdvibeSlug(p.replace('/advibe/', '').split('/')[0] || null);
-        setActiveTab('advibe');
-      } else if (p === '/advibe') {
-        setActiveAdvibeSlug(null);
-        setActiveTab('advibe');
-      } else {
-        setActiveAdvibeSlug(null);
-      }
-    };
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
-
-  const navigateToAdvibeListing = () => {
-    setActiveTab('advibe');
-    setActiveAdvibeSlug(null);
-    if (typeof window !== 'undefined' && window.history.pushState) {
-      window.history.pushState({}, '', '/advibe');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  };
-
-  const navigateToAdvibeProject = (slug: string) => {
-    setActiveTab('advibe');
-    setActiveAdvibeSlug(slug);
-    if (typeof window !== 'undefined' && window.history.pushState) {
-      window.history.pushState({}, '', `/advibe/${slug}`);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-    const nextProjects = advibeProjects.map(p =>
-      p.slug === slug ? { ...p, viewsCount: (p.viewsCount || 0) + 1 } : p
-    );
-    setAdvibeProjects(nextProjects);
-    try {
-      localStorage.setItem('ri8click_advibe_projects', JSON.stringify(nextProjects));
-    } catch {}
-    syncUniversalStateToServer({ advibeProjects: nextProjects });
-  };
-
-  const handleSaveAdvibeProject = (project: AdVibeProject) => {
-    const exists = advibeProjects.some(p => p.id === project.id);
-    const updated = exists
-      ? advibeProjects.map(p =>
-          p.id === project.id
-            ? { ...project, updatedAt: new Date().toISOString().split('T')[0] }
-            : p
-        )
-      : [project, ...advibeProjects];
-    setAdvibeProjects(updated);
-    try {
-      localStorage.setItem('ri8click_advibe_projects', JSON.stringify(updated));
-    } catch {}
-    syncUniversalStateToServer({ advibeProjects: updated });
-  };
-
-  const handleDeleteAdvibeProject = (projectId: string) => {
-    const updated = advibeProjects.filter(p => p.id !== projectId);
-    setAdvibeProjects(updated);
-    try {
-      localStorage.setItem('ri8click_advibe_projects', JSON.stringify(updated));
-    } catch {}
-    syncUniversalStateToServer({ advibeProjects: updated });
-  };
-
-  const handleDuplicateAdvibeProject = (projectId: string) => {
-    const source = advibeProjects.find(p => p.id === projectId);
-    if (!source) return;
-    const copy: AdVibeProject = {
-      ...source,
-      id: `advibe-proj-${Date.now()}`,
-      title: `${source.title} (Copy)`,
-      slug: `${source.slug}-copy-${Date.now().toString().slice(-4)}`,
-      status: 'Booking Open',
-      viewsCount: 0,
-      createdAt: new Date().toISOString().split('T')[0],
-      updatedAt: new Date().toISOString().split('T')[0]
-    };
-    const updated = [copy, ...advibeProjects];
-    setAdvibeProjects(updated);
-    try {
-      localStorage.setItem('ri8click_advibe_projects', JSON.stringify(updated));
-    } catch {}
-    syncUniversalStateToServer({ advibeProjects: updated });
-  };
-
-  const handleUpdateAdvibeLeadStatus = (leadId: string, status: AdVibeLead['status']) => {
-    const updated = advibeLeads.map(l => (l.id === leadId ? { ...l, status } : l));
-    setAdvibeLeads(updated);
-    try {
-      localStorage.setItem('ri8click_advibe_leads', JSON.stringify(updated));
-    } catch {}
-    syncUniversalStateToServer({ advibeLeads: updated });
-  };
-
-  const handleToggleAgencyAdvibePermission = (agencyId: string, allowed: boolean) => {
-    const updated = agencies.map(a =>
-      a.id === agencyId ? { ...a, canManageAdvibe: allowed } : a
-    );
-    setAgencies(updated);
-    try {
-      localStorage.setItem('ri8click_agencies_data', JSON.stringify(updated));
-    } catch {}
-    syncUniversalStateToServer({ agencies: updated });
-  };
-
-  const [savedPropertyIds, setSavedPropertyIds] = useState<string[]>(['prop-comm-1', 'prop-res-1']);
-
-  const handleToggleSave = (propertyId: string) => {
+  const handleToggleSave = (id: string) => {
     setSavedPropertyIds(prev =>
-      prev.includes(propertyId) ? prev.filter(id => id !== propertyId) : [...prev, propertyId]
+      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
     );
   };
 
-  const clearAllSaved = () => {
-    setSavedPropertyIds([]);
-  };
-
-  const handleSelectProperty = (property: Property) => {
-    const updated = properties.map(p =>
-      p.id === property.id ? { ...p, viewsCount: (p.viewsCount || 0) + 1 } : p
+  const handleAddProperty = (newProp: Property) => {
+    const nextProps = [newProp, ...properties];
+    const nextAgencies = agencies.map(ag =>
+      ag.id === newProp.agencyId
+        ? {
+            ...ag,
+            totalPosts: ((ag as any).totalPosts || 0) + 1,
+            activeListings: ((ag as any).activeListings || 0) + 1
+          }
+        : ag
     );
-    setProperties(updated);
-    try {
-      localStorage.setItem('ri8click_properties_data', JSON.stringify(updated));
-    } catch {}
-    syncUniversalStateToServer({ properties: updated });
-    setSelectedProperty({ ...property, viewsCount: (property.viewsCount || 0) + 1 });
-  };
-
-  const handleSelectBlog = (blog: BlogPost) => {
-    const updated = blogs.map(b =>
-      b.id === blog.id ? { ...b, viewsCount: (b.viewsCount || 0) + 1 } : b
-    );
-    setBlogs(updated);
-    try {
-      localStorage.setItem('ri8click_blogs_data', JSON.stringify(updated));
-    } catch {}
-    syncUniversalStateToServer({ blogs: updated });
-    setSelectedBlog({ ...blog, viewsCount: (blog.viewsCount || 0) + 1 });
-  };
-
-  const handleUpdateHeroSlides = (updatedSlides: HeroSlide[]) => {
-    setHeroSlides(updatedSlides);
-    try {
-      localStorage.setItem('ri8click_hero_slides', JSON.stringify(updatedSlides));
-    } catch {}
-    syncUniversalStateToServer({ heroSlides: updatedSlides });
-  };
-
-  const handleUpdateBlogs = (updatedBlogs: BlogPost[]) => {
-    setBlogs(updatedBlogs);
-    try {
-      localStorage.setItem('ri8click_blogs_data', JSON.stringify(updatedBlogs));
-    } catch {}
-    syncUniversalStateToServer({ blogs: updatedBlogs });
-  };
-
-  const handleUpdatePortions = (updatedPortions: SiteSectionPortion[]) => {
-    setSitePortions(updatedPortions);
-    try {
-      localStorage.setItem('ri8click_site_portions', JSON.stringify(updatedPortions));
-    } catch {}
-    syncUniversalStateToServer({ sitePortions: updatedPortions });
-  };
-
-  const handleResetPortions = () => {
-    setSitePortions(initialSitePortions);
-    try {
-      localStorage.setItem('ri8click_site_portions', JSON.stringify(initialSitePortions));
-    } catch {}
-    syncUniversalStateToServer({ sitePortions: initialSitePortions });
-  };
-
-  const handleUpdateProvinceCityData = (updatedData: ProvinceCityData[]) => {
-    setProvinceCityData(updatedData);
-    try {
-      localStorage.setItem('ri8click_locations_data', JSON.stringify(updatedData));
-    } catch {}
-    syncUniversalStateToServer({ provinceCityData: updatedData });
-  };
-
-  const handleUpdateProperties = (updatedProperties: Property[]) => {
-    const cleanProps = sanitizePropertiesToPakistanRegion(updatedProperties);
-    setProperties(cleanProps);
-    try {
-      localStorage.setItem('ri8click_properties_data', JSON.stringify(cleanProps));
-    } catch {}
-    syncUniversalStateToServer({ properties: cleanProps });
-  };
-
-  const initialFilterState: SearchFilterState = {
-    searchQuery: '',
-    purpose: 'all',
-    category: 'all',
-    province: '',
-    city: '',
-    society: '',
-    propertyType: '',
-    minPrice: 0,
-    maxPrice: 1000000000,
-    minBedrooms: null,
-    agencyId: ''
-  };
-
-  const [filters, setFilters] = useState<SearchFilterState>(initialFilterState);
-
-  const resetFilters = () => {
-    setFilters(initialFilterState);
+    setProperties(nextProps);
+    setAgencies(nextAgencies);
+    pushStateToServer({ properties: nextProps, agencies: nextAgencies });
   };
 
   const filteredProperties = useMemo(() => {
-    return properties.filter(p => {
-      if (p.status === 'pending') return false;
+    return properties
+      .filter(p => {
+        if (p.status === 'pending') return false;
+        if (filters.category !== 'all' && p.category !== filters.category) return false;
+        if (filters.purpose !== 'all' && p.purpose !== filters.purpose) return false;
+        if (filters.province !== 'all' && p.location.province !== filters.province) return false;
+        if (filters.city !== 'all' && p.location.city !== filters.city) return false;
+        if (filters.society !== 'all' && p.location.society !== filters.society) return false;
+        if (filters.propertyType !== 'all' && p.type !== filters.propertyType) return false;
+        if (p.price < filters.minPrice || p.price > filters.maxPrice) return false;
 
-      if (filters.searchQuery.trim() !== '') {
-        const q = filters.searchQuery.toLowerCase();
-        const matchTitle = p.title.toLowerCase().includes(q);
-        const matchDesc = p.description.toLowerCase().includes(q);
-        const matchSoc = p.location.society.toLowerCase().includes(q);
-        const matchCity = p.location.city.toLowerCase().includes(q);
-        const matchAgent = p.agentName.toLowerCase().includes(q);
-        if (!matchTitle && !matchDesc && !matchSoc && !matchCity && !matchAgent) return false;
-      }
-
-      if (filters.purpose !== 'all' && p.purpose !== filters.purpose) return false;
-      if (filters.category !== 'all' && p.category !== filters.category) return false;
-      if (filters.province && filters.province !== 'All Provinces' && p.location.province !== filters.province) return false;
-      if (filters.city && filters.city !== 'All Cities' && p.location.city.toLowerCase() !== filters.city.toLowerCase()) return false;
-      if (
-        filters.society &&
-        filters.society !== 'All Societies' &&
-        filters.society !== 'Show All' &&
-        filters.society !== 'all' &&
-        !p.location.society.toLowerCase().includes(filters.society.toLowerCase())
-      ) {
-        return false;
-      }
-      if (filters.propertyType && p.type !== filters.propertyType) return false;
-      if (filters.minBedrooms !== null && (p.bedrooms || 0) < filters.minBedrooms) return false;
-      if (filters.agencyId && p.agencyId !== filters.agencyId) return false;
-
-      return true;
-    });
+        if (filters.searchQuery.trim()) {
+          const q = filters.searchQuery.toLowerCase();
+          const matchTitle = p.title.toLowerCase().includes(q);
+          const matchDesc = p.description.toLowerCase().includes(q);
+          const matchSoc = p.location.society.toLowerCase().includes(q);
+          const matchCity = p.location.city.toLowerCase().includes(q);
+          const matchAgent = p.agentName.toLowerCase().includes(q);
+          if (!matchTitle && !matchDesc && !matchSoc && !matchCity && !matchAgent) {
+            return false;
+          }
+        }
+        return true;
+      })
+      .sort((a, b) => {
+        if (filters.sortBy === 'price_low') return a.price - b.price;
+        if (filters.sortBy === 'price_high') return b.price - a.price;
+        if (filters.sortBy === 'newest') {
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        }
+        return (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0);
+      });
   }, [properties, filters]);
 
-  const handleAddProperty = (newProp: Property) => {
-    const cleanProp = sanitizePropertiesToPakistanRegion([newProp])[0];
-    const updatedProps = [cleanProp, ...properties];
-    setProperties(updatedProps);
-    try {
-      localStorage.setItem('ri8click_properties_data', JSON.stringify(updatedProps));
-    } catch {}
-
-    const updatedAgencies = agencies.map(ag =>
-      ag.id === newProp.agencyId
-        ? { ...ag, totalPosts: ag.totalPosts + 1, activeListings: ag.activeListings + 1 }
-        : ag
-    );
-    setAgencies(updatedAgencies);
-    try {
-      localStorage.setItem('ri8click_agencies_data', JSON.stringify(updatedAgencies));
-    } catch {}
-
-    syncUniversalStateToServer({
-      properties: updatedProps,
-      agencies: updatedAgencies
-    });
+  const isPortionVisible = (portionId: string) => {
+    const found = sitePortions.find(p => p.id === portionId);
+    return found ? found.isVisible : true;
   };
-
-  const handleUpdateAgencyLimit = (agencyId: string, newLimit: number) => {
-    const updated = agencies.map(ag =>
-      ag.id === agencyId ? { ...ag, postLimit: newLimit } : ag
-    );
-    setAgencies(updated);
-    try {
-      localStorage.setItem('ri8click_agencies_data', JSON.stringify(updated));
-    } catch {}
-    syncUniversalStateToServer({ agencies: updated });
-  };
-
-  const handleAddNewAgency = (newAgency: AgencyAccount) => {
-    const cleanNew = sanitizeAgenciesToPakistanRegion([newAgency])[0];
-    const updated = [cleanNew, ...agencies];
-    setAgencies(updated);
-    try {
-      localStorage.setItem('ri8click_agencies_data', JSON.stringify(updated));
-    } catch {}
-    syncUniversalStateToServer({ agencies: updated });
-    setCurrentAgencyId(cleanNew.id);
-  };
-
-  const savedPropertiesList = useMemo(
-    () => properties.filter(p => savedPropertyIds.includes(p.id) && p.status !== 'pending'),
-    [properties, savedPropertyIds]
-  );
-
-  const isPortionEnabled = (key: SiteSectionPortion['key']) => {
-    const portion = sitePortions.find(p => p.key === key);
-    return portion ? portion.isEnabled : true;
-  };
-
-  const getPortionTitle = (key: SiteSectionPortion['key'], fallback: string) => {
-    const portion = sitePortions.find(p => p.key === key);
-    return portion ? portion.title : fallback;
-  };
-
-  const handleOpenVirtualTourFromPartial = (propData: Partial<Property>) => {
-    const fullProp: Property = {
-      id: propData.id || `tour-${Date.now()}`,
-      title: propData.title || 'Ri8Click Showcase Tour',
-      description: propData.description || '360° interactive architectural tour.',
-      purpose: propData.purpose || 'for_sale',
-      category: propData.category || 'commercial',
-      type: propData.type || 'Highrise Project',
-      price: propData.price || 25000000,
-      priceFormatted: propData.priceFormatted || 'PKR 2.5 Crore',
-      currency: 'PKR',
-      location: propData.location || {
-        province: 'Islamabad Capital Territory',
-        city: 'Islamabad / Taxila',
-        society: 'Faisal Hills & Blue Area',
-        address: 'Main Boulevard'
-      },
-      area: propData.area || '1000',
-      areaUnit: propData.areaUnit || 'Sq Ft',
-      features: propData.features || ['Ri8Click Thermal UPVC', 'Verified Legal NOC'],
-      images:
-        propData.images && propData.images.length > 0
-          ? propData.images
-          : ['https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1200&q=80'],
-      virtualTourVideoUrl: propData.virtualTourVideoUrl,
-      virtualTourVideoTitle: propData.virtualTourVideoTitle,
-      hasVirtualTour: true,
-      watermark: true,
-      agencyId: propData.agencyId || 'agency-1',
-      agentName: propData.agentName || 'Malik Zeeshan',
-      agentCompany: propData.agentCompany || 'Al-Mairaj Real Estate & Builders',
-      agentPhone: propData.agentPhone || '+92 336-5666727',
-      agentWhatsApp: propData.agentWhatsApp || '923365666727',
-      agentAvatar: resolvePakistanAgentAvatar(propData.agentAvatar, 'agency-1'),
-      agentVerified: true,
-      agentRating: 4.9,
-      isFeatured: true,
-      status: 'active',
-      createdAt: new Date().toISOString().split('T')[0]
-    };
-    setVirtualTourProperty(fullProp);
-  };
-
-  if (activeAdvibeSlug) {
-    const activeProject =
-      advibeProjects.find(p => p.slug === activeAdvibeSlug || p.id === activeAdvibeSlug) ||
-      advibeProjects[0];
-
-    if (activeProject) {
-      return (
-        <div className="min-h-screen bg-slate-950 text-white font-sans">
-          <AdvibeProjectScrollyPage
-            project={activeProject}
-            properties={properties.filter(p => p.status !== 'pending')}
-            onBackToListing={() => {
-              setActiveAdvibeSlug(null);
-              setActiveTab('advibe');
-              if (typeof window !== 'undefined' && window.history.pushState) {
-                window.history.pushState({}, '', '/advibe');
-              }
-            }}
-            onSelectProperty={prop => setSelectedProperty(prop)}
-          />
-          <PropertyDetailModal
-            property={selectedProperty}
-            onClose={() => setSelectedProperty(null)}
-            isSaved={selectedProperty ? savedPropertyIds.includes(selectedProperty.id) : false}
-            onToggleSave={handleToggleSave}
-            onScheduleTour={prop => setTourProperty(prop)}
-          />
-          <ScheduleTourModal
-            isOpen={Boolean(tourProperty)}
-            onClose={() => setTourProperty(null)}
-            property={tourProperty}
-          />
-          <FloatingWhatsApp />
-        </div>
-      );
-    }
-  }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans">
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
       <Navbar
-        activeTab={activeTab}
-        setActiveTab={tab => {
-          if (tab === 'advibe') {
-            navigateToAdvibeListing();
+        savedCount={savedPropertyIds.length}
+        onOpenSaved={() => setIsSavedModalOpen(true)}
+        onOpenPostProperty={() => {
+          if (userRole === 'admin' || userRole === 'agency') {
+            setIsPostModalOpen(true);
           } else {
-            setActiveTab(tab);
-            setActiveAdvibeSlug(null);
-            if (typeof window !== 'undefined' && window.location.pathname !== '/') {
-              window.history.pushState({}, '', '/');
-            }
-          }
-        }}
-        savedPropertiesCount={savedPropertiesList.length}
-        onOpenSavedModal={() => setIsSavedModalOpen(true)}
-        onOpenPostModal={() => {
-          if (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'agency')) {
             setLoginModalReason('agency_required');
             setIsLoginModalOpen(true);
-          } else {
-            setIsPostModalOpen(true);
           }
         }}
-        onOpenScheduleModal={() => setTourProperty(properties[0] || null)}
-        onOpenAdmin={() => {
-          if (!currentUser || currentUser.role !== 'admin') {
-            setLoginModalReason('admin_required');
-            setIsLoginModalOpen(true);
-          } else {
-            setAdminInitialTab('overview');
-            setIsAdminModalOpen(true);
-          }
+        onOpenAdmin={tab => {
+          if (tab) setAdminInitialTab(tab);
+          setIsAdminHubOpen(true);
         }}
-        onOpenAuthRoleModal={() => {
-          if (!currentUser) {
-            setLoginModalReason('general');
-            setIsLoginModalOpen(true);
-          } else {
-            setIsAuthRoleModalOpen(true);
-          }
-        }}
-        currentRole={currentRole}
-        currentAgency={currentAgency}
-        currentUser={currentUser}
-        onOpenLoginModal={reason => {
-          setLoginModalReason(reason || 'general');
+        onOpenRoleModal={() => setIsRoleModalOpen(true)}
+        onOpenLoginModal={() => {
+          setLoginModalReason('general');
           setIsLoginModalOpen(true);
         }}
+        currentUser={currentUser}
         onLogout={handleUserLogout}
+        userRole={userRole}
+        agencies={agencies}
+        selectedAgencyId={selectedAgencyId}
+        onSelectCategory={cat => {
+          setActiveView('portal');
+          setFilters(prev => ({ ...prev, category: cat }));
+          setTimeout(() => {
+            document.getElementById('listings-section')?.scrollIntoView({ behavior: 'smooth' });
+          }, 100);
+        }}
+        activeCategory={filters.category}
+        activeView={activeView}
+        onOpenAdvibe={() => {
+          setActiveView('advibe_listing');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+        onBackToPortal={() => {
+          setActiveView('portal');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
       />
 
-      {activeTab === 'advibe' ? (
+      {activeView === 'advibe_listing' ? (
         <AdvibeListingPage
-          projects={advibeProjects}
-          onOpenProject={slug => navigateToAdvibeProject(slug)}
-          onOpenCreateProject={() => {
-            if (
-              !currentUser ||
-              (currentUser.role !== 'admin' && !currentAgency?.canManageAdvibe)
-            ) {
-              setLoginModalReason('advibe_required');
-              setIsLoginModalOpen(true);
-            } else {
-              setAdminInitialTab('advibe');
-              setIsAdminModalOpen(true);
-            }
+          projects={advibeProjects.filter(p => p.published && !p.archived)}
+          onSelectProject={proj => {
+            setSelectedAdvibeProject(proj);
+            setActiveView('advibe_project');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
+          onOpenAdminAdvibe={() => {
+            setAdminInitialTab('advibe');
+            setIsAdminHubOpen(true);
+          }}
+          onBackToPortal={() => setActiveView('portal')}
           canManageAdvibe={
-            Boolean(currentUser) &&
-            (currentRole === 'admin' || Boolean(currentAgency?.canManageAdvibe))
+            userRole === 'admin' ||
+            (userRole === 'agency' &&
+              Boolean(
+                agencies.find(a => a.id === selectedAgencyId)?.canPublishAdvibe ||
+                  (agencies.find(a => a.id === selectedAgencyId) as any)?.canManageAdvibe
+              ))
           }
         />
+      ) : activeView === 'advibe_project' && selectedAdvibeProject ? (
+        <AdvibeProjectScrollyPage
+          project={selectedAdvibeProject}
+          properties={properties}
+          onBackToListing={() => setActiveView('advibe_listing')}
+          onSelectProperty={prop => setSelectedProperty(prop)}
+          onSubmitLead={leadData => {
+            const newLead: AdVibeLead = {
+              ...leadData,
+              id: `lead-adv-${Date.now()}`,
+              status: 'new',
+              createdAt: new Date().toISOString().split('T')[0]
+            };
+            handleUpdateAdvibeLeads([newLead, ...advibeLeads]);
+          }}
+        />
       ) : (
-        <>
-          {isPortionEnabled('hero_slider') && (
+        <main className="flex-1">
+          {isPortionVisible('hero_slider') && (
             <HeroSection
               slides={heroSlides}
               properties={properties}
-              onExploreClick={() => {
-                document
-                  .getElementById('properties-grid-section')
-                  ?.scrollIntoView({ behavior: 'smooth' });
-              }}
-              onContactAgentClick={() => setTourProperty(properties[0] || null)}
               onSelectCategoryFilter={cat => {
                 setFilters(prev => ({ ...prev, category: cat }));
-                setTimeout(() => {
-                  document
-                    .getElementById('properties-grid-section')
-                    ?.scrollIntoView({ behavior: 'smooth' });
-                }, 100);
               }}
-              onOpen3DTour={propData => handleOpenVirtualTourFromPartial(propData)}
+              onExploreClick={() => {
+                document.getElementById('listings-section')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              onContactAgentClick={() => {
+                document.getElementById('agencies-section')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              onOpen3DTour={sampleProp => {
+                setVirtual3DProperty(sampleProp || properties[0]);
+              }}
             />
           )}
 
-          {isPortionEnabled('search_bar') && (
+          {isPortionVisible('search_bar') && (
             <SearchFilterBar
               filters={filters}
-              setFilters={setFilters}
+              onChangeFilters={setFilters}
               provinceCityData={provinceCityData}
-              totalResultsCount={filteredProperties.length}
-              onResetFilters={resetFilters}
+              totalResults={filteredProperties.length}
+              isSuperAdmin={userRole === 'admin'}
+              onOpenLocationManager={() => {
+                setAdminInitialTab('locations');
+                setIsAdminHubOpen(true);
+              }}
             />
           )}
 
-          {isPortionEnabled('properties_grid') && (
-            <main
-              id="properties-grid-section"
-              className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 w-full space-y-8"
-            >
-              <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200/80 pb-5">
-                <div className="space-y-1">
-                  <div className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-blue-600">
+          {/* Featured Properties Grid */}
+          {isPortionVisible('properties_grid') && (
+            <section id="listings-section" className="py-12 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
+                <div>
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-xs font-extrabold uppercase tracking-wider mb-2">
                     <Sparkles className="w-3.5 h-3.5" />
-                    <span>Verified Multi-Agent Listings</span>
+                    <span>Verified Inventory ({filteredProperties.length})</span>
                   </div>
-                  <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
-                    {filters.city
-                      ? `Properties in ${filters.city}${
-                          filters.society ? ` • ${filters.society}` : ''
-                        }`
-                      : getPortionTitle(
-                          'properties_grid',
-                          'Featured Properties in Taxila, Faisal Hills & Pakistan'
-                        )}
+                  <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                    Featured Watermarked Properties
                   </h2>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
-                  {[
-                    { id: 'all', label: 'All Listings' },
-                    { id: 'commercial', label: 'Commercial' },
-                    { id: 'residential', label: 'Residential' },
-                    { id: 'modular', label: 'Capsule Homes' },
-                    { id: 'projects', label: 'New Projects' }
-                  ].map(pill => (
-                    <button
-                      key={pill.id}
-                      onClick={() => setFilters(prev => ({ ...prev, category: pill.id as any }))}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                        filters.category === pill.id
-                          ? 'bg-slate-900 text-white shadow-2xs'
-                          : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80'
-                      }`}
-                    >
-                      {pill.label}
-                    </button>
-                  ))}
+                  <button
+                    onClick={() => {
+                      if (userRole === 'admin' || userRole === 'agency') {
+                        setIsPostModalOpen(true);
+                      } else {
+                        setLoginModalReason('agency_required');
+                        setIsLoginModalOpen(true);
+                      }
+                    }}
+                    className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm cursor-pointer"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Post Property Ad</span>
+                  </button>
                 </div>
               </div>
 
-              {filteredProperties.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredProperties.map(property => (
+              {filteredProperties.length === 0 ? (
+                <div className="bg-white rounded-3xl border border-slate-200 p-12 text-center space-y-4">
+                  <SlidersHorizontal className="w-10 h-10 text-slate-400 mx-auto" />
+                  <h3 className="text-lg font-extrabold text-slate-900">
+                    No Matching Properties Found
+                  </h3>
+                  <p className="text-xs text-slate-500 max-w-md mx-auto">
+                    Try clearing your search filters or switching the selected city/society.
+                  </p>
+                  <button
+                    onClick={() =>
+                      setFilters({
+                        searchQuery: '',
+                        province: 'all',
+                        city: 'all',
+                        society: 'all',
+                        category: 'all',
+                        purpose: 'all',
+                        propertyType: 'all',
+                        minPrice: 0,
+                        maxPrice: 1000000000,
+                        bedrooms: 'all',
+                        sortBy: 'featured'
+                      })
+                    }
+                    className="px-5 py-2.5 rounded-xl bg-blue-600 text-white text-xs font-bold cursor-pointer"
+                  >
+                    Reset All Filters
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {filteredProperties.map(prop => (
                     <PropertyCard
-                      key={property.id}
-                      property={property}
-                      isSaved={savedPropertyIds.includes(property.id)}
+                      key={prop.id}
+                      property={prop}
+                      isSaved={savedPropertyIds.includes(prop.id)}
                       onToggleSave={handleToggleSave}
-                      onSelectProperty={handleSelectProperty}
-                      onScheduleTour={prop => setTourProperty(prop)}
+                      onSelectProperty={p => setSelectedProperty(p)}
+                      onScheduleTour={p => setTourProperty(p)}
                     />
                   ))}
                 </div>
-              ) : (
-                <div className="bg-white rounded-2xl border border-slate-200/80 p-12 text-center max-w-lg mx-auto my-6 space-y-4 shadow-2xs">
-                  <div className="w-12 h-12 bg-slate-100 text-slate-700 rounded-xl flex items-center justify-center mx-auto">
-                    <SlidersHorizontal className="w-6 h-6" />
-                  </div>
-                  <h3 className="text-base font-bold text-slate-900">
-                    No Matching Properties Found
-                  </h3>
-                  <p className="text-xs text-slate-500 leading-relaxed">
-                    We couldn&apos;t find any active listings matching your current filter criteria. Try resetting your filters or selecting another society.
-                  </p>
-                  <button
-                    onClick={resetFilters}
-                    className="px-4 py-2 rounded-lg text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 transition-colors inline-flex items-center gap-1.5 shadow-2xs"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5" />
-                    <span>Reset All Search Filters</span>
-                  </button>
-                </div>
               )}
-            </main>
+            </section>
           )}
 
-          {isPortionEnabled('commercial_showcase') && (
+          {isPortionVisible('commercial_showcase') && (
             <CommercialShowcase
               properties={properties}
               savedPropertyIds={savedPropertyIds}
               onToggleSave={handleToggleSave}
-              onSelectProperty={handleSelectProperty}
-              onScheduleTour={prop => setTourProperty(prop)}
+              onSelectProperty={p => setSelectedProperty(p)}
+              onScheduleTour={p => setTourProperty(p)}
               onViewAllCommercial={() => {
                 setFilters(prev => ({ ...prev, category: 'commercial' }));
-                document
-                  .getElementById('properties-grid-section')
-                  ?.scrollIntoView({ behavior: 'smooth' });
+                document.getElementById('listings-section')?.scrollIntoView({ behavior: 'smooth' });
               }}
             />
           )}
 
-          {isPortionEnabled('modular_houses') && (
+          {isPortionVisible('modular_showcase') && (
             <ModularHomesShowcase
               properties={properties}
               savedPropertyIds={savedPropertyIds}
               onToggleSave={handleToggleSave}
-              onSelectProperty={handleSelectProperty}
-              onScheduleTour={prop => setTourProperty(prop)}
-              onWhatsAppInquiry={subject => {
-                window.open(
-                  `https://wa.me/923365666727?text=${encodeURIComponent(
-                    `Assalam o Alaikum ri8click, I want complete pricing and brochure for: ${subject}`
-                  )}`,
-                  '_blank'
+              onSelectProperty={p => setSelectedProperty(p)}
+              onScheduleTour={p => setTourProperty(p)}
+              onWhatsAppInquiry={topic => {
+                const text = encodeURIComponent(
+                  `Assalam-o-Alaikum, I am inquiring about "${topic}" on ri8click.com.`
                 );
+                window.open(`https://wa.me/923365666727?text=${text}`, '_blank');
               }}
             />
           )}
 
-          {isPortionEnabled('news_blogs_section') && (
+          {isPortionVisible('agencies_network') && (
+            <div id="agencies-section">
+              <AgenciesSection
+                agencies={agencies}
+                properties={properties}
+                onSelectAgencyFilter={agencyId => {
+                  const ag = agencies.find(a => a.id === agencyId);
+                  if (ag) {
+                    setFilters(prev => ({ ...prev, searchQuery: ag.name }));
+                    document
+                      .getElementById('listings-section')
+                      ?.scrollIntoView({ behavior: 'smooth' });
+                  }
+                }}
+                onOpenAgencyPortal={() => {
+                  setIsRoleModalOpen(true);
+                }}
+              />
+            </div>
+          )}
+
+          {isPortionVisible('consortium_showcase') && (
+            <ConsortiumShowcase divisions={CONSORTIUM_DIVISIONS} />
+          )}
+
+          {isPortionVisible('news_blogs_section') && (
             <NewsBlogsSection
-              blogs={blogs}
-              onSelectBlog={handleSelectBlog}
-              onOpenAdminBlogManager={() => {
-                if (!currentUser || currentUser.role !== 'admin') {
-                  setLoginModalReason('admin_required');
-                  setIsLoginModalOpen(true);
-                } else {
-                  setAdminInitialTab('blogs');
-                  setIsAdminModalOpen(true);
-                }
+              blogs={blogs.filter(b => b.status === 'published')}
+              onSelectBlog={b => setSelectedBlog(b)}
+              onOpenAdminBlogs={() => {
+                setAdminInitialTab('blogs');
+                setIsAdminHubOpen(true);
               }}
+              isSuperAdmin={userRole === 'admin'}
             />
           )}
-
-          {isPortionEnabled('verified_agencies') && (
-            <AgenciesSection
-              agencies={agencies}
-              properties={properties}
-              onOpenRegisterAgency={() => {
-                if (!currentUser || currentUser.role !== 'admin') {
-                  setLoginModalReason('admin_required');
-                  setIsLoginModalOpen(true);
-                } else {
-                  setAdminInitialTab('agencies');
-                  setIsAdminModalOpen(true);
-                }
-              }}
-              onFilterByAgency={agencyId => {
-                setFilters(prev => ({ ...prev, agencyId }));
-                document
-                  .getElementById('properties-grid-section')
-                  ?.scrollIntoView({ behavior: 'smooth' });
-              }}
-            />
-          )}
-
-          {isPortionEnabled('consortium_section') && (
-            <ConsortiumShowcase
-              divisions={consortiumDivisions}
-              onSelectDivisionContact={div => {
-                window.open(
-                  `https://wa.me/${div.contactWhatsApp}?text=${encodeURIComponent(
-                    `Assalam o Alaikum, I am inquiring about ${div.title} on ri8click.`
-                  )}`,
-                  '_blank'
-                );
-              }}
-            />
-          )}
-        </>
+        </main>
       )}
 
       <Footer
-        divisions={consortiumDivisions}
-        currentUser={currentUser}
-        onOpenLogin={() => {
-          setLoginModalReason('general');
-          setIsLoginModalOpen(true);
+        onSelectCity={cityName => {
+          setActiveView('portal');
+          setFilters(prev => ({ ...prev, province: 'all', city: cityName, society: 'all' }));
+          document.getElementById('listings-section')?.scrollIntoView({ behavior: 'smooth' });
+        }}
+        onSelectCategory={cat => {
+          setActiveView('portal');
+          setFilters(prev => ({ ...prev, category: cat }));
+          document.getElementById('listings-section')?.scrollIntoView({ behavior: 'smooth' });
         }}
         onOpenAdmin={() => {
-          if (!currentUser || currentUser.role !== 'admin') {
-            setLoginModalReason('admin_required');
-            setIsLoginModalOpen(true);
-          } else {
-            setAdminInitialTab('overview');
-            setIsAdminModalOpen(true);
-          }
-        }}
-        onSelectSociety={society => {
-          setActiveTab('properties');
-          setActiveAdvibeSlug(null);
-          setFilters(prev => ({ ...prev, society }));
-          document
-            .getElementById('properties-grid-section')
-            ?.scrollIntoView({ behavior: 'smooth' });
-        }}
-        onSelectNavTab={section => {
-          if (section === 'advibe') {
-            navigateToAdvibeListing();
-            return;
-          }
-          setActiveTab(section);
-          setActiveAdvibeSlug(null);
-          const idMap: Record<string, string> = {
-            properties: 'properties-grid-section',
-            commercial: 'commercial-section',
-            modular: 'modular-section',
-            consortium: 'consortium-section',
-            agents: 'agents-section',
-            news_blogs: 'news-blogs-section'
-          };
-          const targetId = idMap[section];
-          if (targetId) {
-            document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth' });
-          } else {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }
+          setAdminInitialTab('overview');
+          setIsAdminHubOpen(true);
         }}
       />
 
-      <VirtualTour3DModal
-        isOpen={Boolean(virtualTourProperty)}
-        onClose={() => setVirtualTourProperty(null)}
-        property={virtualTourProperty}
-        onScheduleVisit={prop => {
-          setVirtualTourProperty(null);
-          setTourProperty(prop);
-        }}
-      />
-
-      <AuthRoleModal
-        isOpen={isAuthRoleModalOpen}
-        onClose={() => setIsAuthRoleModalOpen(false)}
-        currentRole={currentRole}
-        currentAgency={currentAgency}
-        allAgencies={agencies}
-        agencies={agencies}
-        onSelectRole={role => setCurrentRole(role)}
-        onSelectAgency={id => setCurrentAgencyId(id)}
-        onOpenAdminHub={() => {
-          setIsAuthRoleModalOpen(false);
-          if (!currentUser || currentUser.role !== 'admin') {
-            setLoginModalReason('admin_required');
-            setIsLoginModalOpen(true);
-          } else {
-            setAdminInitialTab('overview');
-            setIsAdminModalOpen(true);
-          }
-        }}
-        onOpenPostProperty={() => {
-          setIsAuthRoleModalOpen(false);
-          if (
-            !currentUser ||
-            (currentUser.role !== 'admin' && currentUser.role !== 'agency')
-          ) {
-            setLoginModalReason('agency_required');
-            setIsLoginModalOpen(true);
-          } else {
-            setIsPostModalOpen(true);
-          }
-        }}
-      />
-
-      <AuthLoginModal
-        isOpen={isLoginModalOpen}
-        onClose={() => setIsLoginModalOpen(false)}
-        currentUser={currentUser}
-        agencies={agencies}
-        requiredReason={loginModalReason}
-        onLogin={user => {
-          handleUserLogin(user);
-          if (loginModalReason === 'admin_required' && user.role === 'admin') {
-            setAdminInitialTab('overview');
-            setIsAdminModalOpen(true);
-          } else if (
-            loginModalReason === 'agency_required' &&
-            (user.role === 'admin' || user.role === 'agency')
-          ) {
-            setIsPostModalOpen(true);
-          } else if (loginModalReason === 'advibe_required') {
-            setAdminInitialTab('advibe');
-            setIsAdminModalOpen(true);
-          }
-        }}
-        onLogout={handleUserLogout}
-      />
-
+      {/* Modals */}
       <PropertyDetailModal
         property={selectedProperty}
         onClose={() => setSelectedProperty(null)}
@@ -1265,107 +895,126 @@ export function App() {
           setSelectedProperty(null);
           setTourProperty(prop);
         }}
-      />
-
-      <BlogDetailModal
-        blog={selectedBlog}
-        onClose={() => setSelectedBlog(null)}
-        onOpenPropertySearch={society => {
-          setFilters(prev => ({ ...prev, society }));
-          setSelectedBlog(null);
-          document.getElementById('properties-grid-section')?.scrollIntoView({ behavior: 'smooth' });
+        onOpen3DTour={prop => {
+          setSelectedProperty(null);
+          setVirtual3DProperty(prop);
         }}
       />
+
+      <BlogDetailModal blog={selectedBlog} onClose={() => setSelectedBlog(null)} />
 
       <ScheduleTourModal
-        isOpen={Boolean(tourProperty)}
-        onClose={() => setTourProperty(null)}
         property={tourProperty}
-      />
-
-      <PostPropertyModal
-        isOpen={isPostModalOpen}
-        onClose={() => setIsPostModalOpen(false)}
-        currentAgency={currentAgency}
-        provinceCityData={provinceCityData}
-        onUpdateProvinceCityData={handleUpdateProvinceCityData}
-        onAddProperty={handleAddProperty}
-        onOpenAdmin={() => {
-          setAdminInitialTab('agencies');
-          setIsAdminModalOpen(true);
-        }}
-        currentRole={currentRole}
-        isSuperAdmin={currentRole === 'admin'}
-        onOpenRoleSwitcher={() => setIsAuthRoleModalOpen(true)}
+        onClose={() => setTourProperty(null)}
       />
 
       <SavedPropertiesModal
         isOpen={isSavedModalOpen}
         onClose={() => setIsSavedModalOpen(false)}
-        savedProperties={savedPropertiesList}
-        onToggleSave={handleToggleSave}
-        onSelectProperty={handleSelectProperty}
-        onScheduleTour={prop => setTourProperty(prop)}
-        onClearAllSaved={clearAllSaved}
+        savedProperties={properties.filter(p => savedPropertyIds.includes(p.id))}
+        onRemoveSaved={handleToggleSave}
+        onSelectProperty={prop => {
+          setIsSavedModalOpen(false);
+          setSelectedProperty(prop);
+        }}
+        onScheduleTour={prop => {
+          setIsSavedModalOpen(false);
+          setTourProperty(prop);
+        }}
+      />
+
+      <PostPropertyModal
+        isOpen={isPostModalOpen}
+        onClose={() => setIsPostModalOpen(false)}
+        agencies={agencies}
+        selectedAgencyId={selectedAgencyId}
+        provinceCityData={provinceCityData}
+        onAddProperty={handleAddProperty}
+        onOpenAdmin={() => {
+          setIsPostModalOpen(false);
+          setAdminInitialTab('agencies');
+          setIsAdminHubOpen(true);
+        }}
+        isSuperAdmin={userRole === 'admin'}
+        onOpenRoleSwitcher={() => {
+          setIsPostModalOpen(false);
+          setIsRoleModalOpen(true);
+        }}
+        onUpdateProvinceCityData={handleUpdateProvinceCityData}
+      />
+
+      <VirtualTour3DModal
+        isOpen={Boolean(virtual3DProperty)}
+        onClose={() => setVirtual3DProperty(null)}
+        property={virtual3DProperty}
+        onScheduleTour={prop => {
+          setVirtual3DProperty(null);
+          setTourProperty(prop);
+        }}
       />
 
       <AdminHubModal
-        isOpen={isAdminModalOpen}
-        onClose={() => setIsAdminModalOpen(false)}
+        isOpen={isAdminHubOpen}
+        onClose={() => setIsAdminHubOpen(false)}
         initialTab={adminInitialTab}
-        properties={properties}
-        onUpdateProperties={handleUpdateProperties}
-        onViewProperty={prop => {
-          setIsAdminModalOpen(false);
-          handleSelectProperty(prop);
-        }}
-        onOpenVirtualTour={prop => {
-          setIsAdminModalOpen(false);
-          setVirtualTourProperty(prop);
-        }}
-        agencies={agencies}
-        onUpdateAgencyLimit={handleUpdateAgencyLimit}
-        onAddNewAgency={handleAddNewAgency}
         provinceCityData={provinceCityData}
         onUpdateProvinceCityData={handleUpdateProvinceCityData}
+        agencies={agencies}
+        onUpdateAgencies={handleUpdateAgencies}
+        properties={properties}
+        onUpdateProperties={handleUpdateProperties}
         heroSlides={heroSlides}
         onUpdateHeroSlides={handleUpdateHeroSlides}
         blogs={blogs}
         onUpdateBlogs={handleUpdateBlogs}
-        onViewBlog={blog => {
-          setIsAdminModalOpen(false);
-          setSelectedBlog(blog);
-        }}
-        portions={sitePortions}
-        onUpdatePortions={handleUpdatePortions}
-        onResetPortions={handleResetPortions}
-        advibeProjects={advibeProjects}
-        advibeLeads={advibeLeads}
-        onSaveAdvibeProject={handleSaveAdvibeProject}
-        onDeleteAdvibeProject={handleDeleteAdvibeProject}
-        onDuplicateAdvibeProject={handleDuplicateAdvibeProject}
-        onUpdateAdvibeLeadStatus={handleUpdateAdvibeLeadStatus}
-        onToggleAgencyAdvibePermission={handleToggleAgencyAdvibePermission}
-        onPreviewAdvibeProject={slug => {
-          setIsAdminModalOpen(false);
-          navigateToAdvibeProject(slug);
-        }}
-        currentRole={currentRole}
-        isSuperAdmin={currentRole === 'admin'}
+        sitePortions={sitePortions}
+        onUpdateSitePortions={handleUpdateSitePortions}
         currentUser={currentUser}
-        allUsers={userAccounts}
-        onUpdateCurrentUser={handleUpdateCurrentUser}
-        onUpdateAllUsers={handleUpdateUserAccounts}
-        onOpenRoleSwitcher={() => {
-          setIsAdminModalOpen(false);
-          setIsAuthRoleModalOpen(true);
+        userAccounts={userAccounts}
+        onUpdateUserAccounts={handleUpdateUserAccounts}
+        onSwitchActiveUser={handleUserLogin}
+        advibeProjects={advibeProjects}
+        onUpdateAdvibeProjects={handleUpdateAdvibeProjects}
+        advibeLeads={advibeLeads}
+        onUpdateAdvibeLeads={handleUpdateAdvibeLeads}
+        onPreviewAdvibeProject={proj => {
+          setIsAdminHubOpen(false);
+          setSelectedAdvibeProject(proj);
+          setActiveView('advibe_project');
         }}
       />
 
-      <AiChatbot
-        properties={properties.filter(p => p.status !== 'pending')}
-        onSelectProperty={handleSelectProperty}
+      <AuthLoginModal
+        isOpen={isLoginModalOpen}
+        onClose={() => setIsLoginModalOpen(false)}
+        accounts={userAccounts}
+        currentUser={currentUser}
+        onLogin={handleUserLogin}
+        onLogout={handleUserLogout}
+        requiredReason={loginModalReason}
       />
+
+      <AuthRoleModal
+        isOpen={isRoleModalOpen}
+        onClose={() => setIsRoleModalOpen(false)}
+        currentRole={userRole}
+        onSelectRole={role => {
+          setUserRole(role);
+          if (role === 'admin') {
+            const adminAcc = userAccounts.find(a => a.role === 'admin') || DEFAULT_USER_ACCOUNTS[0];
+            setCurrentUser(adminAcc);
+          }
+        }}
+        agencies={agencies}
+        selectedAgencyId={selectedAgencyId}
+        onSelectAgency={id => setSelectedAgencyId(id)}
+        onOpenAdmin={() => {
+          setIsRoleModalOpen(false);
+          setIsAdminHubOpen(true);
+        }}
+      />
+
+      <AiChatbot properties={properties} agencies={agencies} />
       <FloatingWhatsApp />
       <ScrollToTop />
     </div>
