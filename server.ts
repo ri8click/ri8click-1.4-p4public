@@ -2,440 +2,509 @@ import express from "express";
 import path from "path";
 import fs from "fs";
 import { createServer as createViteServer } from "vite";
-import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
+import { GoogleGenAI } from "@google/genai";
 
-// Load environment variables from .envRE and .env if available
-dotenv.config({ path: path.resolve(process.cwd(), ".envRE") });
+// Load environment variables from .envRE first, then fallback to default .env
+dotenv.config({ path: ".envRE" });
 dotenv.config();
 
-const app = express();
-const PORT = Number(process.env.PORT) || 3000;
-
-// Security headers middleware
-app.use((_req, res, next) => {
-  res.setHeader("X-Content-Type-Options", "nosniff");
-  res.setHeader("X-Frame-Options", "SAMEORIGIN");
-  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
-  next();
-});
-
-// Increase body limit to 50MB so base64/uploaded images from Admin or Agencies save universally
-app.use(express.json({ limit: "50mb" }));
-app.use(express.urlencoded({ extended: true, limit: "50mb" }));
-
-// Lazy initialization of Gemini client
-let aiClient: GoogleGenAI | null = null;
-function getGeminiClient(): GoogleGenAI | null {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey || apiKey === "your_actual_gemini_api_key_here") {
-    return null;
-  }
-  if (!aiClient) {
-    aiClient = new GoogleGenAI({
-      apiKey,
-      httpOptions: {
-        headers: {
-          "User-Agent": "aistudio-build"
-        }
-      }
-    });
-  }
-  return aiClient;
-}
-
-// ============================================================================
-// UNIVERSAL PORTAL STATE PERSISTENCE & REAL-TIME SSE BROADCAST
-// ============================================================================
 const DATA_DIR = path.resolve(process.cwd(), "data");
 const STATE_FILE = path.join(DATA_DIR, "portal-state.json");
 
 interface GlobalPortalState {
-  properties: any[] | null;
-  agencies: any[] | null;
-  provinceCityData: any[] | null;
-  heroSlides: any[] | null;
-  blogs: any[] | null;
-  sitePortions: any[] | null;
-  userAccounts: any[] | null;
-  advibeProjects: any[] | null;
-  advibeLeads: any[] | null;
-  updatedAt: string;
+  properties?: any[];
+  agencies?: any[];
+  provinceCityData?: any[];
+  heroSlides?: any[];
+  blogs?: any[];
+  sitePortions?: any[];
+  userAccounts?: any[];
+  advibeProjects?: any[];
+  advibeLeads?: any[];
+  updatedAt?: string;
+  revision?: number;
+}
+
+function ensureDataDir() {
+  if (!fs.existsSync(DATA_DIR)) {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+  }
 }
 
 function loadGlobalState(): GlobalPortalState {
   try {
-    if (!fs.existsSync(DATA_DIR)) {
-      fs.mkdirSync(DATA_DIR, { recursive: true });
-    }
+    ensureDataDir();
     if (fs.existsSync(STATE_FILE)) {
       const raw = fs.readFileSync(STATE_FILE, "utf-8");
-      return JSON.parse(raw);
-    }
-  } catch (err) {
-    console.error("Failed to read global portal state:", err);
-  }
-  return {
-    properties: null,
-    agencies: null,
-    provinceCityData: null,
-    heroSlides: null,
-    blogs: null,
-    sitePortions: null,
-    userAccounts: null,
-    advibeProjects: null,
-    advibeLeads: null,
-    updatedAt: new Date().toISOString()
-  };
-}
-
-let globalPortalState: GlobalPortalState = loadGlobalState();
-
-function saveGlobalState() {
-  try {
-    if (!fs.existsSync(DATA_DIR)) {
-      fs.mkdirSync(DATA_DIR, { recursive: true });
-    }
-    globalPortalState.updatedAt = new Date().toISOString();
-    fs.writeFileSync(STATE_FILE, JSON.stringify(globalPortalState, null, 2), "utf-8");
-  } catch (err) {
-    console.error("Failed to persist global portal state:", err);
-  }
-}
-
-// Redact sensitive password fields when broadcasting state to public browser clients
-function getPublicSanitizedState(state: GlobalPortalState): GlobalPortalState {
-  return {
-    ...state,
-    userAccounts: Array.isArray(state.userAccounts)
-      ? state.userAccounts.map(({ password, ...safeAccount }) => safeAccount)
-      : null
-  };
-}
-
-// Connected SSE clients for instant multi-browser synchronization
-const sseClients = new Set<express.Response>();
-
-function broadcastStateUpdate(changedKeys: string[]) {
-  const payload = JSON.stringify({
-    type: "STATE_UPDATED",
-    changedKeys,
-    updatedAt: globalPortalState.updatedAt,
-    state: getPublicSanitizedState(globalPortalState)
-  });
-  for (const client of sseClients) {
-    try {
-      client.write(`data: ${payload}\n\n`);
-    } catch {
-      sseClients.delete(client);
-    }
-  }
-}
-
-// Subscribe to live state updates via Server-Sent Events (SSE)
-app.get("/api/state/stream", (req, res) => {
-  res.setHeader("Content-Type", "text/event-stream");
-  res.setHeader("Cache-Control", "no-cache");
-  res.setHeader("Connection", "keep-alive");
-  res.flushHeaders?.();
-
-  sseClients.add(res);
-  res.write(
-    `data: ${JSON.stringify({
-      type: "CONNECTED",
-      updatedAt: globalPortalState.updatedAt
-    })}\n\n`
-  );
-
-  req.on("close", () => {
-    sseClients.delete(res);
-  });
-});
-
-// Get universal portal state for all browser sessions (passwords redacted)
-app.get("/api/state", (_req, res) => {
-  res.json(getPublicSanitizedState(globalPortalState));
-});
-
-// Update universal portal state (any section or multiple sections)
-app.put("/api/state", (req, res) => {
-  const updates = req.body;
-  if (!updates || typeof updates !== "object" || Array.isArray(updates)) {
-    return res.status(400).json({ error: "Invalid state payload" });
-  }
-
-  const allowedKeys: (keyof GlobalPortalState)[] = [
-    "properties",
-    "agencies",
-    "provinceCityData",
-    "heroSlides",
-    "blogs",
-    "sitePortions",
-    "userAccounts",
-    "advibeProjects",
-    "advibeLeads"
-  ];
-
-  const changedKeys: string[] = [];
-  for (const key of allowedKeys) {
-    if (Object.prototype.hasOwnProperty.call(updates, key) && Array.isArray(updates[key])) {
-      (globalPortalState as any)[key] = updates[key];
-      changedKeys.push(key);
-    }
-  }
-
-  if (changedKeys.length > 0) {
-    saveGlobalState();
-    broadcastStateUpdate(changedKeys);
-  }
-
-  res.json({
-    status: "ok",
-    changedKeys,
-    updatedAt: globalPortalState.updatedAt
-  });
-});
-
-// ============================================================================
-// ADVIBE INTERACTIVE MEGAPROJECT SHOWCASE API ROUTES
-// ============================================================================
-const advibeStore: {
-  projects: any[];
-  leads: any[];
-  permittedDealers: Set<string>;
-} = {
-  projects: globalPortalState.advibeProjects || [],
-  leads: globalPortalState.advibeLeads || [],
-  permittedDealers: new Set(["agency-1", "agency-2"])
-};
-
-function requireAdvibeAuth(
-  req: express.Request,
-  res: express.Response,
-  next: express.NextFunction
-) {
-  const userRole = (req.headers["x-user-role"] as string) || "";
-  const agencyId = (req.headers["x-agency-id"] as string) || "";
-
-  if (userRole === "admin") {
-    return next();
-  }
-  if (userRole === "agency" && advibeStore.permittedDealers.has(agencyId)) {
-    return next();
-  }
-
-  return res.status(403).json({
-    error: "Forbidden: Requires Super Admin or Authorized Dealer privileges for AdVibe."
-  });
-}
-
-// GET all AdVibe projects
-app.get("/api/advibe/projects", (_req, res) => {
-  res.json({ projects: globalPortalState.advibeProjects || advibeStore.projects });
-});
-
-// GET single AdVibe project by slug
-app.get("/api/advibe/projects/:slug", (req, res) => {
-  const list = globalPortalState.advibeProjects || advibeStore.projects;
-  const project = list.find(
-    (p) => p.slug === req.params.slug || p.id === req.params.slug
-  );
-  if (!project) {
-    return res.status(404).json({ error: "AdVibe project not found" });
-  }
-  res.json({ project });
-});
-
-// POST / PUT AdVibe project (Create or Update)
-app.post("/api/advibe/projects", requireAdvibeAuth, (req, res) => {
-  const project = req.body;
-  if (!project || typeof project.title !== "string" || typeof project.slug !== "string") {
-    return res.status(400).json({ error: "Project title and slug are required." });
-  }
-
-  const list = globalPortalState.advibeProjects || advibeStore.projects;
-  const existingIdx = list.findIndex((p) => p.id === project.id);
-  if (existingIdx >= 0) {
-    list[existingIdx] = {
-      ...project,
-      updatedAt: new Date().toISOString().split("T")[0]
-    };
-  } else {
-    list.unshift({
-      ...project,
-      id: project.id || `advibe-proj-${Date.now()}`,
-      createdAt: new Date().toISOString().split("T")[0],
-      updatedAt: new Date().toISOString().split("T")[0]
-    });
-  }
-
-  advibeStore.projects = list;
-  globalPortalState.advibeProjects = list;
-  saveGlobalState();
-  broadcastStateUpdate(["advibeProjects"]);
-
-  res.json({ status: "ok", project });
-});
-
-// DELETE AdVibe project
-app.delete("/api/advibe/projects/:id", requireAdvibeAuth, (req, res) => {
-  const list = globalPortalState.advibeProjects || advibeStore.projects;
-  const nextList = list.filter((p) => p.id !== req.params.id);
-  advibeStore.projects = nextList;
-  globalPortalState.advibeProjects = nextList;
-  saveGlobalState();
-  broadcastStateUpdate(["advibeProjects"]);
-
-  res.json({ status: "deleted", id: req.params.id });
-});
-
-// POST duplicate AdVibe project
-app.post("/api/advibe/projects/:id/duplicate", requireAdvibeAuth, (req, res) => {
-  const list = globalPortalState.advibeProjects || advibeStore.projects;
-  const source = list.find((p) => p.id === req.params.id);
-  if (!source) {
-    return res.status(404).json({ error: "Source project not found" });
-  }
-  const copy = {
-    ...source,
-    id: `advibe-proj-${Date.now()}`,
-    title: `${source.title} (Copy)`,
-    slug: `${source.slug}-copy-${Date.now().toString().slice(-4)}`,
-    status: "Booking Open",
-    viewsCount: 0,
-    leadsCount: 0,
-    createdAt: new Date().toISOString().split("T")[0],
-    updatedAt: new Date().toISOString().split("T")[0]
-  };
-  list.unshift(copy);
-  advibeStore.projects = list;
-  globalPortalState.advibeProjects = list;
-  saveGlobalState();
-  broadcastStateUpdate(["advibeProjects"]);
-
-  res.json({ status: "duplicated", project: copy });
-});
-
-// POST public lead from AdVibe interactive showcase
-app.post("/api/advibe/leads", (req, res) => {
-  const lead = req.body;
-  if (!lead || typeof lead.name !== "string" || typeof lead.phone !== "string") {
-    return res.status(400).json({ error: "Lead name and phone are required." });
-  }
-  const newLead = {
-    id: `advibe-lead-${Date.now()}`,
-    projectId: String(lead.projectId || ""),
-    projectTitle: String(lead.projectTitle || ""),
-    name: lead.name.trim().slice(0, 120),
-    phone: lead.phone.trim().slice(0, 40),
-    email: String(lead.email || "").trim().slice(0, 120),
-    preferredUnit: String(lead.preferredUnit || "").trim().slice(0, 120),
-    message: String(lead.message || "").trim().slice(0, 1000),
-    contactPreference: lead.contactPreference || "whatsapp",
-    source: String(lead.source || "website_advibe"),
-    status: "new",
-    createdAt: new Date().toISOString()
-  };
-  const leadsList = globalPortalState.advibeLeads || advibeStore.leads;
-  leadsList.unshift(newLead);
-  advibeStore.leads = leadsList;
-  globalPortalState.advibeLeads = leadsList;
-  saveGlobalState();
-  broadcastStateUpdate(["advibeLeads"]);
-
-  res.json({ status: "ok", lead: newLead });
-});
-
-// GET all AdVibe leads (Admin / Authorized Dealer)
-app.get("/api/advibe/leads", requireAdvibeAuth, (_req, res) => {
-  res.json({ leads: globalPortalState.advibeLeads || advibeStore.leads });
-});
-
-// POST toggle dealer AdVibe permission (Super Admin only)
-app.post("/api/advibe/permissions", requireAdvibeAuth, (req, res) => {
-  const { agencyId, allowed } = req.body || {};
-  if (!agencyId || typeof agencyId !== "string") {
-    return res.status(400).json({ error: "agencyId is required" });
-  }
-  if (allowed) {
-    advibeStore.permittedDealers.add(agencyId);
-  } else {
-    advibeStore.permittedDealers.delete(agencyId);
-  }
-  res.json({
-    status: "ok",
-    agencyId,
-    allowed: advibeStore.permittedDealers.has(agencyId)
-  });
-});
-
-// API Health Check
-app.get("/api/health", (_req, res) => {
-  res.json({
-    status: "ok",
-    geminiConfigured: Boolean(getGeminiClient()),
-    stateUpdatedAt: globalPortalState.updatedAt
-  });
-});
-
-// Gemini AI Real Estate Assistant Endpoint
-app.post("/api/gemini/chat", async (req, res) => {
-  try {
-    const { message, context } = req.body || {};
-    if (!message || typeof message !== "string") {
-      return res.status(400).json({ error: "A valid message is required." });
-    }
-
-    const ai = getGeminiClient();
-    if (!ai) {
-      return res.status(200).json({
-        reply:
-          "Welcome to ri8click Real Estate & Modular Homes Consortium! Tell me your budget, preferred city (Taxila, Faisal Hills, Islamabad, Rawalpindi, or Lahore), or whether you're interested in Residential Villas, Commercial Highrises, or Readymade Space Capsule Smart Houses. For immediate assistance, WhatsApp +92 336-5666727.",
-        fallback: true
-      });
-    }
-
-    const systemInstruction = `You are the official AI Property & Investment Advisor for "ri8click" (ri8click.com), Pakistan's premier verified real estate portal and consortium group specializing in:
-1. Taxila & Faisal Hills (Executive Block, Block A, B, C, Commercial Broadway), Kohistan Enclave, Multi Gardens B-17, DHA Islamabad/Rawalpindi, Bahria Town, and Lahore.
-2. Commercial Plazas, Retail Shops, Corporate Offices, and High-ROI real estate investments.
-3. Readymade Space Capsule Smart Houses & Curved Container Modular Homes (deployed in 7-30 days across Pakistan).
-4. Ri8Click Consortium Group services: Turnkey Construction, German UPVC Windows & Doors Manufacturing, and PropTech solutions.
-
-Official Contact & WhatsApp: +92 336-5666727
-Always be polite, concise, accurate, and helpful. Use Pakistani Rupees (PKR, Lakh, Crore) and local area units (Marla, Kanal, Sq Ft).
-${context ? `\nCurrent Portal Context:\n${String(context).slice(0, 2000)}` : ""}`;
-
-    const response = await ai.models.generateContent({
-      model: "gemini-3.8-flash",
-      contents: message.slice(0, 1000),
-      config: {
-        systemInstruction,
-        temperature: 0.7,
-        maxOutputTokens: 500
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === "object") {
+        return parsed;
       }
-    });
+    }
+  } catch (err) {
+    console.error("Failed to read portal-state.json:", err);
+  }
+  return {
+    updatedAt: new Date().toISOString(),
+    revision: 1,
+  };
+}
 
-    return res.json({
-      reply:
-        response.text ||
-        "Please contact our senior advisors on WhatsApp at +92 336-5666727 for personalized property guidance.",
-      fallback: false
-    });
-  } catch (error) {
-    console.error("Gemini API Error:", error);
-    return res.status(200).json({
-      reply:
-        "I can help you explore properties in Faisal Hills Taxila, Islamabad, Rawalpindi, and Lahore, or share details on our Readymade Capsule Smart Homes. Connect with our team directly on WhatsApp at +92 336-5666727.",
-      fallback: true
+function saveGlobalState(state: GlobalPortalState) {
+  try {
+    ensureDataDir();
+    state.updatedAt = new Date().toISOString();
+    state.revision = (typeof state.revision === "number" ? state.revision : 0) + 1;
+    const tempFile = `${STATE_FILE}.tmp`;
+    fs.writeFileSync(tempFile, JSON.stringify(state, null, 2), "utf-8");
+    fs.renameSync(tempFile, STATE_FILE);
+  } catch (err) {
+    console.error("Failed to save portal-state.json:", err);
+  }
+}
+
+/**
+ * Prevent Prototype Pollution & strip dangerous script URLs recursively
+ */
+function sanitizeIncomingPayload(input: any): any {
+  if (Array.isArray(input)) {
+    return input.map(sanitizeIncomingPayload);
+  }
+  if (input !== null && typeof input === "object") {
+    const clean: Record<string, any> = {};
+    for (const [key, value] of Object.entries(input)) {
+      if (key === "__proto__" || key === "constructor" || key === "prototype") {
+        continue;
+      }
+      clean[key] = sanitizeIncomingPayload(value);
+    }
+    return clean;
+  }
+  if (typeof input === "string") {
+    const trimmed = input.trim();
+    if (/^(javascript|vbscript|data:text\/html):/i.test(trimmed)) {
+      return "";
+    }
+  }
+  return input;
+}
+
+/**
+ * Strip sensitive plaintext passwords before sending state to clients
+ */
+function sanitizeStateForClient(state: GlobalPortalState): GlobalPortalState {
+  const copy: GlobalPortalState = { ...state };
+  if (Array.isArray(copy.userAccounts)) {
+    copy.userAccounts = copy.userAccounts.map((acc: any) => {
+      if (!acc || typeof acc !== "object") return acc;
+      const { password, ...safeAccount } = acc;
+      return safeAccount;
     });
   }
-});
+  return copy;
+}
+
+const globalPortalState: GlobalPortalState = loadGlobalState();
 
 async function startServer() {
+  const app = express();
+  const PORT = Number(process.env.PORT) || 3000;
+
+  // Security headers & no-cache for API routes
+  app.use((req, res, next) => {
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("X-Frame-Options", "SAMEORIGIN");
+    res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+    if (req.path.startsWith("/api/")) {
+      res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+      res.setHeader("Pragma", "no-cache");
+      res.setHeader("Expires", "0");
+    }
+    next();
+  });
+
+  // 50MB payload limit to support Base64 images and short MP4/WebM video clips
+  app.use(express.json({ limit: "50mb" }));
+  app.use(express.urlencoded({ extended: true, limit: "50mb" }));
+
+  // ============================================================================
+  // REAL-TIME UNIVERSAL STATE SYNC (SSE + REST)
+  // ============================================================================
+  const sseClients = new Set<express.Response>();
+
+  function broadcastStateUpdate() {
+    const safePayload = JSON.stringify({
+      type: "STATE_UPDATED",
+      state: sanitizeStateForClient(globalPortalState),
+    });
+    for (const client of sseClients) {
+      try {
+        client.write(`data: ${safePayload}\n\n`);
+      } catch {
+        sseClients.delete(client);
+      }
+    }
+  }
+
+  // Heartbeat every 20s to keep SSE connections alive through proxies
+  setInterval(() => {
+    const ping = JSON.stringify({
+      type: "HEARTBEAT",
+      updatedAt: globalPortalState.updatedAt,
+      revision: globalPortalState.revision || 1,
+    });
+    for (const client of sseClients) {
+      try {
+        client.write(`data: ${ping}\n\n`);
+      } catch {
+        sseClients.delete(client);
+      }
+    }
+  }, 20000);
+
+  app.get("/api/state/stream", (req, res) => {
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache, no-transform");
+    res.setHeader("Connection", "keep-alive");
+    res.setHeader("X-Accel-Buffering", "no");
+    res.flushHeaders?.();
+
+    res.write(
+      `data: ${JSON.stringify({
+        type: "INITIAL_STATE",
+        state: sanitizeStateForClient(globalPortalState),
+      })}\n\n`
+    );
+
+    sseClients.add(res);
+    req.on("close", () => {
+      sseClients.delete(res);
+    });
+  });
+
+  // Lightweight version check endpoint for fast polling fallback
+  app.get("/api/state/version", (_req, res) => {
+    res.json({
+      updatedAt: globalPortalState.updatedAt || null,
+      revision: globalPortalState.revision || 1,
+    });
+  });
+
+  // GET full universal state
+  app.get("/api/state", (_req, res) => {
+    res.json(sanitizeStateForClient(globalPortalState));
+  });
+
+  // PUT partial or full state update — persists to disk & broadcasts to all sessions
+  app.put("/api/state", (req, res) => {
+    const updates = sanitizeIncomingPayload(req.body);
+    if (!updates || typeof updates !== "object") {
+      return res.status(400).json({ error: "Invalid state payload" });
+    }
+
+    const allowedKeys: (keyof GlobalPortalState)[] = [
+      "properties",
+      "agencies",
+      "provinceCityData",
+      "heroSlides",
+      "blogs",
+      "sitePortions",
+      "userAccounts",
+      "advibeProjects",
+      "advibeLeads",
+    ];
+
+    let changed = false;
+    for (const key of allowedKeys) {
+      if (Array.isArray(updates[key])) {
+        if (key === "userAccounts" && Array.isArray(globalPortalState.userAccounts)) {
+          // Preserve existing passwords if incoming account objects omitted password
+          const existingById = new Map(
+            globalPortalState.userAccounts.map((u: any) => [u.id, u])
+          );
+          globalPortalState.userAccounts = updates.userAccounts.map((incoming: any) => {
+            const existing = existingById.get(incoming.id);
+            return {
+              ...existing,
+              ...incoming,
+              password: incoming.password || existing?.password || "admin123",
+            };
+          });
+        } else {
+          (globalPortalState as any)[key] = updates[key];
+        }
+        changed = true;
+      }
+    }
+
+    if (changed) {
+      saveGlobalState(globalPortalState);
+      broadcastStateUpdate();
+    }
+
+    res.json({
+      status: "ok",
+      updatedAt: globalPortalState.updatedAt,
+      revision: globalPortalState.revision,
+      state: sanitizeStateForClient(globalPortalState),
+    });
+  });
+
+  // Server-side authentication verification endpoint
+  app.post("/api/auth/verify", (req, res) => {
+    const { identifier, password } = sanitizeIncomingPayload(req.body || {});
+    if (!identifier || !password) {
+      return res.status(400).json({ error: "Username/email and password are required." });
+    }
+
+    const cleanId = String(identifier).trim().toLowerCase();
+    const cleanPass = String(password).trim();
+    const accounts = Array.isArray(globalPortalState.userAccounts)
+      ? globalPortalState.userAccounts
+      : [];
+
+    const matched = accounts.find(
+      (acc: any) =>
+        (String(acc.username || "").toLowerCase() === cleanId ||
+          String(acc.email || "").toLowerCase() === cleanId) &&
+        String(acc.password || "") === cleanPass
+    );
+
+    if (!matched) {
+      return res.status(401).json({ verified: false, error: "Invalid credentials." });
+    }
+
+    const { password: _omitted, ...safeUser } = matched;
+    return res.json({ verified: true, user: safeUser });
+  });
+
+  // ============================================================================
+  // ADVIBE — CINEMATIC MEGAPROJECT SHOWCASE API ROUTES
+  // ============================================================================
+  const advibeStore: {
+    projects: any[];
+    leads: any[];
+    permittedDealers: Set<string>;
+  } = {
+    projects: Array.isArray(globalPortalState.advibeProjects)
+      ? globalPortalState.advibeProjects
+      : [],
+    leads: Array.isArray(globalPortalState.advibeLeads)
+      ? globalPortalState.advibeLeads
+      : [],
+    permittedDealers: new Set(["agency-1", "agency-2"]),
+  };
+
+  const requireAdvibeAuth = (
+    req: express.Request,
+    res: express.Response,
+    next: express.NextFunction
+  ) => {
+    const role = String(req.headers["x-user-role"] || "").toLowerCase();
+    const agencyId = String(req.headers["x-agency-id"] || "");
+
+    if (
+      role === "admin" ||
+      (role === "agency" && agencyId && advibeStore.permittedDealers.has(agencyId))
+    ) {
+      return next();
+    }
+    return res.status(403).json({
+      error: "Forbidden: Requires Super Admin or Authorized Dealer privileges for AdVibe.",
+    });
+  };
+
+  app.get("/api/advibe/projects", (_req, res) => {
+    res.json({
+      status: "ok",
+      count: advibeStore.projects.length,
+      projects: advibeStore.projects,
+    });
+  });
+
+  app.get("/api/advibe/projects/:slug", (req, res) => {
+    const project = advibeStore.projects.find(
+      (p) => p.slug === req.params.slug || p.id === req.params.slug
+    );
+    if (!project) {
+      return res.status(404).json({ error: "AdVibe Project not found" });
+    }
+    res.json(project);
+  });
+
+  app.post("/api/advibe/projects", requireAdvibeAuth, (req, res) => {
+    const projectData = sanitizeIncomingPayload(req.body);
+    if (!projectData || !projectData.title) {
+      return res.status(400).json({ error: "Project title is required" });
+    }
+
+    const existingIdx = advibeStore.projects.findIndex((p) => p.id === projectData.id);
+    if (existingIdx >= 0) {
+      advibeStore.projects[existingIdx] = {
+        ...advibeStore.projects[existingIdx],
+        ...projectData,
+        updatedAt: new Date().toISOString().split("T")[0],
+      };
+      globalPortalState.advibeProjects = advibeStore.projects;
+      saveGlobalState(globalPortalState);
+      broadcastStateUpdate();
+      return res.json({ status: "updated", project: advibeStore.projects[existingIdx] });
+    } else {
+      const newProject = {
+        ...projectData,
+        id: projectData.id || `adv-proj-${Date.now()}`,
+        createdAt: new Date().toISOString().split("T")[0],
+        updatedAt: new Date().toISOString().split("T")[0],
+      };
+      advibeStore.projects.unshift(newProject);
+      globalPortalState.advibeProjects = advibeStore.projects;
+      saveGlobalState(globalPortalState);
+      broadcastStateUpdate();
+      return res.status(201).json({ status: "created", project: newProject });
+    }
+  });
+
+  app.delete("/api/advibe/projects/:id", requireAdvibeAuth, (req, res) => {
+    const { id } = req.params;
+    advibeStore.projects = advibeStore.projects.filter((p) => p.id !== id);
+    globalPortalState.advibeProjects = advibeStore.projects;
+    saveGlobalState(globalPortalState);
+    broadcastStateUpdate();
+    res.json({ status: "deleted", id });
+  });
+
+  app.post("/api/advibe/projects/:id/duplicate", requireAdvibeAuth, (req, res) => {
+    const source = advibeStore.projects.find((p) => p.id === req.params.id);
+    if (!source) {
+      return res.status(404).json({ error: "Source project not found" });
+    }
+    const duplicate = {
+      ...source,
+      id: `adv-proj-${Date.now()}`,
+      title: `${source.title} (Copy)`,
+      slug: `${source.slug}-copy-${Date.now().toString().slice(-4)}`,
+      published: false,
+      createdAt: new Date().toISOString().split("T")[0],
+      updatedAt: new Date().toISOString().split("T")[0],
+    };
+    advibeStore.projects.unshift(duplicate);
+    globalPortalState.advibeProjects = advibeStore.projects;
+    saveGlobalState(globalPortalState);
+    broadcastStateUpdate();
+    res.status(201).json({ status: "duplicated", project: duplicate });
+  });
+
+  app.post("/api/advibe/leads", (req, res) => {
+    const leadData = sanitizeIncomingPayload(req.body);
+    if (!leadData || !leadData.name || !leadData.phone) {
+      return res.status(400).json({ error: "Name and Phone are required for enquiries." });
+    }
+    const newLead = {
+      id: `lead-adv-${Date.now()}`,
+      projectId: String(leadData.projectId || ""),
+      projectTitle: String(leadData.projectTitle || "General Megaproject Inquiry"),
+      name: String(leadData.name).slice(0, 120),
+      phone: String(leadData.phone).slice(0, 40),
+      email: String(leadData.email || "").slice(0, 120),
+      preferredUnit: String(leadData.preferredUnit || "General Inquiry").slice(0, 120),
+      message: String(leadData.message || "").slice(0, 1500),
+      contactPreference: leadData.contactPreference || "whatsapp",
+      source: leadData.source || "website_advibe",
+      status: "new",
+      createdAt: new Date().toISOString().split("T")[0],
+    };
+    advibeStore.leads.unshift(newLead);
+    globalPortalState.advibeLeads = advibeStore.leads;
+    saveGlobalState(globalPortalState);
+    broadcastStateUpdate();
+    res.status(201).json({ status: "submitted", lead: newLead });
+  });
+
+  app.get("/api/advibe/leads", requireAdvibeAuth, (_req, res) => {
+    res.json({
+      status: "ok",
+      count: advibeStore.leads.length,
+      leads: advibeStore.leads,
+    });
+  });
+
+  app.post("/api/advibe/permissions", requireAdvibeAuth, (req, res) => {
+    const { agencyId, canPublish } = sanitizeIncomingPayload(req.body || {});
+    if (!agencyId) {
+      return res.status(400).json({ error: "agencyId is required" });
+    }
+    if (canPublish) {
+      advibeStore.permittedDealers.add(String(agencyId));
+    } else {
+      advibeStore.permittedDealers.delete(String(agencyId));
+    }
+    res.json({
+      status: "updated",
+      agencyId,
+      canPublish: advibeStore.permittedDealers.has(String(agencyId)),
+    });
+  });
+
+  // Health Check
+  app.get("/api/health", (_req, res) => {
+    res.json({
+      status: "ok",
+      updatedAt: globalPortalState.updatedAt,
+      revision: globalPortalState.revision || 1,
+      geminiConfigured:
+        !!process.env.GEMINI_API_KEY &&
+        process.env.GEMINI_API_KEY !== "your_actual_gemini_api_key_here",
+    });
+  });
+
+  // Gemini AI Chat Endpoint
+  app.post("/api/gemini/chat", async (req, res) => {
+    try {
+      const { message, systemContext } = sanitizeIncomingPayload(req.body || {});
+      if (!message || typeof message !== "string") {
+        return res.status(400).json({ error: "A valid message is required." });
+      }
+
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey || apiKey === "your_actual_gemini_api_key_here") {
+        return res.status(503).json({
+          error: "GEMINI_API_KEY is not configured in .envRE",
+          fallback: true,
+        });
+      }
+
+      const ai = new GoogleGenAI({ apiKey });
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: message,
+        config: {
+          systemInstruction:
+            systemContext ||
+            "You are the official AI Property & Consortium Advisor for ri8click.com, Pakistan's premier real estate portal and consortium based in Taxila, Faisal Hills, and Islamabad.",
+          temperature: 0.7,
+          maxOutputTokens: 500,
+        },
+      });
+
+      const replyText =
+        response.text ||
+        "Thank you for reaching out to ri8click. Please contact our executive desk on WhatsApp at +92 336-5666727 for immediate assistance.";
+      return res.json({ reply: replyText });
+    } catch (error: any) {
+      console.error("Gemini API error:", error?.message || error);
+      return res.status(500).json({
+        error: "Failed to generate response from Gemini.",
+        fallback: true,
+      });
+    }
+  });
+
+  // Vite middleware for development; static bundle for production
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
       server: { middlewareMode: true },
-      appType: "spa"
+      appType: "spa",
     });
     app.use(vite.middlewares);
   } else {
