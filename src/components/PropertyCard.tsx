@@ -5,7 +5,6 @@ import {
   BedDouble,
   Bath,
   Maximize,
-  Video,
   MessageCircle,
   Star,
   Sparkles,
@@ -65,7 +64,6 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
       onClick={() => onSelectProperty(property)}
       className="group bg-white rounded-2xl border border-slate-200/90 hover:border-blue-500/50 overflow-hidden shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col cursor-pointer"
     >
-      {/* Image Container */}
       <div className="relative h-56 w-full overflow-hidden bg-slate-900">
         <img
           src={displayImg}
@@ -76,7 +74,6 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
         />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/15 to-transparent" />
 
-        {/* Top Left Badges */}
         <div className="absolute top-3 left-3 flex flex-wrap items-center gap-1.5 z-10">
           <span
             className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold uppercase tracking-wider shadow-xs ${
@@ -117,7 +114,6 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
           )}
         </div>
 
-        {/* Save Button */}
         <button
           type="button"
           onClick={e => {
@@ -134,12 +130,10 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
           <Heart className={`w-4 h-4 ${isSaved ? 'fill-current' : ''}`} />
         </button>
 
-        {/* Watermark */}
         {property.watermark !== false && (
           <WatermarkBadge position="bottom-right" size="sm" showVerifiedText />
         )}
 
-        {/* Bottom Price Overlay */}
         <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between text-white z-10">
           <div>
             <div className="text-[10px] font-bold uppercase tracking-wider text-amber-300">
@@ -152,7 +146,6 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
         </div>
       </div>
 
-      {/* Content */}
       <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
         <div>
           <div className="flex items-center gap-1 text-xs font-bold text-blue-600 mb-1 truncate">
@@ -172,7 +165,6 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
         </div>
 
         <div className="space-y-3 pt-2">
-          {/* Specs Strip */}
           <div className="flex items-center justify-between py-2 px-3 rounded-xl bg-slate-50 border border-slate-100 text-xs font-bold text-slate-700">
             {property.bedrooms !== undefined ? (
               <span className="flex items-center gap-1">
@@ -199,7 +191,6 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
             </span>
           </div>
 
-          {/* Agent Footer */}
           <div className="flex items-center justify-between pt-2 border-t border-slate-100">
             <div className="flex items-center gap-2 min-w-0">
               <img
@@ -224,7 +215,6 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-2.5 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white text-xs font-bold flex items-center gap-1 transition-colors"
-                title="WhatsApp Agent"
               >
                 <MessageCircle className="w-3.5 h-3.5" />
                 <span>Chat</span>
