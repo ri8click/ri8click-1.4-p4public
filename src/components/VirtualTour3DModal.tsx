@@ -5,19 +5,13 @@ import {
   Maximize2,
   Minimize2,
   RotateCw,
-  MapPin,
-  Sparkles,
   ChevronLeft,
   ChevronRight,
-  Eye,
   Layers,
   CheckCircle2,
-  Phone,
   MessageSquare,
-  ShieldCheck,
   Sun,
   Moon,
-  Info,
   Video,
   Camera
 } from 'lucide-react';
@@ -202,7 +196,6 @@ export const VirtualTour3DModal: React.FC<VirtualTour3DModalProps> = ({
           isFullscreen ? 'w-screen h-screen rounded-none' : 'w-full max-w-6xl h-[88vh]'
         }`}
       >
-        {/* Top Header */}
         <div className="px-4 sm:px-6 py-3.5 bg-slate-950 border-b border-white/10 flex flex-wrap items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-9 h-9 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center font-black shrink-0">
@@ -274,7 +267,6 @@ export const VirtualTour3DModal: React.FC<VirtualTour3DModalProps> = ({
                   type="button"
                   onClick={() => setIsNightMode(prev => !prev)}
                   className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/15 cursor-pointer"
-                  title="Toggle Day / Evening Ambience"
                 >
                   {isNightMode ? <Moon className="w-4 h-4 text-amber-300" /> : <Sun className="w-4 h-4 text-amber-400" />}
                 </button>
@@ -312,7 +304,6 @@ export const VirtualTour3DModal: React.FC<VirtualTour3DModalProps> = ({
           </div>
         </div>
 
-        {/* Main Viewport */}
         <div className="relative flex-1 overflow-hidden bg-black flex items-center justify-center">
           {viewMode === 'video_walkthrough' && hasVideo ? (
             property!.virtualTourVideoUrl!.includes('youtube.com') ||
@@ -353,7 +344,6 @@ export const VirtualTour3DModal: React.FC<VirtualTour3DModalProps> = ({
               />
               <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-transparent to-slate-950/30 pointer-events-none" />
 
-              {/* Interactive Hotspots */}
               {currentScene.hotspots.map(hs => (
                 <div
                   key={hs.id}
@@ -381,7 +371,6 @@ export const VirtualTour3DModal: React.FC<VirtualTour3DModalProps> = ({
 
           <WatermarkBadge position="bottom-right" size="md" showVerifiedText />
 
-          {/* Left/Right Navigation Arrows */}
           {viewMode === '360_scenes' && scenes.length > 1 && (
             <>
               <button
@@ -403,7 +392,6 @@ export const VirtualTour3DModal: React.FC<VirtualTour3DModalProps> = ({
             </>
           )}
 
-          {/* Floorplan Overlay */}
           {showFloorplan && (
             <div className="absolute top-4 right-4 z-30 w-72 rounded-2xl bg-slate-950/90 backdrop-blur-xl border border-white/20 p-4 text-white shadow-2xl space-y-3">
               <div className="flex items-center justify-between border-b border-white/15 pb-2">
@@ -442,7 +430,6 @@ export const VirtualTour3DModal: React.FC<VirtualTour3DModalProps> = ({
           )}
         </div>
 
-        {/* Bottom Scene Dock & Inquiry Footer */}
         <div className="px-4 sm:px-6 py-3.5 bg-slate-950 border-t border-white/15 flex flex-col lg:flex-row items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-2 overflow-x-auto w-full lg:w-auto pb-1 lg:pb-0">
             {scenes.map((scene, idx) => (
