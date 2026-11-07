@@ -10,7 +10,7 @@ import { AgenciesSection, resolvePakistanAgentAvatar } from './components/Agenci
 import { ConsortiumShowcase } from './components/ConsortiumShowcase';
 import { NewsBlogsSection } from './components/NewsBlogsSection';
 import { BlogDetailModal } from './components/BlogDetailModal';
-import { AdminHubModal } from './components/AdminHubModal';
+import { AdminHubModal, AdminTabType } from './components/AdminHubModal';
 import { PostPropertyModal } from './components/PostPropertyModal';
 import { ScheduleTourModal } from './components/ScheduleTourModal';
 import { SavedPropertiesModal } from './components/SavedPropertiesModal';
@@ -33,7 +33,7 @@ import {
   INITIAL_BLOGS,
   INITIAL_SITE_PORTIONS
 } from './data/mockData';
-import { DEFAULT_USER_ACCOUNTS, UserAccount } from './data/defaultAccounts';
+import { initialUserAccounts, UserAccount } from './data/defaultAccounts';
 import { initialAdvibeProjects, initialAdvibeLeads } from './data/advibeDemoData';
 import {
   Property,
@@ -42,26 +42,33 @@ import {
   HeroSlide,
   BlogPost,
   SiteSectionPortion,
-  FilterState,
   AdVibeProject,
   AdVibeLead
 } from './types';
-import { SlidersHorizontal, Sparkles, Plus } from 'lucide-react';
+import { SlidersHorizontal, Sparkles, Plus, RotateCcw } from 'lucide-react';
 
 const DECK_SCHEMA_VERSION = 'ri8click_deck_v2_16slides';
 
 function sanitizePropertiesToPakistanAvatars(props: Property[]): Property[] {
   if (!Array.isArray(props)) return INITIAL_PROPERTIES;
-  return props.map(p => ({
+  return props.map((p, idx) => ({
     ...p,
-    agentAvatar: resolvePakistanAgentAvatar(p.agentAvatar, p.agencyId || p.agentName)
+    agentAvatar: resolvePakistanAgentAvatar(
+      p.agentAvatar,
+      `${p.agencyId || ''} ${p.agentName || ''} ${p.agentCompany || ''}`,
+      idx
+    )
   }));
 }
 
 function sanitizeAgenciesToPakistanAvatars(agencies: AgencyAccount[]): AgencyAccount[] {
   if (!Array.isArray(agencies)) return INITIAL_AGENCIES;
-  return agencies.map(a => {
-    const cleanAvatar = resolvePakistanAgentAvatar((a as any).avatar || a.logo, a.id);
+  return agencies.map((a, idx) => {
+    const cleanAvatar = resolvePakistanAgentAvatar(
+      (a as any).avatar || a.logo,
+      `${a.id} ${a.name} ${(a as any).companyName || ''}`,
+      idx
+    );
     return {
       ...a,
       logo: cleanAvatar,
@@ -92,7 +99,7 @@ export function App() {
       const saved = localStorage.getItem('ri8click_properties_data');
       if (saved) return sanitizePropertiesToPakistanAvatars(JSON.parse(saved));
     } catch {}
-    return INITIAL_PROPERTIES;
+    return sanitizePropertiesToPakistanAvatars(INITIAL_PROPERTIES);
   });
 
   const [agencies, setAgencies] = useState<AgencyAccount[]>(() => {
@@ -100,7 +107,7 @@ export function App() {
       const saved = localStorage.getItem('ri8click_agencies_data');
       if (saved) return sanitizeAgenciesToPakistanAvatars(JSON.parse(saved));
     } catch {}
-    return INITIAL_AGENCIES;
+    return sanitizeAgenciesToPakistanAvatars(INITIAL_AGENCIES);
   });
 
   const [provinceCityData, setProvinceCityData] = useState<ProvinceCityData[]>(() => {
@@ -134,7 +141,7 @@ export function App() {
       const saved = localStorage.getItem('ri8click_user_accounts');
       if (saved) return JSON.parse(saved);
     } catch {}
-    return DEFAULT_USER_ACCOUNTS;
+    return initialUserAccounts;
   });
 
   const [advibeProjects, setAdvibeProjects] = useState<AdVibeProject[]>(() => {
@@ -423,12 +430,27 @@ export function App() {
     [pushStateToServer]
   );
 
+  const handleResetPortions = useCallback(() => {
+    setSitePortions(INITIAL_SITE_PORTIONS);
+    pushStateToServer({ sitePortions: INITIAL_SITE_PORTIONS });
+  }, [pushStateToServer]);
+
   const handleUpdateUserAccounts = useCallback(
     (nextAccounts: UserAccount[]) => {
       setUserAccounts(nextAccounts);
       pushStateToServer({ userAccounts: nextAccounts });
     },
     [pushStateToServer]
+  );
+
+  const handleUpdateCurrentUser = useCallback(
+    (updatedUser: UserAccount) => {
+      setCurrentUser(updatedUser);
+      const nextAccounts = userAccounts.map(u => (u.id === updatedUser.id ? updatedUser : u));
+      setUserAccounts(nextAccounts);
+      pushStateToServer({ userAccounts: nextAccounts });
+    },
+    [userAccounts, pushStateToServer]
   );
 
   const handleUpdateAdvibeProjects = useCallback(
@@ -457,10 +479,10 @@ export function App() {
     } catch {}
   }, [currentUser]);
 
-  const [activeView, setActiveView] = useState<'portal' | 'advibe_listing' | 'advibe_project'>('portal');
-  const [selectedAdvibeProject, setSelectedAdvibeProject] = useState<AdVibeProject | null>(null);
+  const [activeTab, setActiveTab] = useState<string>('properties');
+  const [activeAdvibeSlug, setActiveAdvibeSlug] = useState<string | null>(null);
 
-  const [savedPropertyIds, setSavedPropertyIds] = useState<string[]>([]);
+  const [savedPropertyIds, setSavedPropertyIds] = useState<string[]>(['prop-comm-1', 'prop-res-1']);
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [selectedBlog, setSelectedBlog] = useState<BlogPost | null>(null);
   const [tourProperty, setTourProperty] = useState<Property | null>(null);
@@ -469,10 +491,10 @@ export function App() {
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
   const [isSavedModalOpen, setIsSavedModalOpen] = useState(false);
   const [isAdminHubOpen, setIsAdminHubOpen] = useState(false);
-  const [adminInitialTab, setAdminInitialTab] = useState<any>('overview');
+  const [adminInitialTab, setAdminInitialTab] = useState<AdminTabType>('overview');
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [loginModalReason, setLoginModalReason] = useState<
-    'general' | 'admin_required' | 'agency_required'
+    'general' | 'admin_required' | 'agency_required' | 'advibe_required'
   >('general');
   const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
 
@@ -483,19 +505,28 @@ export function App() {
     currentUser?.agencyId ? currentUser.agencyId : 'agency-1'
   );
 
-  const [filters, setFilters] = useState<FilterState>({
+  const currentAgency = useMemo(
+    () => agencies.find(a => a.id === selectedAgencyId) || agencies[0],
+    [agencies, selectedAgencyId]
+  );
+
+  const initialFilterState = {
     searchQuery: '',
-    province: 'all',
-    city: 'all',
-    society: 'all',
-    category: 'all',
-    purpose: 'all',
-    propertyType: 'all',
+    purpose: 'all' as any,
+    category: 'all' as any,
+    province: '',
+    city: '',
+    society: '',
+    propertyType: '',
     minPrice: 0,
     maxPrice: 1000000000,
-    bedrooms: 'all',
-    sortBy: 'featured'
-  });
+    minBedrooms: null as number | null,
+    agencyId: ''
+  };
+
+  const [filters, setFilters] = useState<any>(initialFilterState);
+
+  const resetFilters = () => setFilters(initialFilterState);
 
   const handleUserLogin = (account: UserAccount) => {
     setCurrentUser(account);
@@ -510,6 +541,9 @@ export function App() {
       (account.role === 'admin' || account.role === 'agency')
     ) {
       setIsPostModalOpen(true);
+    } else if (loginModalReason === 'advibe_required') {
+      setAdminInitialTab('advibe');
+      setIsAdminHubOpen(true);
     }
     setLoginModalReason('general');
   };
@@ -542,52 +576,136 @@ export function App() {
     pushStateToServer({ properties: nextProps, agencies: nextAgencies });
   };
 
-  const filteredProperties = useMemo(() => {
-    return properties
-      .filter(p => {
-        if (p.status === 'pending') return false;
-        if (filters.category !== 'all' && p.category !== filters.category) return false;
-        if (filters.purpose !== 'all' && p.purpose !== filters.purpose) return false;
-        if (filters.province !== 'all' && p.location.province !== filters.province) return false;
-        if (filters.city !== 'all' && p.location.city !== filters.city) return false;
-        if (filters.society !== 'all' && p.location.society !== filters.society) return false;
-        if (filters.propertyType !== 'all' && p.type !== filters.propertyType) return false;
-        if (p.price < filters.minPrice || p.price > filters.maxPrice) return false;
+  const handleUpdateAgencyLimit = (agencyId: string, newLimit: number) => {
+    const updated = agencies.map(ag =>
+      ag.id === agencyId ? ({ ...ag, postLimit: newLimit } as AgencyAccount) : ag
+    );
+    handleUpdateAgencies(updated);
+  };
 
-        if (filters.searchQuery.trim()) {
-          const q = filters.searchQuery.toLowerCase();
-          const matchTitle = p.title.toLowerCase().includes(q);
-          const matchDesc = p.description.toLowerCase().includes(q);
-          const matchSoc = p.location.society.toLowerCase().includes(q);
-          const matchCity = p.location.city.toLowerCase().includes(q);
-          const matchAgent = p.agentName.toLowerCase().includes(q);
-          if (!matchTitle && !matchDesc && !matchSoc && !matchCity && !matchAgent) {
-            return false;
-          }
+  const handleAddNewAgency = (newAgency: AgencyAccount) => {
+    handleUpdateAgencies([newAgency, ...agencies]);
+    setSelectedAgencyId(newAgency.id);
+  };
+
+  const handleSaveAdvibeProject = (project: AdVibeProject) => {
+    const exists = advibeProjects.some(p => p.id === project.id);
+    const updated = exists
+      ? advibeProjects.map(p => (p.id === project.id ? project : p))
+      : [project, ...advibeProjects];
+    handleUpdateAdvibeProjects(updated);
+  };
+
+  const handleDeleteAdvibeProject = (projectId: string) => {
+    handleUpdateAdvibeProjects(advibeProjects.filter(p => p.id !== projectId));
+  };
+
+  const handleDuplicateAdvibeProject = (projectId: string) => {
+    const source = advibeProjects.find(p => p.id === projectId);
+    if (!source) return;
+    const copy: AdVibeProject = {
+      ...source,
+      id: `advibe-proj-${Date.now()}`,
+      title: `${source.title} (Copy)`,
+      slug: `${source.slug}-copy-${Date.now().toString().slice(-4)}`,
+      viewsCount: 0,
+      createdAt: new Date().toISOString().split('T')[0],
+      updatedAt: new Date().toISOString().split('T')[0]
+    };
+    handleUpdateAdvibeProjects([copy, ...advibeProjects]);
+  };
+
+  const handleUpdateAdvibeLeadStatus = (leadId: string, status: AdVibeLead['status']) => {
+    handleUpdateAdvibeLeads(
+      advibeLeads.map(l => (l.id === leadId ? { ...l, status } : l))
+    );
+  };
+
+  const handleToggleAgencyAdvibePermission = (agencyId: string, allowed: boolean) => {
+    const updated = agencies.map(a =>
+      a.id === agencyId ? ({ ...a, canManageAdvibe: allowed } as AgencyAccount) : a
+    );
+    handleUpdateAgencies(updated);
+  };
+
+  const filteredProperties = useMemo(() => {
+    return properties.filter(p => {
+      if (p.status === 'pending') return false;
+      if (filters.category && filters.category !== 'all' && p.category !== filters.category)
+        return false;
+      if (filters.purpose && filters.purpose !== 'all' && p.purpose !== filters.purpose)
+        return false;
+      if (
+        filters.province &&
+        filters.province !== 'all' &&
+        filters.province !== 'All Provinces' &&
+        p.location.province !== filters.province
+      )
+        return false;
+      if (
+        filters.city &&
+        filters.city !== 'all' &&
+        filters.city !== 'All Cities' &&
+        p.location.city.toLowerCase() !== filters.city.toLowerCase()
+      )
+        return false;
+      if (
+        filters.society &&
+        filters.society !== 'all' &&
+        filters.society !== 'All Societies' &&
+        filters.society !== 'Show All' &&
+        !p.location.society.toLowerCase().includes(filters.society.toLowerCase())
+      )
+        return false;
+      if (
+        filters.propertyType &&
+        filters.propertyType !== 'all' &&
+        p.type.toLowerCase() !== filters.propertyType.toLowerCase()
+      )
+        return false;
+      if (filters.minBedrooms !== null && filters.minBedrooms !== undefined) {
+        if ((p.bedrooms || 0) < filters.minBedrooms) return false;
+      }
+      if (filters.agencyId && p.agencyId !== filters.agencyId) return false;
+
+      if (filters.searchQuery && filters.searchQuery.trim()) {
+        const q = filters.searchQuery.toLowerCase();
+        const matchTitle = p.title.toLowerCase().includes(q);
+        const matchDesc = p.description.toLowerCase().includes(q);
+        const matchSoc = p.location.society.toLowerCase().includes(q);
+        const matchCity = p.location.city.toLowerCase().includes(q);
+        const matchAgent = p.agentName.toLowerCase().includes(q);
+        if (!matchTitle && !matchDesc && !matchSoc && !matchCity && !matchAgent) {
+          return false;
         }
-        return true;
-      })
-      .sort((a, b) => {
-        if (filters.sortBy === 'price_low') return a.price - b.price;
-        if (filters.sortBy === 'price_high') return b.price - a.price;
-        if (filters.sortBy === 'newest') {
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-        }
-        return (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0);
-      });
+      }
+      return true;
+    });
   }, [properties, filters]);
 
-  const isPortionVisible = (portionId: string) => {
-    const found = sitePortions.find(p => p.id === portionId);
-    return found ? found.isVisible : true;
+  const isPortionVisible = (keyOrId: string) => {
+    const found = sitePortions.find(
+      p => p.id === keyOrId || (p as any).key === keyOrId
+    );
+    if (!found) return true;
+    return (found as any).isEnabled !== undefined
+      ? (found as any).isEnabled
+      : found.isVisible !== false;
   };
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col">
       <Navbar
-        savedCount={savedPropertyIds.length}
-        onOpenSaved={() => setIsSavedModalOpen(true)}
-        onOpenPostProperty={() => {
+        activeTab={activeTab}
+        setActiveTab={tab => {
+          setActiveTab(tab);
+          if (tab !== 'advibe') {
+            setActiveAdvibeSlug(null);
+          }
+        }}
+        savedPropertiesCount={savedPropertyIds.length}
+        onOpenSavedModal={() => setIsSavedModalOpen(true)}
+        onOpenPostModal={() => {
           if (userRole === 'admin' || userRole === 'agency') {
             setIsPostModalOpen(true);
           } else {
@@ -595,52 +713,44 @@ export function App() {
             setIsLoginModalOpen(true);
           }
         }}
-        onOpenAdmin={tab => {
-          if (tab) setAdminInitialTab(tab);
+        onOpenScheduleModal={() => setTourProperty(properties[0] || null)}
+        onOpenAdmin={() => {
+          setAdminInitialTab('overview');
           setIsAdminHubOpen(true);
         }}
-        onOpenRoleModal={() => setIsRoleModalOpen(true)}
-        onOpenLoginModal={() => {
-          setLoginModalReason('general');
+        onOpenAuthRoleModal={() => setIsRoleModalOpen(true)}
+        currentRole={userRole}
+        currentAgency={currentAgency}
+        currentUser={currentUser}
+        onOpenLoginModal={reason => {
+          setLoginModalReason(reason || 'general');
           setIsLoginModalOpen(true);
         }}
-        currentUser={currentUser}
         onLogout={handleUserLogout}
-        userRole={userRole}
-        agencies={agencies}
-        selectedAgencyId={selectedAgencyId}
-        onSelectCategory={cat => {
-          setActiveView('portal');
-          setFilters(prev => ({ ...prev, category: cat }));
-          setTimeout(() => {
-            document.getElementById('listings-section')?.scrollIntoView({ behavior: 'smooth' });
-          }, 100);
-        }}
-        activeCategory={filters.category}
-        activeView={activeView}
-        onOpenAdvibe={() => {
-          setActiveView('advibe_listing');
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }}
-        onBackToPortal={() => {
-          setActiveView('portal');
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }}
       />
 
-      {activeView === 'advibe_listing' ? (
+      {activeTab === 'advibe' && activeAdvibeSlug ? (
+        <AdvibeProjectScrollyPage
+          project={
+            advibeProjects.find(
+              p => p.slug === activeAdvibeSlug || p.id === activeAdvibeSlug
+            ) || advibeProjects[0]
+          }
+          properties={properties}
+          onBackToListing={() => setActiveAdvibeSlug(null)}
+          onSelectProperty={prop => setSelectedProperty(prop)}
+        />
+      ) : activeTab === 'advibe' ? (
         <AdvibeListingPage
           projects={advibeProjects.filter(p => p.published && !p.archived)}
-          onSelectProject={proj => {
-            setSelectedAdvibeProject(proj);
-            setActiveView('advibe_project');
+          onOpenProject={slug => {
+            setActiveAdvibeSlug(slug);
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
-          onOpenAdminAdvibe={() => {
+          onOpenCreateProject={() => {
             setAdminInitialTab('advibe');
             setIsAdminHubOpen(true);
           }}
-          onBackToPortal={() => setActiveView('portal')}
           canManageAdvibe={
             userRole === 'admin' ||
             (userRole === 'agency' &&
@@ -650,22 +760,6 @@ export function App() {
               ))
           }
         />
-      ) : activeView === 'advibe_project' && selectedAdvibeProject ? (
-        <AdvibeProjectScrollyPage
-          project={selectedAdvibeProject}
-          properties={properties}
-          onBackToListing={() => setActiveView('advibe_listing')}
-          onSelectProperty={prop => setSelectedProperty(prop)}
-          onSubmitLead={leadData => {
-            const newLead: AdVibeLead = {
-              ...leadData,
-              id: `lead-adv-${Date.now()}`,
-              status: 'new',
-              createdAt: new Date().toISOString().split('T')[0]
-            };
-            handleUpdateAdvibeLeads([newLead, ...advibeLeads]);
-          }}
-        />
       ) : (
         <main className="flex-1">
           {isPortionVisible('hero_slider') && (
@@ -673,13 +767,17 @@ export function App() {
               slides={heroSlides}
               properties={properties}
               onSelectCategoryFilter={cat => {
-                setFilters(prev => ({ ...prev, category: cat }));
+                setFilters((prev: any) => ({ ...prev, category: cat }));
               }}
               onExploreClick={() => {
-                document.getElementById('listings-section')?.scrollIntoView({ behavior: 'smooth' });
+                document
+                  .getElementById('properties-grid-section')
+                  ?.scrollIntoView({ behavior: 'smooth' });
               }}
               onContactAgentClick={() => {
-                document.getElementById('agencies-section')?.scrollIntoView({ behavior: 'smooth' });
+                document
+                  .getElementById('agents-section')
+                  ?.scrollIntoView({ behavior: 'smooth' });
               }}
               onOpen3DTour={sampleProp => {
                 setVirtual3DProperty(sampleProp || properties[0]);
@@ -690,19 +788,18 @@ export function App() {
           {isPortionVisible('search_bar') && (
             <SearchFilterBar
               filters={filters}
-              onChangeFilters={setFilters}
+              setFilters={setFilters}
               provinceCityData={provinceCityData}
-              totalResults={filteredProperties.length}
-              isSuperAdmin={userRole === 'admin'}
-              onOpenLocationManager={() => {
-                setAdminInitialTab('locations');
-                setIsAdminHubOpen(true);
-              }}
+              totalResultsCount={filteredProperties.length}
+              onResetFilters={resetFilters}
             />
           )}
 
           {isPortionVisible('properties_grid') && (
-            <section id="listings-section" className="py-12 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <section
+              id="properties-grid-section"
+              className="py-12 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
+            >
               <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
                 <div>
                   <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-xs font-extrabold uppercase tracking-wider mb-2">
@@ -742,24 +839,11 @@ export function App() {
                     Try clearing your search filters or switching the selected city/society.
                   </p>
                   <button
-                    onClick={() =>
-                      setFilters({
-                        searchQuery: '',
-                        province: 'all',
-                        city: 'all',
-                        society: 'all',
-                        category: 'all',
-                        purpose: 'all',
-                        propertyType: 'all',
-                        minPrice: 0,
-                        maxPrice: 1000000000,
-                        bedrooms: 'all',
-                        sortBy: 'featured'
-                      })
-                    }
-                    className="px-5 py-2.5 rounded-xl bg-blue-600 text-white text-xs font-bold cursor-pointer"
+                    onClick={resetFilters}
+                    className="px-5 py-2.5 rounded-xl bg-blue-600 text-white text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer"
                   >
-                    Reset All Filters
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>Reset All Filters</span>
                   </button>
                 </div>
               ) : (
@@ -787,8 +871,10 @@ export function App() {
               onSelectProperty={p => setSelectedProperty(p)}
               onScheduleTour={p => setTourProperty(p)}
               onViewAllCommercial={() => {
-                setFilters(prev => ({ ...prev, category: 'commercial' }));
-                document.getElementById('listings-section')?.scrollIntoView({ behavior: 'smooth' });
+                setFilters((prev: any) => ({ ...prev, category: 'commercial' }));
+                document
+                  .getElementById('properties-grid-section')
+                  ?.scrollIntoView({ behavior: 'smooth' });
               }}
             />
           )}
@@ -810,58 +896,71 @@ export function App() {
           )}
 
           {isPortionVisible('agencies_network') && (
-            <div id="agencies-section">
-              <AgenciesSection
-                agencies={agencies}
-                properties={properties}
-                onSelectAgencyFilter={agencyId => {
-                  const ag = agencies.find(a => a.id === agencyId);
-                  if (ag) {
-                    setFilters(prev => ({ ...prev, searchQuery: ag.name }));
-                    document
-                      .getElementById('listings-section')
-                      ?.scrollIntoView({ behavior: 'smooth' });
-                  }
-                }}
-                onOpenAgencyPortal={() => {
-                  setIsRoleModalOpen(true);
-                }}
-              />
-            </div>
+            <AgenciesSection
+              agencies={agencies}
+              properties={properties}
+              onOpenRegisterAgency={() => {
+                setAdminInitialTab('agencies');
+                setIsAdminHubOpen(true);
+              }}
+              onFilterByAgency={agencyId => {
+                setFilters((prev: any) => ({ ...prev, agencyId }));
+                document
+                  .getElementById('properties-grid-section')
+                  ?.scrollIntoView({ behavior: 'smooth' });
+              }}
+            />
           )}
 
           {isPortionVisible('consortium_showcase') && (
-            <ConsortiumShowcase divisions={CONSORTIUM_DIVISIONS} />
+            <ConsortiumShowcase
+              divisions={CONSORTIUM_DIVISIONS}
+              onSelectDivisionContact={div => {
+                const text = encodeURIComponent(
+                  `Assalam-o-Alaikum, I am inquiring about ${div.title} on ri8click.com.`
+                );
+                window.open(`https://wa.me/${div.contactWhatsApp}?text=${text}`, '_blank');
+              }}
+            />
           )}
 
           {isPortionVisible('news_blogs_section') && (
             <NewsBlogsSection
               blogs={blogs.filter(b => b.status === 'published')}
               onSelectBlog={b => setSelectedBlog(b)}
-              onOpenAdminBlogs={() => {
+              onOpenAdminBlogManager={() => {
                 setAdminInitialTab('blogs');
                 setIsAdminHubOpen(true);
               }}
-              isSuperAdmin={userRole === 'admin'}
             />
           )}
         </main>
       )}
 
       <Footer
-        onSelectCity={cityName => {
-          setActiveView('portal');
-          setFilters(prev => ({ ...prev, province: 'all', city: cityName, society: 'all' }));
-          document.getElementById('listings-section')?.scrollIntoView({ behavior: 'smooth' });
-        }}
-        onSelectCategory={cat => {
-          setActiveView('portal');
-          setFilters(prev => ({ ...prev, category: cat }));
-          document.getElementById('listings-section')?.scrollIntoView({ behavior: 'smooth' });
+        divisions={CONSORTIUM_DIVISIONS}
+        currentUser={currentUser}
+        onOpenLogin={() => {
+          setLoginModalReason('general');
+          setIsLoginModalOpen(true);
         }}
         onOpenAdmin={() => {
           setAdminInitialTab('overview');
           setIsAdminHubOpen(true);
+        }}
+        onSelectSociety={society => {
+          setActiveTab('properties');
+          setActiveAdvibeSlug(null);
+          setFilters((prev: any) => ({ ...prev, society }));
+          document
+            .getElementById('properties-grid-section')
+            ?.scrollIntoView({ behavior: 'smooth' });
+        }}
+        onSelectNavTab={tab => {
+          setActiveTab(tab);
+          if (tab !== 'advibe') {
+            setActiveAdvibeSlug(null);
+          }
         }}
       />
 
@@ -883,6 +982,7 @@ export function App() {
       <BlogDetailModal blog={selectedBlog} onClose={() => setSelectedBlog(null)} />
 
       <ScheduleTourModal
+        isOpen={Boolean(tourProperty)}
         property={tourProperty}
         onClose={() => setTourProperty(null)}
       />
@@ -891,7 +991,8 @@ export function App() {
         isOpen={isSavedModalOpen}
         onClose={() => setIsSavedModalOpen(false)}
         savedProperties={properties.filter(p => savedPropertyIds.includes(p.id))}
-        onRemoveSaved={handleToggleSave}
+        onToggleSave={handleToggleSave}
+        onClearAllSaved={() => setSavedPropertyIds([])}
         onSelectProperty={prop => {
           setIsSavedModalOpen(false);
           setSelectedProperty(prop);
@@ -939,61 +1040,81 @@ export function App() {
         provinceCityData={provinceCityData}
         onUpdateProvinceCityData={handleUpdateProvinceCityData}
         agencies={agencies}
-        onUpdateAgencies={handleUpdateAgencies}
+        onUpdateAgencyLimit={handleUpdateAgencyLimit}
+        onAddNewAgency={handleAddNewAgency}
         properties={properties}
         onUpdateProperties={handleUpdateProperties}
+        onViewProperty={prop => setSelectedProperty(prop)}
+        onOpenVirtualTour={prop => setVirtual3DProperty(prop)}
         heroSlides={heroSlides}
         onUpdateHeroSlides={handleUpdateHeroSlides}
         blogs={blogs}
         onUpdateBlogs={handleUpdateBlogs}
-        sitePortions={sitePortions}
-        onUpdateSitePortions={handleUpdateSitePortions}
+        onViewBlog={b => setSelectedBlog(b)}
+        portions={sitePortions}
+        onUpdatePortions={handleUpdateSitePortions}
+        onResetPortions={handleResetPortions}
+        currentRole={userRole}
+        isSuperAdmin={userRole === 'admin'}
         currentUser={currentUser}
-        userAccounts={userAccounts}
-        onUpdateUserAccounts={handleUpdateUserAccounts}
-        onSwitchActiveUser={handleUserLogin}
+        allUsers={userAccounts}
+        onUpdateCurrentUser={handleUpdateCurrentUser}
+        onUpdateAllUsers={handleUpdateUserAccounts}
+        onOpenRoleSwitcher={() => setIsRoleModalOpen(true)}
         advibeProjects={advibeProjects}
-        onUpdateAdvibeProjects={handleUpdateAdvibeProjects}
         advibeLeads={advibeLeads}
-        onUpdateAdvibeLeads={handleUpdateAdvibeLeads}
-        onPreviewAdvibeProject={proj => {
+        onSaveAdvibeProject={handleSaveAdvibeProject}
+        onDeleteAdvibeProject={handleDeleteAdvibeProject}
+        onDuplicateAdvibeProject={handleDuplicateAdvibeProject}
+        onUpdateAdvibeLeadStatus={handleUpdateAdvibeLeadStatus}
+        onToggleAgencyAdvibePermission={handleToggleAgencyAdvibePermission}
+        onPreviewAdvibeProject={slug => {
           setIsAdminHubOpen(false);
-          setSelectedAdvibeProject(proj);
-          setActiveView('advibe_project');
+          setActiveTab('advibe');
+          setActiveAdvibeSlug(slug);
         }}
       />
 
       <AuthLoginModal
         isOpen={isLoginModalOpen}
         onClose={() => setIsLoginModalOpen(false)}
-        accounts={userAccounts}
         currentUser={currentUser}
         onLogin={handleUserLogin}
         onLogout={handleUserLogout}
         requiredReason={loginModalReason}
+        agencies={agencies}
       />
 
       <AuthRoleModal
         isOpen={isRoleModalOpen}
         onClose={() => setIsRoleModalOpen(false)}
         currentRole={userRole}
+        currentAgency={currentAgency}
+        allAgencies={agencies}
+        agencies={agencies}
         onSelectRole={role => {
           setUserRole(role);
           if (role === 'admin') {
-            const adminAcc = userAccounts.find(a => a.role === 'admin') || DEFAULT_USER_ACCOUNTS[0];
+            const adminAcc =
+              userAccounts.find(a => a.role === 'admin') || initialUserAccounts[0];
             setCurrentUser(adminAcc);
           }
         }}
-        agencies={agencies}
-        selectedAgencyId={selectedAgencyId}
         onSelectAgency={id => setSelectedAgencyId(id)}
-        onOpenAdmin={() => {
+        onOpenAdminHub={() => {
           setIsRoleModalOpen(false);
           setIsAdminHubOpen(true);
         }}
+        onOpenPostProperty={() => {
+          setIsRoleModalOpen(false);
+          setIsPostModalOpen(true);
+        }}
       />
 
-      <AiChatbot properties={properties} agencies={agencies} />
+      <AiChatbot
+        properties={properties}
+        onSelectProperty={prop => setSelectedProperty(prop)}
+      />
       <FloatingWhatsApp />
       <ScrollToTop />
     </div>
