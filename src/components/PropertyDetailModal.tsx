@@ -57,7 +57,6 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
 
   useEffect(() => {
     setActiveImageIdx(0);
-    // Automatically open in video mode if user clicked a listing with an attached video clip
     if (property?.virtualTourVideoUrl && property.virtualTourVideoUrl.trim()) {
       setActiveMediaMode('video');
     } else {
@@ -148,9 +147,7 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
 
         {/* Scrollable Content */}
         <div className="overflow-y-auto p-5 sm:p-6 space-y-6">
-          {/* Media Showcase (Photos OR Functional Video Player) */}
           <div className="space-y-3">
-            {/* Media Mode Switcher Bar */}
             {hasVideo && (
               <div className="flex flex-wrap items-center justify-between gap-2 bg-slate-100 p-2 rounded-2xl border border-slate-200">
                 <div className="flex items-center gap-2">
@@ -241,7 +238,6 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
               )}
             </div>
 
-            {/* Thumbnail Strip */}
             <div className="flex items-center gap-2.5 overflow-x-auto pb-1">
               {hasVideo && (
                 <button
@@ -283,7 +279,6 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
             </div>
           </div>
 
-          {/* Grid Layout: Left Details, Right Agent Card */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 space-y-6">
               <div>
@@ -301,7 +296,6 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
                 )}
               </div>
 
-              {/* Specs Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-200/80">
                 <div>
                   <div className="text-[11px] text-slate-400 font-semibold uppercase">Area Size</div>
@@ -333,7 +327,6 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
                 )}
               </div>
 
-              {/* Description */}
               <div>
                 <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider mb-2">
                   Property Overview &amp; Specifications
@@ -341,7 +334,6 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
                 <p className="text-slate-600 text-sm leading-relaxed">{property.description}</p>
               </div>
 
-              {/* Features */}
               <div>
                 <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider mb-3">
                   Key Features &amp; Amenities
@@ -362,7 +354,6 @@ export const PropertyDetailModal: React.FC<PropertyDetailModalProps> = ({
               <LocationMapView location={property.location} title={property.title} />
             </div>
 
-            {/* Right Column: Agent Card */}
             <div className="space-y-4">
               <div className="p-5 rounded-2xl bg-slate-900 text-white border border-slate-800 space-y-4 sticky top-4">
                 <div className="flex items-center gap-3.5 pb-4 border-b border-slate-800">
