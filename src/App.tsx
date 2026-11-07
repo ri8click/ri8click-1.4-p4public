@@ -43,11 +43,10 @@ import {
   BlogPost,
   SiteSectionPortion,
   FilterState,
-  PropertyCategory,
   AdVibeProject,
   AdVibeLead
 } from './types';
-import { SlidersHorizontal, Sparkles, Plus, RefreshCw } from 'lucide-react';
+import { SlidersHorizontal, Sparkles, Plus } from 'lucide-react';
 
 const DECK_SCHEMA_VERSION = 'ri8click_deck_v2_16slides';
 
@@ -71,10 +70,6 @@ function sanitizeAgenciesToPakistanAvatars(agencies: AgencyAccount[]): AgencyAcc
   });
 }
 
-/**
- * Ensures legacy 5-slide caches are upgraded to the full 16-slide Portfolio Deck
- * on first migration, while respecting any subsequent Admin deletions/reordering.
- */
 function loadInitialSlides(): HeroSlide[] {
   try {
     const migratedFlag = localStorage.getItem(DECK_SCHEMA_VERSION);
@@ -92,9 +87,6 @@ function loadInitialSlides(): HeroSlide[] {
 }
 
 export function App() {
-  // ============================================================================
-  // UNIVERSAL PORTAL STATE (REAL-TIME SERVER + CROSS-BROWSER SYNCED)
-  // ============================================================================
   const [properties, setProperties] = useState<Property[]>(() => {
     try {
       const saved = localStorage.getItem('ri8click_properties_data');
@@ -197,7 +189,6 @@ export function App() {
       localStorage.setItem('ri8click_locations_data', JSON.stringify(remote.provinceCityData));
     }
     if (Array.isArray(remote.heroSlides) && remote.heroSlides.length > 0) {
-      // If server still had old 5-slide seed (`slide-1`..`slide-5`), upgrade it to the 16-slide Portfolio Deck
       const isLegacy5SlideSeed =
         remote.heroSlides.length === 5 &&
         remote.heroSlides.every((s: any) => /^slide-[1-5]$/.test(s.id));
@@ -231,7 +222,6 @@ export function App() {
   }, []);
 
   const pushStateToServer = useCallback((partialState: Record<string, any>) => {
-    // Save immediately to localStorage for instant UI & cross-tab sync
     if (partialState.properties) {
       localStorage.setItem('ri8click_properties_data', JSON.stringify(partialState.properties));
     }
@@ -274,7 +264,6 @@ export function App() {
       .catch(() => {});
   }, []);
 
-  // Multi-Layer Real-Time Sync: Initial Fetch + SSE Stream + 4-Second Polling Fallback + Window Focus + Storage Listener
   useEffect(() => {
     let isMounted = true;
 
@@ -320,7 +309,6 @@ export function App() {
 
     fetchLatestFromServer(true);
 
-    // 1. Server-Sent Events (SSE) for instant push
     let eventSource: EventSource | null = null;
     try {
       eventSource = new EventSource('/api/state/stream');
@@ -337,7 +325,6 @@ export function App() {
       };
     } catch {}
 
-    // 2. Lightweight 4-second polling fallback (guarantees updates even if proxy blocks SSE)
     const pollInterval = setInterval(async () => {
       try {
         const vRes = await fetch(`/api/state/version?_t=${Date.now()}`, { cache: 'no-store' });
@@ -352,7 +339,6 @@ export function App() {
       } catch {}
     }, 4000);
 
-    // 3. Re-sync whenever user switches back to tab/window
     const handleVisibilityOrFocus = () => {
       if (document.visibilityState === 'visible') {
         fetchLatestFromServer(false);
@@ -361,7 +347,6 @@ export function App() {
     window.addEventListener('focus', handleVisibilityOrFocus);
     document.addEventListener('visibilitychange', handleVisibilityOrFocus);
 
-    // 4. Cross-tab localStorage listener
     const handleStorageEvent = (e: StorageEvent) => {
       if (!e.newValue) return;
       try {
@@ -388,7 +373,6 @@ export function App() {
     };
   }, [applyIncomingServerState, pushStateToServer]);
 
-  // Wrap state setters so every change immediately persists to server & broadcasts to all users
   const handleUpdateProperties = useCallback(
     (nextProps: Property[]) => {
       const clean = sanitizePropertiesToPakistanAvatars(nextProps);
@@ -473,9 +457,6 @@ export function App() {
     } catch {}
   }, [currentUser]);
 
-  // ============================================================================
-  // UI & NAVIGATION STATE
-  // ============================================================================
   const [activeView, setActiveView] = useState<'portal' | 'advibe_listing' | 'advibe_project'>('portal');
   const [selectedAdvibeProject, setSelectedAdvibeProject] = useState<AdVibeProject | null>(null);
 
@@ -720,7 +701,6 @@ export function App() {
             />
           )}
 
-          {/* Featured Properties Grid */}
           {isPortionVisible('properties_grid') && (
             <section id="listings-section" className="py-12 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
@@ -885,7 +865,6 @@ export function App() {
         }}
       />
 
-      {/* Modals */}
       <PropertyDetailModal
         property={selectedProperty}
         onClose={() => setSelectedProperty(null)}
