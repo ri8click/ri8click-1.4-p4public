@@ -1426,11 +1426,11 @@ export const INITIAL_HERO_SLIDES: HeroSlide[] = [
     price: 'PKR 48 Lakh – 68 Lakh',
     location: 'Taxila / Murree / Nathia Gali / Islamabad',
     society: 'Faisal Hills & Resort Estates',
-    imageUrl: 'https://www.genspark.ai/api/files/s/pSySUzgg',
+    imageUrl: 'https://images.unsplash.com/photo-1518780664697-55e3ad937233?auto=format&fit=crop&w=1600&q=85',
     galleryImages: [
-      'https://www.genspark.ai/api/files/s/pSySUzgg',
-      'https://www.genspark.ai/api/files/s/OypEiCb2',
-      'https://www.genspark.ai/api/files/s/I6HwjuLB'
+      'https://images.unsplash.com/photo-1518780664697-55e3ad937233?auto=format&fit=crop&w=1600&q=85',
+      'https://images.unsplash.com/photo-1510798831971-661eb04b3739?auto=format&fit=crop&w=1600&q=85',
+      'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1600&q=85'
     ],
     tourRoomsCount: 4,
     isActive: true,
@@ -1461,11 +1461,11 @@ export const INITIAL_HERO_SLIDES: HeroSlide[] = [
     price: 'PKR 82 Lakh – 1.25 Crore',
     location: 'Faisal Hills / B-17 / Gulberg Greens',
     society: 'Faisal Hills Executive Block',
-    imageUrl: 'https://www.genspark.ai/api/files/s/OypEiCb2',
+    imageUrl: 'https://images.unsplash.com/photo-1510798831971-661eb04b3739?auto=format&fit=crop&w=1600&q=85',
     galleryImages: [
-      'https://www.genspark.ai/api/files/s/OypEiCb2',
-      'https://www.genspark.ai/api/files/s/pSySUzgg',
-      'https://www.genspark.ai/api/files/s/gbfFKIcB'
+      'https://images.unsplash.com/photo-1510798831971-661eb04b3739?auto=format&fit=crop&w=1600&q=85',
+      'https://images.unsplash.com/photo-1518780664697-55e3ad937233?auto=format&fit=crop&w=1600&q=85',
+      'https://images.unsplash.com/photo-1600585154526-990dced4db0d?auto=format&fit=crop&w=1600&q=85'
     ],
     tourRoomsCount: 5,
     isActive: true,
@@ -1496,11 +1496,11 @@ export const INITIAL_HERO_SLIDES: HeroSlide[] = [
     price: 'PKR 55 Lakh – 78 Lakh',
     location: 'Islamabad / Khanpur Dam / Swat / Hunza',
     society: 'Margalla Foothills & Resort Enclaves',
-    imageUrl: 'https://www.genspark.ai/api/files/s/I6HwjuLB',
+    imageUrl: 'https://images.unsplash.com/photo-1600585154526-990dced4db0d?auto=format&fit=crop&w=1600&q=85',
     galleryImages: [
-      'https://www.genspark.ai/api/files/s/I6HwjuLB',
-      'https://www.genspark.ai/api/files/s/gbfFKIcB',
-      'https://www.genspark.ai/api/files/s/pSySUzgg'
+      'https://images.unsplash.com/photo-1600585154526-990dced4db0d?auto=format&fit=crop&w=1600&q=85',
+      'https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=1600&q=85',
+      'https://images.unsplash.com/photo-1518780664697-55e3ad937233?auto=format&fit=crop&w=1600&q=85'
     ],
     tourRoomsCount: 4,
     isActive: true,
@@ -1531,11 +1531,11 @@ export const INITIAL_HERO_SLIDES: HeroSlide[] = [
     price: 'PKR 64 Lakh – 88 Lakh',
     location: 'Islamabad / DHA / Bahria Town',
     society: 'Executive Farmhouse & Commercial Hub',
-    imageUrl: 'https://www.genspark.ai/api/files/s/gbfFKIcB',
+    imageUrl: 'https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=1600&q=85',
     galleryImages: [
-      'https://www.genspark.ai/api/files/s/gbfFKIcB',
-      'https://www.genspark.ai/api/files/s/W2Z5zFao',
-      'https://www.genspark.ai/api/files/s/OypEiCb2'
+      'https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=1600&q=85',
+      'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1600&q=85',
+      'https://images.unsplash.com/photo-1518780664697-55e3ad937233?auto=format&fit=crop&w=1600&q=85'
     ],
     tourRoomsCount: 4,
     isActive: true,
@@ -1566,11 +1566,11 @@ export const INITIAL_HERO_SLIDES: HeroSlide[] = [
     price: 'PKR 46 Lakh – 65 Lakh',
     location: 'Taxila / Faisal Hills / Abbottabad',
     society: 'Faisal Hills & Hill Station Enclaves',
-    imageUrl: 'https://www.genspark.ai/api/files/s/W2Z5zFao',
+    imageUrl: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1600&q=85',
     galleryImages: [
-      'https://www.genspark.ai/api/files/s/W2Z5zFao',
-      'https://www.genspark.ai/api/files/s/pSySUzgg',
-      'https://www.genspark.ai/api/files/s/bf0ebbb238de4f18ac5521303f36222c'
+      'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1600&q=85',
+      'https://images.unsplash.com/photo-1518780664697-55e3ad937233?auto=format&fit=crop&w=1600&q=85',
+      'https://images.unsplash.com/photo-1510798831971-661eb04b3739?auto=format&fit=crop&w=1600&q=85'
     ],
     tourRoomsCount: 3,
     isActive: true,
@@ -1601,11 +1601,11 @@ export const INITIAL_HERO_SLIDES: HeroSlide[] = [
     price: 'PKR 1.35 Crore – 1.85 Crore',
     location: 'Islamabad / Lahore / Karachi / Bhurban',
     society: 'Premier Farmhouse & Resort Estates',
-    imageUrl: 'https://www.genspark.ai/api/files/s/bf0ebbb238de4f18ac5521303f36222c',
+    imageUrl: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1600&q=85',
     galleryImages: [
-      'https://www.genspark.ai/api/files/s/bf0ebbb238de4f18ac5521303f36222c',
-      'https://www.genspark.ai/api/files/s/7bb35bc10e1549908eb921611bd92685',
-      'https://www.genspark.ai/api/files/s/OypEiCb2'
+      'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1600&q=85',
+      'https://images.unsplash.com/photo-1600585154526-990dced4db0d?auto=format&fit=crop&w=1600&q=85',
+      'https://images.unsplash.com/photo-1518780664697-55e3ad937233?auto=format&fit=crop&w=1600&q=85'
     ],
     tourRoomsCount: 6,
     isActive: true,
@@ -1636,11 +1636,11 @@ export const INITIAL_HERO_SLIDES: HeroSlide[] = [
     price: 'PKR 68 Lakh – 96 Lakh',
     location: 'Khanpur Dam / Rawal Lake / Attabad Lake',
     society: 'Waterfront & Eco-Resort Zone',
-    imageUrl: 'https://www.genspark.ai/api/files/s/7bb35bc10e1549908eb921611bd92685',
+    imageUrl: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=1600&q=85',
     galleryImages: [
-      'https://www.genspark.ai/api/files/s/7bb35bc10e1549908eb921611bd92685',
-      'https://www.genspark.ai/api/files/s/bf0ebbb238de4f18ac5521303f36222c',
-      'https://www.genspark.ai/api/files/s/pSySUzgg'
+      'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=1600&q=85',
+      'https://images.unsplash.com/photo-1510798831971-661eb04b3739?auto=format&fit=crop&w=1600&q=85',
+      'https://images.unsplash.com/photo-1518780664697-55e3ad937233?auto=format&fit=crop&w=1600&q=85'
     ],
     tourRoomsCount: 4,
     isActive: true,
@@ -1671,17 +1671,17 @@ export const INITIAL_HERO_SLIDES: HeroSlide[] = [
     price: 'Shops PKR 1.1–3.0 Cr • Offices 2.0–3.5 Cr • Suites 3.0–6.0 Cr',
     location: 'Main Jinnah Avenue, Sector F-8 / Blue Area, Islamabad',
     society: 'Blue Area Corporate Zone',
-    imageUrl: 'https://towers.pk/wp-content/uploads/sites/2/2023/08/the-centaurus-islamabad-380x250.jpg',
+    imageUrl: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1600&q=85',
     galleryImages: [
-      'https://towers.pk/wp-content/uploads/sites/2/2023/08/the-centaurus-islamabad-380x250.jpg',
-      'https://towers.pk/wp-content/uploads/sites/2/2023/09/Citadel-7-by-Chakor-Ventures-in-Blue-Area-Islamabad-1-380x250.jpg',
-      'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1600&q=85'
+      'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1600&q=85',
+      'https://images.unsplash.com/photo-1582407947304-fd86f028f716?auto=format&fit=crop&w=1600&q=85',
+      'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1600&q=85'
     ],
     tourRoomsCount: 6,
     isActive: true,
     order: 8,
     features: [
-      'Towers.pk #1 Ranked Islamabad Skyscraper (656 ft / 42 Floors)',
+      'Islamabad Flagship Skyscraper (656 ft / 42 Floors)',
       'Citadel 7: 272 ft / 20-Storey Corporate & Retail Complex',
       'CDA Approved Freehold Commercial & Luxury Suites',
       'Guaranteed Multinational Tenant Demand & High ROI'
@@ -1706,11 +1706,11 @@ export const INITIAL_HERO_SLIDES: HeroSlide[] = [
     price: 'Offices PKR 2.0–15.0 Cr • Luxury Suites PKR 2.1–10.0 Cr',
     location: 'DHA Phase 2, Main GT Road, Islamabad',
     society: 'DHA Islamabad Phase 1-5',
-    imageUrl: 'https://towers.pk/wp-content/uploads/sites/2/2024/02/Giga-Mall-Islamabad-380x250.jpg',
+    imageUrl: 'https://images.unsplash.com/photo-1582407947304-fd86f028f716?auto=format&fit=crop&w=1600&q=85',
     galleryImages: [
-      'https://towers.pk/wp-content/uploads/sites/2/2024/02/Giga-Mall-Islamabad-380x250.jpg',
-      'https://towers.pk/wp-content/uploads/sites/2/2023/09/Goldcrest-Views-Islamabad-380x250.jpg',
-      'https://images.unsplash.com/photo-1582407947304-fd86f028f716?auto=format&fit=crop&w=1600&q=85'
+      'https://images.unsplash.com/photo-1582407947304-fd86f028f716?auto=format&fit=crop&w=1600&q=85',
+      'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1600&q=85',
+      'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1600&q=85'
     ],
     tourRoomsCount: 5,
     isActive: true,
@@ -1741,11 +1741,11 @@ export const INITIAL_HERO_SLIDES: HeroSlide[] = [
     price: 'Offices PKR 50M–1.40 Cr • Floor Rent PKR 15.4L–16.2L/Mo',
     location: 'Jinnah Avenue F-7 / G-7 Blue Area, Islamabad',
     society: 'Blue Area Corporate Zone',
-    imageUrl: 'https://towers.pk/wp-content/uploads/sites/2/2023/08/Telecom-Tower-Islamabad-1-380x250.jpg',
+    imageUrl: 'https://images.unsplash.com/photo-1577495508048-b635879837f1?auto=format&fit=crop&w=1600&q=85',
     galleryImages: [
-      'https://towers.pk/wp-content/uploads/sites/2/2023/08/Telecom-Tower-Islamabad-1-380x250.jpg',
-      'https://towers.pk/wp-content/uploads/sites/2/2023/08/ISE-Towers-Islamabad-380x250.jpg',
-      'https://towers.pk/wp-content/uploads/sites/2/2023/08/Saudi-Pak-Tower-Islamabad-1-380x250.jpg'
+      'https://images.unsplash.com/photo-1577495508048-b635879837f1?auto=format&fit=crop&w=1600&q=85',
+      'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1600&q=85',
+      'https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1600&q=85'
     ],
     tourRoomsCount: 5,
     isActive: true,
@@ -1776,11 +1776,11 @@ export const INITIAL_HERO_SLIDES: HeroSlide[] = [
     price: 'Luxury Units & Penthouses from PKR 1.45 Crore',
     location: 'Constitution Ave / Gulberg Greens / DHA-2, Islamabad',
     society: 'Gulberg Greens & Residencia',
-    imageUrl: 'https://towers.pk/wp-content/uploads/sites/2/2023/09/Skypark-One-Gulberg-Islamabad-380x250.jpg',
+    imageUrl: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1600&q=85',
     galleryImages: [
-      'https://towers.pk/wp-content/uploads/sites/2/2023/09/Skypark-One-Gulberg-Islamabad-380x250.jpg',
-      'https://towers.pk/wp-content/uploads/sites/2/2023/08/One-Constitution-Avenue-Islamabad-380x250.jpg',
-      'https://towers.pk/wp-content/uploads/sites/2/2023/09/Lignum-Tower-Islamabad-380x250.jpg'
+      'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1600&q=85',
+      'https://images.unsplash.com/photo-1582407947304-fd86f028f716?auto=format&fit=crop&w=1600&q=85',
+      'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1600&q=85'
     ],
     tourRoomsCount: 5,
     isActive: true,
@@ -1811,11 +1811,11 @@ export const INITIAL_HERO_SLIDES: HeroSlide[] = [
     price: 'Shops PKR 4.5M–3.5 Cr • Offices PKR 80M–3.5 Cr • 8–9% Yield',
     location: 'Jinnah Avenue Blue Area & DHA Phase 1, Islamabad',
     society: 'Blue Area Corporate Zone',
-    imageUrl: 'https://towers.pk/wp-content/uploads/sites/2/2023/08/State-Life-Tower-Islamabad-380x250.jpg',
+    imageUrl: 'https://images.unsplash.com/photo-1554469384-e58fac16e23a?auto=format&fit=crop&w=1600&q=85',
     galleryImages: [
-      'https://towers.pk/wp-content/uploads/sites/2/2023/08/State-Life-Tower-Islamabad-380x250.jpg',
-      'https://towers.pk/wp-content/uploads/sites/2/2023/08/Green-Trust-Tower-Islamabad-380x250.jpg',
-      'https://towers.pk/wp-content/uploads/sites/2/2023/09/Defence-Executive-Apartments-Islamabad-380x250.jpg'
+      'https://images.unsplash.com/photo-1554469384-e58fac16e23a?auto=format&fit=crop&w=1600&q=85',
+      'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1600&q=85',
+      'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1600&q=85'
     ],
     tourRoomsCount: 5,
     isActive: true,
@@ -1919,7 +1919,7 @@ export const INITIAL_HERO_SLIDES: HeroSlide[] = [
     imageUrl: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1600&q=85',
     galleryImages: [
       'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1600&q=85',
-      'https://images.unsplash.com/photo-1600566753376-12c8ab7fb75b?auto=format&fit=crop&w=1200&q=85',
+      'https://images.unsplash.com/photo-1600566753376-12c8ab7fb75b?auto=format&fit=crop&w=1600&q=85',
       'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=85'
     ],
     tourRoomsCount: 4,
@@ -1955,7 +1955,7 @@ export const INITIAL_HERO_SLIDES: HeroSlide[] = [
     galleryImages: [
       'https://images.unsplash.com/photo-1600566753376-12c8ab7fb75b?auto=format&fit=crop&w=1600&q=85',
       'https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1200&q=85',
-      'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=85'
+      'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1600&q=85'
     ],
     tourRoomsCount: 4,
     isActive: true,
