@@ -6,7 +6,10 @@ import { PropertyCard } from './components/PropertyCard';
 import { PropertyDetailModal } from './components/PropertyDetailModal';
 import { CommercialShowcase } from './components/CommercialShowcase';
 import { ModularHomesShowcase } from './components/ModularHomesShowcase';
-import { AgenciesSection, resolvePakistanAgentAvatar } from './components/AgenciesSection';
+import {
+  AgenciesSection,
+  resolvePakistanAgentAvatar
+} from './components/AgenciesSection';
 import { ConsortiumShowcase } from './components/ConsortiumShowcase';
 import { NewsBlogsSection } from './components/NewsBlogsSection';
 import { BlogDetailModal } from './components/BlogDetailModal';
@@ -33,7 +36,11 @@ import {
   INITIAL_BLOGS,
   INITIAL_SITE_PORTIONS
 } from './data/mockData';
-import { initialUserAccounts, UserAccount } from './data/defaultAccounts';
+import {
+  initialUserAccounts,
+  UserAccount,
+  mergeUserAccountsWithDefaults
+} from './data/defaultAccounts';
 import { initialAdvibeProjects, initialAdvibeLeads } from './data/advibeDemoData';
 import {
   Property,
@@ -43,14 +50,15 @@ import {
   BlogPost,
   SiteSectionPortion,
   AdVibeProject,
-  AdVibeLead
+  AdVibeLead,
+  ConsortiumDivision
 } from './types';
 import { SlidersHorizontal, Sparkles, Plus, RotateCcw } from 'lucide-react';
 
-const DECK_SCHEMA_VERSION = 'ri8click_deck_v2_16slides';
+const DECK_SCHEMA_VERSION = 'ri8click_deck_v3_clean';
 
 function sanitizePropertiesToPakistanAvatars(props: Property[]): Property[] {
-  if (!Array.isArray(props)) return INITIAL_PROPERTIES;
+  if (!Array.isArray(props) || props.length === 0) return INITIAL_PROPERTIES;
   return props.map((p, idx) => ({
     ...p,
     agentAvatar: resolvePakistanAgentAvatar(
@@ -61,19 +69,21 @@ function sanitizePropertiesToPakistanAvatars(props: Property[]): Property[] {
   }));
 }
 
-function sanitizeAgenciesToPakistanAvatars(agencies: AgencyAccount[]): AgencyAccount[] {
-  if (!Array.isArray(agencies)) return INITIAL_AGENCIES;
+function sanitizeAgenciesToPakistanAvatars(
+  agencies: AgencyAccount[]
+): AgencyAccount[] {
+  if (!Array.isArray(agencies) || agencies.length === 0) return INITIAL_AGENCIES;
   return agencies.map((a, idx) => {
     const cleanAvatar = resolvePakistanAgentAvatar(
-      (a as any).avatar || a.logo,
-      `${a.id} ${a.name} ${(a as any).companyName || ''}`,
+      a.avatar || a.logo,
+      `${a.id} ${a.name} ${a.companyName || ''}`,
       idx
     );
     return {
       ...a,
       logo: cleanAvatar,
       avatar: cleanAvatar
-    } as AgencyAccount;
+    };
   });
 }
 
@@ -88,7 +98,10 @@ function loadInitialSlides(): HeroSlide[] {
       }
     }
     localStorage.setItem(DECK_SCHEMA_VERSION, 'true');
-    localStorage.setItem('ri8click_hero_slides', JSON.stringify(INITIAL_HERO_SLIDES));
+    localStorage.setItem(
+      'ri8click_hero_slides',
+      JSON.stringify(INITIAL_HERO_SLIDES)
+    );
   } catch {}
   return INITIAL_HERO_SLIDES;
 }
@@ -110,15 +123,27 @@ export function App() {
     return sanitizeAgenciesToPakistanAvatars(INITIAL_AGENCIES);
   });
 
-  const [provinceCityData, setProvinceCityData] = useState<ProvinceCityData[]>(() => {
-    try {
-      const saved = localStorage.getItem('ri8click_locations_data');
-      if (saved) return JSON.parse(saved);
-    } catch {}
-    return INITIAL_PROVINCE_CITIES;
-  });
+  const [provinceCityData, setProvinceCityData] = useState<ProvinceCityData[]>(
+    () => {
+      try {
+        const saved = localStorage.getItem('ri8click_locations_data');
+        if (saved) return JSON.parse(saved);
+      } catch {}
+      return INITIAL_PROVINCE_CITIES;
+    }
+  );
 
   const [heroSlides, setHeroSlides] = useState<HeroSlide[]>(loadInitialSlides);
+
+  const [consortiumDivisions, setConsortiumDivisions] = useState<
+    ConsortiumDivision[]
+  >(() => {
+    try {
+      const saved = localStorage.getItem('ri8click_consortium_divisions');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return CONSORTIUM_DIVISIONS;
+  });
 
   const [blogs, setBlogs] = useState<BlogPost[]>(() => {
     try {
@@ -139,7 +164,7 @@ export function App() {
   const [userAccounts, setUserAccounts] = useState<UserAccount[]>(() => {
     try {
       const saved = localStorage.getItem('ri8click_user_accounts');
-      if (saved) return JSON.parse(saved);
+      if (saved) return mergeUserAccountsWithDefaults(JSON.parse(saved));
     } catch {}
     return initialUserAccounts;
   });
@@ -191,20 +216,32 @@ export function App() {
       setAgencies(clean);
       localStorage.setItem('ri8click_agencies_data', JSON.stringify(clean));
     }
-    if (Array.isArray(remote.provinceCityData) && remote.provinceCityData.length > 0) {
+    if (
+      Array.isArray(remote.provinceCityData) &&
+      remote.provinceCityData.length > 0
+    ) {
       setProvinceCityData(remote.provinceCityData);
-      localStorage.setItem('ri8click_locations_data', JSON.stringify(remote.provinceCityData));
+      localStorage.setItem(
+        'ri8click_locations_data',
+        JSON.stringify(remote.provinceCityData)
+      );
     }
     if (Array.isArray(remote.heroSlides) && remote.heroSlides.length > 0) {
-      const isLegacy5SlideSeed =
-        remote.heroSlides.length === 5 &&
-        remote.heroSlides.every((s: any) => /^slide-[1-5]$/.test(s.id));
-
-      if (!isLegacy5SlideSeed) {
-        setHeroSlides(remote.heroSlides);
-        localStorage.setItem('ri8click_hero_slides', JSON.stringify(remote.heroSlides));
-        localStorage.setItem(DECK_SCHEMA_VERSION, 'true');
-      }
+      setHeroSlides(remote.heroSlides);
+      localStorage.setItem(
+        'ri8click_hero_slides',
+        JSON.stringify(remote.heroSlides)
+      );
+    }
+    if (
+      Array.isArray(remote.consortiumDivisions) &&
+      remote.consortiumDivisions.length > 0
+    ) {
+      setConsortiumDivisions(remote.consortiumDivisions);
+      localStorage.setItem(
+        'ri8click_consortium_divisions',
+        JSON.stringify(remote.consortiumDivisions)
+      );
     }
     if (Array.isArray(remote.blogs) && remote.blogs.length > 0) {
       setBlogs(remote.blogs);
@@ -212,50 +249,97 @@ export function App() {
     }
     if (Array.isArray(remote.sitePortions) && remote.sitePortions.length > 0) {
       setSitePortions(remote.sitePortions);
-      localStorage.setItem('ri8click_site_portions', JSON.stringify(remote.sitePortions));
+      localStorage.setItem(
+        'ri8click_site_portions',
+        JSON.stringify(remote.sitePortions)
+      );
     }
     if (Array.isArray(remote.userAccounts) && remote.userAccounts.length > 0) {
-      setUserAccounts(remote.userAccounts);
-      localStorage.setItem('ri8click_user_accounts', JSON.stringify(remote.userAccounts));
+      const mergedUsers = mergeUserAccountsWithDefaults(remote.userAccounts);
+      setUserAccounts(mergedUsers);
+      localStorage.setItem(
+        'ri8click_user_accounts',
+        JSON.stringify(mergedUsers)
+      );
     }
-    if (Array.isArray(remote.advibeProjects) && remote.advibeProjects.length > 0) {
+    if (
+      Array.isArray(remote.advibeProjects) &&
+      remote.advibeProjects.length > 0
+    ) {
       setAdvibeProjects(remote.advibeProjects);
-      localStorage.setItem('ri8click_advibe_projects', JSON.stringify(remote.advibeProjects));
+      localStorage.setItem(
+        'ri8click_advibe_projects',
+        JSON.stringify(remote.advibeProjects)
+      );
     }
     if (Array.isArray(remote.advibeLeads)) {
       setAdvibeLeads(remote.advibeLeads);
-      localStorage.setItem('ri8click_advibe_leads', JSON.stringify(remote.advibeLeads));
+      localStorage.setItem(
+        'ri8click_advibe_leads',
+        JSON.stringify(remote.advibeLeads)
+      );
     }
   }, []);
 
   const pushStateToServer = useCallback((partialState: Record<string, any>) => {
     if (partialState.properties) {
-      localStorage.setItem('ri8click_properties_data', JSON.stringify(partialState.properties));
+      localStorage.setItem(
+        'ri8click_properties_data',
+        JSON.stringify(partialState.properties)
+      );
     }
     if (partialState.agencies) {
-      localStorage.setItem('ri8click_agencies_data', JSON.stringify(partialState.agencies));
+      localStorage.setItem(
+        'ri8click_agencies_data',
+        JSON.stringify(partialState.agencies)
+      );
     }
     if (partialState.provinceCityData) {
-      localStorage.setItem('ri8click_locations_data', JSON.stringify(partialState.provinceCityData));
+      localStorage.setItem(
+        'ri8click_locations_data',
+        JSON.stringify(partialState.provinceCityData)
+      );
     }
     if (partialState.heroSlides) {
-      localStorage.setItem('ri8click_hero_slides', JSON.stringify(partialState.heroSlides));
-      localStorage.setItem(DECK_SCHEMA_VERSION, 'true');
+      localStorage.setItem(
+        'ri8click_hero_slides',
+        JSON.stringify(partialState.heroSlides)
+      );
+    }
+    if (partialState.consortiumDivisions) {
+      localStorage.setItem(
+        'ri8click_consortium_divisions',
+        JSON.stringify(partialState.consortiumDivisions)
+      );
     }
     if (partialState.blogs) {
-      localStorage.setItem('ri8click_blogs_data', JSON.stringify(partialState.blogs));
+      localStorage.setItem(
+        'ri8click_blogs_data',
+        JSON.stringify(partialState.blogs)
+      );
     }
     if (partialState.sitePortions) {
-      localStorage.setItem('ri8click_site_portions', JSON.stringify(partialState.sitePortions));
+      localStorage.setItem(
+        'ri8click_site_portions',
+        JSON.stringify(partialState.sitePortions)
+      );
     }
     if (partialState.userAccounts) {
-      localStorage.setItem('ri8click_user_accounts', JSON.stringify(partialState.userAccounts));
+      const merged = mergeUserAccountsWithDefaults(partialState.userAccounts);
+      partialState.userAccounts = merged;
+      localStorage.setItem('ri8click_user_accounts', JSON.stringify(merged));
     }
     if (partialState.advibeProjects) {
-      localStorage.setItem('ri8click_advibe_projects', JSON.stringify(partialState.advibeProjects));
+      localStorage.setItem(
+        'ri8click_advibe_projects',
+        JSON.stringify(partialState.advibeProjects)
+      );
     }
     if (partialState.advibeLeads) {
-      localStorage.setItem('ri8click_advibe_leads', JSON.stringify(partialState.advibeLeads));
+      localStorage.setItem(
+        'ri8click_advibe_leads',
+        JSON.stringify(partialState.advibeLeads)
+      );
     }
 
     fetch('/api/state', {
@@ -285,25 +369,16 @@ export function App() {
 
         const hasRemoteData =
           Array.isArray(remote?.properties) && remote.properties.length > 0;
-        const hasModernSlides =
-          Array.isArray(remote?.heroSlides) &&
-          remote.heroSlides.length > 0 &&
-          !(
-            remote.heroSlides.length === 5 &&
-            remote.heroSlides.every((s: any) => /^slide-[1-5]$/.test(s.id))
-          );
 
         if (hasRemoteData) {
           applyIncomingServerState(remote);
-          if (!hasModernSlides) {
-            pushStateToServer({ heroSlides: INITIAL_HERO_SLIDES });
-          }
         } else if (seedIfEmpty) {
           pushStateToServer({
             properties,
             agencies,
             provinceCityData,
             heroSlides,
+            consortiumDivisions,
             blogs,
             sitePortions,
             userAccounts,
@@ -323,7 +398,8 @@ export function App() {
         try {
           const payload = JSON.parse(event.data);
           if (
-            (payload?.type === 'STATE_UPDATED' || payload?.type === 'INITIAL_STATE') &&
+            (payload?.type === 'STATE_UPDATED' ||
+              payload?.type === 'INITIAL_STATE') &&
             payload.state
           ) {
             applyIncomingServerState(payload.state);
@@ -334,7 +410,9 @@ export function App() {
 
     const pollInterval = setInterval(async () => {
       try {
-        const vRes = await fetch(`/api/state/version?_t=${Date.now()}`, { cache: 'no-store' });
+        const vRes = await fetch(`/api/state/version?_t=${Date.now()}`, {
+          cache: 'no-store'
+        });
         if (!vRes.ok) return;
         const vData = await vRes.json();
         if (
@@ -346,37 +424,10 @@ export function App() {
       } catch {}
     }, 4000);
 
-    const handleVisibilityOrFocus = () => {
-      if (document.visibilityState === 'visible') {
-        fetchLatestFromServer(false);
-      }
-    };
-    window.addEventListener('focus', handleVisibilityOrFocus);
-    document.addEventListener('visibilitychange', handleVisibilityOrFocus);
-
-    const handleStorageEvent = (e: StorageEvent) => {
-      if (!e.newValue) return;
-      try {
-        if (e.key === 'ri8click_properties_data') {
-          setProperties(sanitizePropertiesToPakistanAvatars(JSON.parse(e.newValue)));
-        } else if (e.key === 'ri8click_hero_slides') {
-          setHeroSlides(JSON.parse(e.newValue));
-        } else if (e.key === 'ri8click_locations_data') {
-          setProvinceCityData(JSON.parse(e.newValue));
-        } else if (e.key === 'ri8click_agencies_data') {
-          setAgencies(sanitizeAgenciesToPakistanAvatars(JSON.parse(e.newValue)));
-        }
-      } catch {}
-    };
-    window.addEventListener('storage', handleStorageEvent);
-
     return () => {
       isMounted = false;
       if (eventSource) eventSource.close();
       clearInterval(pollInterval);
-      window.removeEventListener('focus', handleVisibilityOrFocus);
-      document.removeEventListener('visibilitychange', handleVisibilityOrFocus);
-      window.removeEventListener('storage', handleStorageEvent);
     };
   }, [applyIncomingServerState, pushStateToServer]);
 
@@ -414,6 +465,14 @@ export function App() {
     [pushStateToServer]
   );
 
+  const handleUpdateConsortiumDivisions = useCallback(
+    (nextDivisions: ConsortiumDivision[]) => {
+      setConsortiumDivisions(nextDivisions);
+      pushStateToServer({ consortiumDivisions: nextDivisions });
+    },
+    [pushStateToServer]
+  );
+
   const handleUpdateBlogs = useCallback(
     (nextBlogs: BlogPost[]) => {
       setBlogs(nextBlogs);
@@ -437,8 +496,9 @@ export function App() {
 
   const handleUpdateUserAccounts = useCallback(
     (nextAccounts: UserAccount[]) => {
-      setUserAccounts(nextAccounts);
-      pushStateToServer({ userAccounts: nextAccounts });
+      const merged = mergeUserAccountsWithDefaults(nextAccounts);
+      setUserAccounts(merged);
+      pushStateToServer({ userAccounts: merged });
     },
     [pushStateToServer]
   );
@@ -446,7 +506,9 @@ export function App() {
   const handleUpdateCurrentUser = useCallback(
     (updatedUser: UserAccount) => {
       setCurrentUser(updatedUser);
-      const nextAccounts = userAccounts.map(u => (u.id === updatedUser.id ? updatedUser : u));
+      const nextAccounts = mergeUserAccountsWithDefaults(
+        userAccounts.map(u => (u.id === updatedUser.id ? updatedUser : u))
+      );
       setUserAccounts(nextAccounts);
       pushStateToServer({ userAccounts: nextAccounts });
     },
@@ -472,7 +534,10 @@ export function App() {
   useEffect(() => {
     try {
       if (currentUser) {
-        localStorage.setItem('ri8click_current_user', JSON.stringify(currentUser));
+        localStorage.setItem(
+          'ri8click_current_user',
+          JSON.stringify(currentUser)
+        );
       } else {
         localStorage.removeItem('ri8click_current_user');
       }
@@ -481,25 +546,32 @@ export function App() {
 
   const [activeTab, setActiveTab] = useState<string>('properties');
   const [activeAdvibeSlug, setActiveAdvibeSlug] = useState<string | null>(null);
-
-  const [savedPropertyIds, setSavedPropertyIds] = useState<string[]>(['prop-comm-1', 'prop-res-1']);
-  const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
+  const [savedPropertyIds, setSavedPropertyIds] = useState<string[]>([
+    'prop-comm-1',
+    'prop-res-1'
+  ]);
+  const [selectedProperty, setSelectedProperty] = useState<Property | null>(
+    null
+  );
   const [selectedBlog, setSelectedBlog] = useState<BlogPost | null>(null);
   const [tourProperty, setTourProperty] = useState<Property | null>(null);
-  const [virtual3DProperty, setVirtual3DProperty] = useState<Property | null>(null);
+  const [virtual3DProperty, setVirtual3DProperty] = useState<Property | null>(
+    null
+  );
 
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
   const [isSavedModalOpen, setIsSavedModalOpen] = useState(false);
   const [isAdminHubOpen, setIsAdminHubOpen] = useState(false);
-  const [adminInitialTab, setAdminInitialTab] = useState<AdminTabType>('overview');
+  const [adminInitialTab, setAdminInitialTab] =
+    useState<AdminTabType>('overview');
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [loginModalReason, setLoginModalReason] = useState<
     'general' | 'admin_required' | 'agency_required' | 'advibe_required'
   >('general');
   const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
 
-  const [userRole, setUserRole] = useState<'admin' | 'agency' | 'customer'>(() =>
-    currentUser ? currentUser.role : 'customer'
+  const [userRole, setUserRole] = useState<'admin' | 'agency' | 'customer'>(
+    () => (currentUser ? currentUser.role : 'customer')
   );
   const [selectedAgencyId, setSelectedAgencyId] = useState<string>(() =>
     currentUser?.agencyId ? currentUser.agencyId : 'agency-1'
@@ -525,7 +597,6 @@ export function App() {
   };
 
   const [filters, setFilters] = useState<any>(initialFilterState);
-
   const resetFilters = () => setFilters(initialFilterState);
 
   const handleUserLogin = (account: UserAccount) => {
@@ -534,7 +605,10 @@ export function App() {
     if (account.agencyId) {
       setSelectedAgencyId(account.agencyId);
     }
-    if (loginModalReason === 'admin_required' && account.role === 'admin') {
+    if (
+      loginModalReason === 'admin_required' &&
+      (account.role === 'admin' || account.role === 'agency')
+    ) {
       setIsAdminHubOpen(true);
     } else if (
       loginModalReason === 'agency_required' &&
@@ -561,13 +635,16 @@ export function App() {
   };
 
   const handleAddProperty = (newProp: Property) => {
-    const nextProps = [newProp, ...properties];
+    const nextProps = sanitizePropertiesToPakistanAvatars([
+      newProp,
+      ...properties
+    ]);
     const nextAgencies = agencies.map(ag =>
       ag.id === newProp.agencyId
         ? {
             ...ag,
-            totalPosts: ((ag as any).totalPosts || 0) + 1,
-            activeListings: ((ag as any).activeListings || 0) + 1
+            totalPosts: (ag.totalPosts || 0) + 1,
+            activeListings: (ag.activeListings || 0) + 1
           }
         : ag
     );
@@ -578,7 +655,7 @@ export function App() {
 
   const handleUpdateAgencyLimit = (agencyId: string, newLimit: number) => {
     const updated = agencies.map(ag =>
-      ag.id === agencyId ? ({ ...ag, postLimit: newLimit } as AgencyAccount) : ag
+      ag.id === agencyId ? { ...ag, postLimit: newLimit } : ag
     );
     handleUpdateAgencies(updated);
   };
@@ -615,15 +692,23 @@ export function App() {
     handleUpdateAdvibeProjects([copy, ...advibeProjects]);
   };
 
-  const handleUpdateAdvibeLeadStatus = (leadId: string, status: AdVibeLead['status']) => {
+  const handleUpdateAdvibeLeadStatus = (
+    leadId: string,
+    status: AdVibeLead['status']
+  ) => {
     handleUpdateAdvibeLeads(
       advibeLeads.map(l => (l.id === leadId ? { ...l, status } : l))
     );
   };
 
-  const handleToggleAgencyAdvibePermission = (agencyId: string, allowed: boolean) => {
+  const handleToggleAgencyAdvibePermission = (
+    agencyId: string,
+    allowed: boolean
+  ) => {
     const updated = agencies.map(a =>
-      a.id === agencyId ? ({ ...a, canManageAdvibe: allowed } as AgencyAccount) : a
+      a.id === agencyId
+        ? { ...a, canManageAdvibe: allowed, canPublishAdvibe: allowed }
+        : a
     );
     handleUpdateAgencies(updated);
   };
@@ -631,9 +716,17 @@ export function App() {
   const filteredProperties = useMemo(() => {
     return properties.filter(p => {
       if (p.status === 'pending') return false;
-      if (filters.category && filters.category !== 'all' && p.category !== filters.category)
+      if (
+        filters.category &&
+        filters.category !== 'all' &&
+        p.category !== filters.category
+      )
         return false;
-      if (filters.purpose && filters.purpose !== 'all' && p.purpose !== filters.purpose)
+      if (
+        filters.purpose &&
+        filters.purpose !== 'all' &&
+        p.purpose !== filters.purpose
+      )
         return false;
       if (
         filters.province &&
@@ -654,7 +747,9 @@ export function App() {
         filters.society !== 'all' &&
         filters.society !== 'All Societies' &&
         filters.society !== 'Show All' &&
-        !p.location.society.toLowerCase().includes(filters.society.toLowerCase())
+        !p.location.society
+          .toLowerCase()
+          .includes(filters.society.toLowerCase())
       )
         return false;
       if (
@@ -675,7 +770,13 @@ export function App() {
         const matchSoc = p.location.society.toLowerCase().includes(q);
         const matchCity = p.location.city.toLowerCase().includes(q);
         const matchAgent = p.agentName.toLowerCase().includes(q);
-        if (!matchTitle && !matchDesc && !matchSoc && !matchCity && !matchAgent) {
+        if (
+          !matchTitle &&
+          !matchDesc &&
+          !matchSoc &&
+          !matchCity &&
+          !matchAgent
+        ) {
           return false;
         }
       }
@@ -685,11 +786,11 @@ export function App() {
 
   const isPortionVisible = (keyOrId: string) => {
     const found = sitePortions.find(
-      p => p.id === keyOrId || (p as any).key === keyOrId
+      p => p.id === keyOrId || p.key === keyOrId
     );
     if (!found) return true;
-    return (found as any).isEnabled !== undefined
-      ? (found as any).isEnabled
+    return found.isEnabled !== undefined
+      ? found.isEnabled
       : found.isVisible !== false;
   };
 
@@ -748,17 +849,15 @@ export function App() {
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
           onOpenCreateProject={() => {
-            setAdminInitialTab('advibe');
-            setIsAdminHubOpen(true);
+            if (userRole === 'admin' || userRole === 'agency') {
+              setAdminInitialTab('advibe');
+              setIsAdminHubOpen(true);
+            } else {
+              setLoginModalReason('advibe_required');
+              setIsLoginModalOpen(true);
+            }
           }}
-          canManageAdvibe={
-            userRole === 'admin' ||
-            (userRole === 'agency' &&
-              Boolean(
-                agencies.find(a => a.id === selectedAgencyId)?.canPublishAdvibe ||
-                  (agencies.find(a => a.id === selectedAgencyId) as any)?.canManageAdvibe
-              ))
-          }
+          canManageAdvibe={userRole === 'admin' || userRole === 'agency'}
         />
       ) : (
         <main className="flex-1">
@@ -835,9 +934,6 @@ export function App() {
                   <h3 className="text-lg font-extrabold text-slate-900">
                     No Matching Properties Found
                   </h3>
-                  <p className="text-xs text-slate-500 max-w-md mx-auto">
-                    Try clearing your search filters or switching the selected city/society.
-                  </p>
                   <button
                     onClick={resetFilters}
                     className="px-5 py-2.5 rounded-xl bg-blue-600 text-white text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer"
@@ -899,6 +995,8 @@ export function App() {
             <AgenciesSection
               agencies={agencies}
               properties={properties}
+              canEditAgencies={userRole === 'admin' || userRole === 'agency'}
+              onUpdateAgencies={handleUpdateAgencies}
               onOpenRegisterAgency={() => {
                 setAdminInitialTab('agencies');
                 setIsAdminHubOpen(true);
@@ -914,12 +1012,15 @@ export function App() {
 
           {isPortionVisible('consortium_showcase') && (
             <ConsortiumShowcase
-              divisions={CONSORTIUM_DIVISIONS}
+              divisions={consortiumDivisions}
               onSelectDivisionContact={div => {
                 const text = encodeURIComponent(
                   `Assalam-o-Alaikum, I am inquiring about ${div.title} on ri8click.com.`
                 );
-                window.open(`https://wa.me/${div.contactWhatsApp}?text=${text}`, '_blank');
+                window.open(
+                  `https://wa.me/${div.contactWhatsApp}?text=${text}`,
+                  '_blank'
+                );
               }}
             />
           )}
@@ -938,7 +1039,7 @@ export function App() {
       )}
 
       <Footer
-        divisions={CONSORTIUM_DIVISIONS}
+        divisions={consortiumDivisions}
         currentUser={currentUser}
         onOpenLogin={() => {
           setLoginModalReason('general');
@@ -967,7 +1068,9 @@ export function App() {
       <PropertyDetailModal
         property={selectedProperty}
         onClose={() => setSelectedProperty(null)}
-        isSaved={selectedProperty ? savedPropertyIds.includes(selectedProperty.id) : false}
+        isSaved={
+          selectedProperty ? savedPropertyIds.includes(selectedProperty.id) : false
+        }
         onToggleSave={handleToggleSave}
         onScheduleTour={prop => {
           setSelectedProperty(null);
@@ -979,7 +1082,10 @@ export function App() {
         }}
       />
 
-      <BlogDetailModal blog={selectedBlog} onClose={() => setSelectedBlog(null)} />
+      <BlogDetailModal
+        blog={selectedBlog}
+        onClose={() => setSelectedBlog(null)}
+      />
 
       <ScheduleTourModal
         isOpen={Boolean(tourProperty)}
@@ -990,7 +1096,9 @@ export function App() {
       <SavedPropertiesModal
         isOpen={isSavedModalOpen}
         onClose={() => setIsSavedModalOpen(false)}
-        savedProperties={properties.filter(p => savedPropertyIds.includes(p.id))}
+        savedProperties={properties.filter(p =>
+          savedPropertyIds.includes(p.id)
+        )}
         onToggleSave={handleToggleSave}
         onClearAllSaved={() => setSavedPropertyIds([])}
         onSelectProperty={prop => {
@@ -1040,6 +1148,7 @@ export function App() {
         provinceCityData={provinceCityData}
         onUpdateProvinceCityData={handleUpdateProvinceCityData}
         agencies={agencies}
+        onUpdateAgencies={handleUpdateAgencies}
         onUpdateAgencyLimit={handleUpdateAgencyLimit}
         onAddNewAgency={handleAddNewAgency}
         properties={properties}
@@ -1048,6 +1157,8 @@ export function App() {
         onOpenVirtualTour={prop => setVirtual3DProperty(prop)}
         heroSlides={heroSlides}
         onUpdateHeroSlides={handleUpdateHeroSlides}
+        consortiumDivisions={consortiumDivisions}
+        onUpdateConsortiumDivisions={handleUpdateConsortiumDivisions}
         blogs={blogs}
         onUpdateBlogs={handleUpdateBlogs}
         onViewBlog={b => setSelectedBlog(b)}
@@ -1083,6 +1194,7 @@ export function App() {
         onLogout={handleUserLogout}
         requiredReason={loginModalReason}
         agencies={agencies}
+        allUsers={userAccounts}
       />
 
       <AuthRoleModal
@@ -1096,7 +1208,8 @@ export function App() {
           setUserRole(role);
           if (role === 'admin') {
             const adminAcc =
-              userAccounts.find(a => a.role === 'admin') || initialUserAccounts[0];
+              userAccounts.find(a => a.role === 'admin') ||
+              initialUserAccounts[0];
             setCurrentUser(adminAcc);
           }
         }}
