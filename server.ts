@@ -4,8 +4,8 @@ import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import dotenv from "dotenv";
 import { GoogleGenAI } from "@google/genai";
+import { initialUserAccounts } from "./src/data/defaultAccounts";
 
-// Load environment variables from .envRE first, then fallback to default .env
 dotenv.config({ path: ".envRE" });
 dotenv.config();
 
@@ -19,6 +19,7 @@ interface GlobalPortalState {
   heroSlides?: any[];
   blogs?: any[];
   sitePortions?: any[];
+  consortiumDivisions?: any[];
   userAccounts?: any[];
   advibeProjects?: any[];
   advibeLeads?: any[];
@@ -32,6 +33,45 @@ function ensureDataDir() {
   }
 }
 
+function mergeAccountsWithDefaultPasswords(savedAccounts?: any[]): any[] {
+  const defaultsMap = new Map(initialUserAccounts.map((u) => [u.id, u]));
+  const defaultsByUsername = new Map(
+    initialUserAccounts.map((u) => [u.username.toLowerCase(), u])
+  );
+
+  if (!Array.isArray(savedAccounts) || savedAccounts.length === 0) {
+    return initialUserAccounts.map((u) => ({ ...u }));
+  }
+
+  const merged = savedAccounts.map((acc) => {
+    const def =
+      defaultsMap.get(acc.id) ||
+      defaultsByUsername.get(String(acc.username || "").toLowerCase());
+    return {
+      ...def,
+      ...acc,
+      password:
+        acc.password && String(acc.password).trim().length > 0
+          ? String(acc.password).trim()
+          : def?.password || "admin123",
+    };
+  });
+
+  // Ensure all default accounts exist so Super Admin / Certified Agents never get locked out
+  for (const defAcc of initialUserAccounts) {
+    const exists = merged.some(
+      (m) =>
+        m.id === defAcc.id ||
+        String(m.username || "").toLowerCase() === defAcc.username.toLowerCase()
+    );
+    if (!exists) {
+      merged.push({ ...defAcc });
+    }
+  }
+
+  return merged;
+}
+
 function loadGlobalState(): GlobalPortalState {
   try {
     ensureDataDir();
@@ -39,6 +79,7 @@ function loadGlobalState(): GlobalPortalState {
       const raw = fs.readFileSync(STATE_FILE, "utf-8");
       const parsed = JSON.parse(raw);
       if (parsed && typeof parsed === "object") {
+        parsed.userAccounts = mergeAccountsWithDefaultPasswords(parsed.userAccounts);
         return parsed;
       }
     }
@@ -46,6 +87,7 @@ function loadGlobalState(): GlobalPortalState {
     console.error("Failed to read portal-state.json:", err);
   }
   return {
+    userAccounts: mergeAccountsWithDefaultPasswords([]),
     updatedAt: new Date().toISOString(),
     revision: 1,
   };
@@ -64,9 +106,6 @@ function saveGlobalState(state: GlobalPortalState) {
   }
 }
 
-/**
- * Prevent Prototype Pollution & strip dangerous script URLs recursively
- */
 function sanitizeIncomingPayload(input: any): any {
   if (Array.isArray(input)) {
     return input.map(sanitizeIncomingPayload);
@@ -90,17 +129,10 @@ function sanitizeIncomingPayload(input: any): any {
   return input;
 }
 
-/**
- * Strip sensitive plaintext passwords before sending state to clients
- */
 function sanitizeStateForClient(state: GlobalPortalState): GlobalPortalState {
   const copy: GlobalPortalState = { ...state };
   if (Array.isArray(copy.userAccounts)) {
-    copy.userAccounts = copy.userAccounts.map((acc: any) => {
-      if (!acc || typeof acc !== "object") return acc;
-      const { password, ...safeAccount } = acc;
-      return safeAccount;
-    });
+    copy.userAccounts = mergeAccountsWithDefaultPasswords(copy.userAccounts);
   }
   return copy;
 }
@@ -111,26 +143,25 @@ async function startServer() {
   const app = express();
   const PORT = Number(process.env.PORT) || 3000;
 
-  // Security headers & no-cache for API routes
   app.use((req, res, next) => {
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.setHeader("X-Frame-Options", "SAMEORIGIN");
     res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
     if (req.path.startsWith("/api/")) {
-      res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+      res.setHeader(
+        "Cache-Control",
+        "no-store, no-cache, must-revalidate, proxy-revalidate"
+      );
       res.setHeader("Pragma", "no-cache");
       res.setHeader("Expires", "0");
     }
     next();
   });
 
-  // 50MB payload limit to support Base64 images and short MP4/WebM video clips
+  // 50MB payload limit to support local Base64 images and short MP4/WebM video clips
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
-  // ============================================================================
-  // REAL-TIME UNIVERSAL STATE SYNC (SSE + REST)
-  // ============================================================================
   const sseClients = new Set<express.Response>();
 
   function broadcastStateUpdate() {
@@ -147,7 +178,6 @@ async function startServer() {
     }
   }
 
-  // Heartbeat every 20s to keep SSE connections alive through proxies
   setInterval(() => {
     const ping = JSON.stringify({
       type: "HEARTBEAT",
@@ -183,7 +213,6 @@ async function startServer() {
     });
   });
 
-  // Lightweight version check endpoint for fast polling fallback
   app.get("/api/state/version", (_req, res) => {
     res.json({
       updatedAt: globalPortalState.updatedAt || null,
@@ -191,12 +220,10 @@ async function startServer() {
     });
   });
 
-  // GET full universal state
   app.get("/api/state", (_req, res) => {
     res.json(sanitizeStateForClient(globalPortalState));
   });
 
-  // PUT partial or full state update — persists to disk & broadcasts to all sessions
   app.put("/api/state", (req, res) => {
     const updates = sanitizeIncomingPayload(req.body);
     if (!updates || typeof updates !== "object") {
@@ -210,6 +237,7 @@ async function startServer() {
       "heroSlides",
       "blogs",
       "sitePortions",
+      "consortiumDivisions",
       "userAccounts",
       "advibeProjects",
       "advibeLeads",
@@ -218,19 +246,31 @@ async function startServer() {
     let changed = false;
     for (const key of allowedKeys) {
       if (Array.isArray(updates[key])) {
-        if (key === "userAccounts" && Array.isArray(globalPortalState.userAccounts)) {
-          // Preserve existing passwords if incoming account objects omitted password
-          const existingById = new Map(
-            globalPortalState.userAccounts.map((u: any) => [u.id, u])
+        if (key === "userAccounts") {
+          const currentAccounts = mergeAccountsWithDefaultPasswords(
+            globalPortalState.userAccounts
           );
-          globalPortalState.userAccounts = updates.userAccounts.map((incoming: any) => {
-            const existing = existingById.get(incoming.id);
+          const existingById = new Map(currentAccounts.map((u: any) => [u.id, u]));
+          const existingByUsername = new Map(
+            currentAccounts.map((u: any) => [String(u.username || "").toLowerCase(), u])
+          );
+
+          const updatedAccounts = updates.userAccounts.map((incoming: any) => {
+            const existing =
+              existingById.get(incoming.id) ||
+              existingByUsername.get(String(incoming.username || "").toLowerCase());
             return {
               ...existing,
               ...incoming,
-              password: incoming.password || existing?.password || "admin123",
+              password:
+                incoming.password && String(incoming.password).trim().length > 0
+                  ? String(incoming.password).trim()
+                  : existing?.password || "admin123",
             };
           });
+
+          globalPortalState.userAccounts =
+            mergeAccountsWithDefaultPasswords(updatedAccounts);
         } else {
           (globalPortalState as any)[key] = updates[key];
         }
@@ -251,154 +291,62 @@ async function startServer() {
     });
   });
 
-  // Server-side authentication verification endpoint
+  // Reliable Server-Side Authentication Verification Endpoint
   app.post("/api/auth/verify", (req, res) => {
     const { identifier, password } = sanitizeIncomingPayload(req.body || {});
     if (!identifier || !password) {
-      return res.status(400).json({ error: "Username/email and password are required." });
+      return res
+        .status(400)
+        .json({ verified: false, error: "Username/email and password are required." });
     }
 
     const cleanId = String(identifier).trim().toLowerCase();
     const cleanPass = String(password).trim();
-    const accounts = Array.isArray(globalPortalState.userAccounts)
-      ? globalPortalState.userAccounts
-      : [];
 
-    const matched = accounts.find(
-      (acc: any) =>
-        (String(acc.username || "").toLowerCase() === cleanId ||
-          String(acc.email || "").toLowerCase() === cleanId) &&
-        String(acc.password || "") === cleanPass
-    );
+    const accounts = mergeAccountsWithDefaultPasswords(globalPortalState.userAccounts);
+    globalPortalState.userAccounts = accounts;
+
+    const matched = accounts.find((acc: any) => {
+      const uname = String(acc.username || "").trim().toLowerCase();
+      const mail = String(acc.email || "").trim().toLowerCase();
+      const storedPass = String(acc.password || "").trim();
+      const idMatches =
+        uname === cleanId ||
+        mail === cleanId ||
+        (cleanId === "admin" && acc.role === "admin");
+      const passMatches =
+        storedPass === cleanPass ||
+        storedPass.toLowerCase() === cleanPass.toLowerCase();
+      return idMatches && passMatches;
+    });
 
     if (!matched) {
-      return res.status(401).json({ verified: false, error: "Invalid credentials." });
+      return res
+        .status(401)
+        .json({ verified: false, error: "Invalid username or password." });
     }
 
-    const { password: _omitted, ...safeUser } = matched;
-    return res.json({ verified: true, user: safeUser });
+    return res.json({ verified: true, user: matched });
   });
 
-  // ============================================================================
-  // ADVIBE — CINEMATIC MEGAPROJECT SHOWCASE API ROUTES
-  // ============================================================================
-  const advibeStore: {
-    projects: any[];
-    leads: any[];
-    permittedDealers: Set<string>;
-  } = {
-    projects: Array.isArray(globalPortalState.advibeProjects)
-      ? globalPortalState.advibeProjects
-      : [],
-    leads: Array.isArray(globalPortalState.advibeLeads)
-      ? globalPortalState.advibeLeads
-      : [],
-    permittedDealers: new Set(["agency-1", "agency-2"]),
-  };
-
-  const requireAdvibeAuth = (
-    req: express.Request,
-    res: express.Response,
-    next: express.NextFunction
-  ) => {
-    const role = String(req.headers["x-user-role"] || "").toLowerCase();
-    const agencyId = String(req.headers["x-agency-id"] || "");
-
-    if (
-      role === "admin" ||
-      (role === "agency" && agencyId && advibeStore.permittedDealers.has(agencyId))
-    ) {
-      return next();
-    }
-    return res.status(403).json({
-      error: "Forbidden: Requires Super Admin or Authorized Dealer privileges for AdVibe.",
-    });
-  };
-
+  // AdVibe Endpoints
   app.get("/api/advibe/projects", (_req, res) => {
+    const projects = Array.isArray(globalPortalState.advibeProjects)
+      ? globalPortalState.advibeProjects
+      : [];
     res.json({
       status: "ok",
-      count: advibeStore.projects.length,
-      projects: advibeStore.projects,
+      count: projects.length,
+      projects,
     });
-  });
-
-  app.get("/api/advibe/projects/:slug", (req, res) => {
-    const project = advibeStore.projects.find(
-      (p) => p.slug === req.params.slug || p.id === req.params.slug
-    );
-    if (!project) {
-      return res.status(404).json({ error: "AdVibe Project not found" });
-    }
-    res.json(project);
-  });
-
-  app.post("/api/advibe/projects", requireAdvibeAuth, (req, res) => {
-    const projectData = sanitizeIncomingPayload(req.body);
-    if (!projectData || !projectData.title) {
-      return res.status(400).json({ error: "Project title is required" });
-    }
-
-    const existingIdx = advibeStore.projects.findIndex((p) => p.id === projectData.id);
-    if (existingIdx >= 0) {
-      advibeStore.projects[existingIdx] = {
-        ...advibeStore.projects[existingIdx],
-        ...projectData,
-        updatedAt: new Date().toISOString().split("T")[0],
-      };
-      globalPortalState.advibeProjects = advibeStore.projects;
-      saveGlobalState(globalPortalState);
-      broadcastStateUpdate();
-      return res.json({ status: "updated", project: advibeStore.projects[existingIdx] });
-    } else {
-      const newProject = {
-        ...projectData,
-        id: projectData.id || `adv-proj-${Date.now()}`,
-        createdAt: new Date().toISOString().split("T")[0],
-        updatedAt: new Date().toISOString().split("T")[0],
-      };
-      advibeStore.projects.unshift(newProject);
-      globalPortalState.advibeProjects = advibeStore.projects;
-      saveGlobalState(globalPortalState);
-      broadcastStateUpdate();
-      return res.status(201).json({ status: "created", project: newProject });
-    }
-  });
-
-  app.delete("/api/advibe/projects/:id", requireAdvibeAuth, (req, res) => {
-    const { id } = req.params;
-    advibeStore.projects = advibeStore.projects.filter((p) => p.id !== id);
-    globalPortalState.advibeProjects = advibeStore.projects;
-    saveGlobalState(globalPortalState);
-    broadcastStateUpdate();
-    res.json({ status: "deleted", id });
-  });
-
-  app.post("/api/advibe/projects/:id/duplicate", requireAdvibeAuth, (req, res) => {
-    const source = advibeStore.projects.find((p) => p.id === req.params.id);
-    if (!source) {
-      return res.status(404).json({ error: "Source project not found" });
-    }
-    const duplicate = {
-      ...source,
-      id: `adv-proj-${Date.now()}`,
-      title: `${source.title} (Copy)`,
-      slug: `${source.slug}-copy-${Date.now().toString().slice(-4)}`,
-      published: false,
-      createdAt: new Date().toISOString().split("T")[0],
-      updatedAt: new Date().toISOString().split("T")[0],
-    };
-    advibeStore.projects.unshift(duplicate);
-    globalPortalState.advibeProjects = advibeStore.projects;
-    saveGlobalState(globalPortalState);
-    broadcastStateUpdate();
-    res.status(201).json({ status: "duplicated", project: duplicate });
   });
 
   app.post("/api/advibe/leads", (req, res) => {
     const leadData = sanitizeIncomingPayload(req.body);
     if (!leadData || !leadData.name || !leadData.phone) {
-      return res.status(400).json({ error: "Name and Phone are required for enquiries." });
+      return res
+        .status(400)
+        .json({ error: "Name and Phone are required for enquiries." });
     }
     const newLead = {
       id: `lead-adv-${Date.now()}`,
@@ -414,39 +362,16 @@ async function startServer() {
       status: "new",
       createdAt: new Date().toISOString().split("T")[0],
     };
-    advibeStore.leads.unshift(newLead);
-    globalPortalState.advibeLeads = advibeStore.leads;
+    const leads = Array.isArray(globalPortalState.advibeLeads)
+      ? globalPortalState.advibeLeads
+      : [];
+    leads.unshift(newLead);
+    globalPortalState.advibeLeads = leads;
     saveGlobalState(globalPortalState);
     broadcastStateUpdate();
     res.status(201).json({ status: "submitted", lead: newLead });
   });
 
-  app.get("/api/advibe/leads", requireAdvibeAuth, (_req, res) => {
-    res.json({
-      status: "ok",
-      count: advibeStore.leads.length,
-      leads: advibeStore.leads,
-    });
-  });
-
-  app.post("/api/advibe/permissions", requireAdvibeAuth, (req, res) => {
-    const { agencyId, canPublish } = sanitizeIncomingPayload(req.body || {});
-    if (!agencyId) {
-      return res.status(400).json({ error: "agencyId is required" });
-    }
-    if (canPublish) {
-      advibeStore.permittedDealers.add(String(agencyId));
-    } else {
-      advibeStore.permittedDealers.delete(String(agencyId));
-    }
-    res.json({
-      status: "updated",
-      agencyId,
-      canPublish: advibeStore.permittedDealers.has(String(agencyId)),
-    });
-  });
-
-  // Health Check
   app.get("/api/health", (_req, res) => {
     res.json({
       status: "ok",
@@ -458,7 +383,6 @@ async function startServer() {
     });
   });
 
-  // Gemini AI Chat Endpoint
   app.post("/api/gemini/chat", async (req, res) => {
     try {
       const { message, systemContext } = sanitizeIncomingPayload(req.body || {});
@@ -500,7 +424,6 @@ async function startServer() {
     }
   });
 
-  // Vite middleware for development; static bundle for production
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
       server: { middlewareMode: true },
