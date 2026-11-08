@@ -1,62 +1,30 @@
-import React, { useState } from 'react';
-import { 
-  ConsortiumDivision 
-} from '../types';
-import { 
-  Building2, 
-  HardHat, 
-  Maximize, 
-  Cpu, 
-  Layers, 
-  Image as ImageIcon, 
-  Edit3, 
-  CheckCircle2, 
-  RotateCcw, 
-  Plus, 
-  Trash2, 
-  Save, 
-  X, 
-  ExternalLink,
+import React, { useState, useRef } from 'react';
+import { ConsortiumDivision } from '../types';
+import {
+  Building2,
+  HardHat,
+  Maximize,
+  Cpu,
+  Layers,
+  Image as ImageIcon,
+  Edit3,
+  CheckCircle2,
+  RotateCcw,
+  Plus,
+  Trash2,
+  Save,
+  X,
   ShieldCheck,
-  Check
+  Check,
+  Upload
 } from 'lucide-react';
-import { initialConsortiumDivisions } from '../data/mockData';
+import { CONSORTIUM_DIVISIONS } from '../data/mockData';
 
 interface AdminConsortiumManagerProps {
   divisions: ConsortiumDivision[];
   onUpdateDivisions: (divisions: ConsortiumDivision[]) => void;
   isSuperAdmin?: boolean;
 }
-
-const PRESET_CONSTRUCTION_IMAGES = [
-  {
-    label: 'Modern Commercial Construction Site (Active Engineers & Cranes)',
-    url: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=1200&q=80'
-  },
-  {
-    label: 'High-Rise RCC Structure & Engineering Team',
-    url: 'https://images.unsplash.com/photo-1541888946425-d0fbb186c5f8?auto=format&fit=crop&w=1200&q=80'
-  },
-  {
-    label: 'Turnkey Luxury Villa Concrete & Grey Structure Construction',
-    url: 'https://images.unsplash.com/photo-1590381105924-c72589b9ef3f?auto=format&fit=crop&w=1200&q=80'
-  },
-  {
-    label: 'Architectural Blueprint & Civil Engineering Oversight',
-    url: 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?auto=format&fit=crop&w=1200&q=80'
-  }
-];
-
-const PRESET_UPVC_IMAGES = [
-  {
-    label: 'Precision Multi-Chamber UPVC Windows & Profiles',
-    url: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=1200&q=80'
-  },
-  {
-    label: 'Thermal Insulated Double-Glazed French Windows',
-    url: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80'
-  }
-];
 
 export const AdminConsortiumManager: React.FC<AdminConsortiumManagerProps> = ({
   divisions,
@@ -66,50 +34,55 @@ export const AdminConsortiumManager: React.FC<AdminConsortiumManagerProps> = ({
   const [editingDivision, setEditingDivision] = useState<ConsortiumDivision | null>(null);
   const [newCapabilityText, setNewCapabilityText] = useState<string>('');
   const [feedback, setFeedback] = useState<string>('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const showNotification = (msg: string) => {
     setFeedback(msg);
-    setTimeout(() => setFeedback(''), 4000);
+    setTimeout(() => setFeedback(''), 3500);
+  };
+
+  const handleUploadDivisionImage = (file?: File) => {
+    if (!file || !editingDivision) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_W = 1400;
+        let w = img.width;
+        let h = img.height;
+        if (w > MAX_W) {
+          h = Math.round((h * MAX_W) / w);
+          w = MAX_W;
+        }
+        canvas.width = w;
+        canvas.height = h;
+        canvas.getContext('2d')?.drawImage(img, 0, 0, w, h);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+        setEditingDivision({ ...editingDivision, image: dataUrl });
+        showNotification('Uploaded local image for Consortium Division!');
+      };
+      img.src = e.target?.result as string;
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSaveEdit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingDivision) return;
-
-    const updated = divisions.map(d => d.id === editingDivision.id ? editingDivision : d);
+    const updated = divisions.map(d =>
+      d.id === editingDivision.id ? editingDivision : d
+    );
     onUpdateDivisions(updated);
     setEditingDivision(null);
-    showNotification(`Consortium division "${editingDivision.title}" updated successfully! Changes reflected across the website.`);
-  };
-
-  const handleResetToDefaults = () => {
-    if (window.confirm('Reset all consortium divisions back to official default settings?')) {
-      onUpdateDivisions(initialConsortiumDivisions);
-      showNotification('Consortium & UPVC divisions restored to default configuration.');
-    }
-  };
-
-  const handleAddCapability = () => {
-    if (!editingDivision || !newCapabilityText.trim()) return;
-    setEditingDivision({
-      ...editingDivision,
-      capabilities: [...editingDivision.capabilities, newCapabilityText.trim()]
-    });
-    setNewCapabilityText('');
-  };
-
-  const handleRemoveCapability = (index: number) => {
-    if (!editingDivision) return;
-    setEditingDivision({
-      ...editingDivision,
-      capabilities: editingDivision.capabilities.filter((_, i) => i !== index)
-    });
+    showNotification(
+      `Consortium division "${editingDivision.title}" updated and synced globally!`
+    );
   };
 
   const getIcon = (iconName: string) => {
     switch (iconName) {
       case 'HardHat':
-      case 'Hammer':
         return <HardHat className="w-5 h-5 text-amber-500" />;
       case 'Maximize':
         return <Maximize className="w-5 h-5 text-blue-500" />;
@@ -124,30 +97,31 @@ export const AdminConsortiumManager: React.FC<AdminConsortiumManagerProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Header Banner */}
-      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-blue-950 p-5 sm:p-6 rounded-2xl border border-slate-700 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-white">
+      <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-1.5">
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-500 text-white">
-              Website Module
-            </span>
-            <span className="text-xs text-blue-300 font-mono">
-              Consortium & UPVC Governance
+          <div className="flex items-center gap-2 mb-1">
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-100 text-blue-800">
+              Consortium Structure CMS
             </span>
           </div>
-          <h3 className="text-lg sm:text-xl font-black flex items-center gap-2">
-            <ShieldCheck className="w-5 h-5 text-emerald-400" />
-            <span>Consortium & UPVC Divisions Content Manager</span>
+          <h3 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
+            <ShieldCheck className="w-5 h-5 text-blue-600" />
+            <span>ri8click Consortium Divisions &amp; Block Images Manager</span>
           </h3>
-          <p className="text-xs text-slate-300 max-w-xl mt-1 leading-relaxed">
-            Manage imagery, capabilities, specifications, and WhatsApp contacts for <strong>Turnkey Construction</strong>, <strong>UPVC Architectural Profiles</strong>, Real Estate, PropTech AI, and Space Capsule Prefab homes.
+          <p className="text-xs text-slate-500 max-w-2xl mt-0.5">
+            Update images (via local computer upload or URL), titles, descriptions, and capabilities for all Consortium divisions.
           </p>
         </div>
 
         {isSuperAdmin && (
           <button
-            onClick={handleResetToDefaults}
-            className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-bold border border-slate-600 transition-colors flex items-center gap-2 shrink-0 self-start sm:self-center"
+            onClick={() => {
+              if (window.confirm('Restore default Consortium Divisions?')) {
+                onUpdateDivisions(CONSORTIUM_DIVISIONS);
+                showNotification('Restored default Consortium structure.');
+              }
+            }}
+            className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1.5 cursor-pointer self-start sm:self-center"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             <span>Reset Defaults</span>
@@ -156,317 +130,231 @@ export const AdminConsortiumManager: React.FC<AdminConsortiumManagerProps> = ({
       </div>
 
       {feedback && (
-        <div className="p-3 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-bold flex items-center gap-2 animate-in fade-in">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+        <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
           <span>{feedback}</span>
         </div>
       )}
 
-      {/* Consortium Divisions Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {divisions.map((div) => {
-          const isConstruction = div.id === 'div-construction';
-          const isUpvc = div.id === 'div-upvc';
-
-          return (
-            <div 
-              key={div.id}
-              className={`bg-white rounded-2xl border ${
-                isConstruction ? 'border-amber-300 shadow-md ring-1 ring-amber-200' : 'border-slate-200 shadow-xs'
-              } overflow-hidden flex flex-col`}
-            >
-              {/* Image with overlay badge */}
-              <div className="relative h-48 sm:h-52 w-full bg-slate-900 group">
-                <img 
-                  src={div.image} 
-                  alt={div.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent" />
-                
-                <div className="absolute top-3 left-3 flex items-center gap-1.5">
-                  <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-600 text-white shadow-md">
-                    {div.badge}
+        {divisions.map(div => (
+          <div
+            key={div.id}
+            className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden flex flex-col"
+          >
+            <div className="relative h-48 w-full bg-slate-900">
+              <img
+                src={div.image}
+                alt={div.title}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
+              <span className="absolute top-3 left-3 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase bg-blue-600 text-white">
+                {div.badge}
+              </span>
+              <button
+                onClick={() => setEditingDivision({ ...div })}
+                className="absolute top-3 right-3 px-3 py-1.5 rounded-xl bg-white text-slate-900 text-xs font-bold shadow-md flex items-center gap-1.5 cursor-pointer"
+              >
+                <Edit3 className="w-3.5 h-3.5 text-blue-600" />
+                <span>Edit Image &amp; Text</span>
+              </button>
+              <div className="absolute bottom-3 left-4 right-4 text-white">
+                <div className="flex items-center gap-2">
+                  {getIcon(div.iconName)}
+                  <span className="text-xs font-bold text-amber-300 uppercase">
+                    {div.shortName}
                   </span>
-                  {isConstruction && (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-400 text-slate-950 shadow-md">
-                      Featured Turnkey Division
-                    </span>
-                  )}
                 </div>
-
-                <button
-                  onClick={() => setEditingDivision(div)}
-                  className="absolute top-3 right-3 p-2 rounded-xl bg-slate-900/80 hover:bg-slate-900 text-white border border-slate-600 text-xs font-bold transition-all shadow-md flex items-center gap-1.5"
-                  title="Edit image and specifications"
-                >
-                  <Edit3 className="w-3.5 h-3.5" />
-                  <span>Edit Block</span>
-                </button>
-
-                <div className="absolute bottom-3 left-4 right-4 text-white">
-                  <div className="flex items-center gap-2 mb-1">
-                    <div className="p-1 rounded bg-white/20 backdrop-blur-xs">
-                      {getIcon(div.iconName)}
-                    </div>
-                    <span className="text-xs font-semibold text-blue-200 uppercase tracking-wider">
-                      {div.shortName}
-                    </span>
-                  </div>
-                  <h4 className="text-base font-bold text-white leading-snug drop-shadow-xs">
-                    {div.title}
-                  </h4>
-                </div>
-              </div>
-
-              {/* Body */}
-              <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
-                <div className="space-y-3">
-                  <p className="text-xs text-slate-600 leading-relaxed font-medium">
-                    {div.description}
-                  </p>
-
-                  <div>
-                    <h5 className="text-[11px] font-bold text-slate-900 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                      <Check className="w-3.5 h-3.5 text-blue-600" />
-                      <span>Key Capabilities ({div.capabilities.length}):</span>
-                    </h5>
-                    <ul className="space-y-1">
-                      {div.capabilities.map((cap, i) => (
-                        <li key={i} className="text-xs text-slate-700 flex items-start gap-2 bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-100">
-                          <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0 mt-1.5" />
-                          <span>{cap}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-
-                <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-                  <span className="text-slate-500">
-                    WhatsApp: <strong className="text-slate-800 font-mono">+{div.contactWhatsApp}</strong>
-                  </span>
-                  <button
-                    onClick={() => setEditingDivision(div)}
-                    className="px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold transition-colors flex items-center gap-1"
-                  >
-                    <Edit3 className="w-3.5 h-3.5" />
-                    <span>Change Image & Details</span>
-                  </button>
-                </div>
+                <h4 className="text-base font-extrabold text-white mt-0.5">
+                  {div.title}
+                </h4>
               </div>
             </div>
-          );
-        })}
+
+            <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
+              <div className="space-y-3">
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  {div.description}
+                </p>
+                <ul className="space-y-1">
+                  {div.capabilities.map((cap, i) => (
+                    <li
+                      key={i}
+                      className="text-xs text-slate-700 flex items-center gap-2 bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-100"
+                    >
+                      <Check className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                      <span>{cap}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                <span className="text-slate-500">
+                  Contact: <strong className="text-slate-800">{div.contactPerson}</strong>
+                </span>
+                <button
+                  onClick={() => setEditingDivision({ ...div })}
+                  className="px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold cursor-pointer"
+                >
+                  Change Image / Details
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
 
-      {/* Edit Division Modal */}
       {editingDivision && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 overflow-y-auto bg-slate-950/70 backdrop-blur-xs animate-in fade-in">
-          <div 
-            className="relative w-full max-w-2xl bg-white rounded-3xl border border-slate-200 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs">
+          <div
+            className="w-full max-w-2xl bg-white rounded-3xl border border-slate-200 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
             onClick={e => e.stopPropagation()}
           >
-            {/* Modal Header */}
-            <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between border-b border-slate-800 shrink-0">
-              <div className="flex items-center gap-2.5">
-                <div className="p-1.5 rounded-lg bg-blue-500/20 text-blue-400">
-                  <Edit3 className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-white">
-                    Edit Consortium Module: {editingDivision.shortName}
-                  </h3>
-                  <p className="text-[11px] text-slate-400">
-                    Update suitable image URL, description, and turnkey capabilities
-                  </p>
-                </div>
-              </div>
+            <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
+              <h3 className="text-sm font-bold">
+                Edit Consortium Block: {editingDivision.title}
+              </h3>
               <button
                 onClick={() => setEditingDivision(null)}
-                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
+                className="p-1 rounded-lg text-slate-400 hover:text-white"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Modal Content */}
-            <form onSubmit={handleSaveEdit} className="p-6 overflow-y-auto space-y-4">
-              {/* Image URL & Quick Selection */}
+            <form onSubmit={handleSaveEdit} className="p-6 overflow-y-auto space-y-4 text-xs">
               <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-800 flex items-center justify-between">
-                  <span className="flex items-center gap-1.5">
-                    <ImageIcon className="w-3.5 h-3.5 text-blue-600" />
-                    <span>Cover Image URL</span>
-                  </span>
-                  <span className="text-[11px] text-slate-400 font-normal">Direct image link (Unsplash, CDN, etc.)</span>
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="font-bold text-slate-800 flex items-center gap-1.5">
+                    <ImageIcon className="w-4 h-4 text-blue-600" />
+                    <span>Division Cover Image</span>
+                  </label>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={e => handleUploadDivisionImage(e.target.files?.[0])}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="px-3 py-1.5 rounded-xl bg-blue-600 text-white font-bold flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>Upload from Computer</span>
+                  </button>
+                </div>
+
                 <input
-                  type="url"
+                  type="text"
                   value={editingDivision.image}
-                  onChange={e => setEditingDivision({ ...editingDivision, image: e.target.value })}
-                  placeholder="https://images.unsplash.com/photo-..."
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:bg-white focus:border-blue-500"
-                  required
+                  onChange={e =>
+                    setEditingDivision({ ...editingDivision, image: e.target.value })
+                  }
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900"
                 />
 
-                {/* Current Image Preview */}
-                <div className="relative h-36 w-full rounded-xl overflow-hidden border border-slate-200 bg-slate-100">
+                <div className="h-40 rounded-xl overflow-hidden bg-slate-100 border border-slate-200">
                   <img
                     src={editingDivision.image}
                     alt="Preview"
                     className="w-full h-full object-cover"
                   />
-                  <div className="absolute bottom-2 left-2 bg-slate-900/80 backdrop-blur-xs text-white text-[10px] font-semibold px-2 py-0.5 rounded">
-                    Live Preview
-                  </div>
                 </div>
-
-                {/* Quick Presets for Construction or UPVC */}
-                {editingDivision.id === 'div-construction' && (
-                  <div className="space-y-1.5 pt-1">
-                    <span className="text-[11px] font-bold text-amber-900 flex items-center gap-1">
-                      <HardHat className="w-3 h-3 text-amber-600" />
-                      <span>Suggested High-Resolution Construction & Civil Works Images:</span>
-                    </span>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                      {PRESET_CONSTRUCTION_IMAGES.map((preset, idx) => (
-                        <button
-                          key={idx}
-                          type="button"
-                          onClick={() => setEditingDivision({ ...editingDivision, image: preset.url })}
-                          className={`p-2 rounded-lg text-left text-[11px] border transition-all ${
-                            editingDivision.image === preset.url 
-                              ? 'bg-amber-50 border-amber-400 text-amber-900 font-bold' 
-                              : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
-                          }`}
-                        >
-                          {preset.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {editingDivision.id === 'div-upvc' && (
-                  <div className="space-y-1.5 pt-1">
-                    <span className="text-[11px] font-bold text-blue-900 flex items-center gap-1">
-                      <Maximize className="w-3 h-3 text-blue-600" />
-                      <span>Suggested UPVC Windows & Profiles Images:</span>
-                    </span>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                      {PRESET_UPVC_IMAGES.map((preset, idx) => (
-                        <button
-                          key={idx}
-                          type="button"
-                          onClick={() => setEditingDivision({ ...editingDivision, image: preset.url })}
-                          className={`p-2 rounded-lg text-left text-[11px] border transition-all ${
-                            editingDivision.image === preset.url 
-                              ? 'bg-blue-50 border-blue-400 text-blue-900 font-bold' 
-                              : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
-                          }`}
-                        >
-                          {preset.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
 
-              {/* Title & Short Name */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-800">Title</label>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Title</label>
                   <input
                     type="text"
                     value={editingDivision.title}
-                    onChange={e => setEditingDivision({ ...editingDivision, title: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:bg-white focus:border-blue-500"
-                    required
+                    onChange={e =>
+                      setEditingDivision({ ...editingDivision, title: e.target.value })
+                    }
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2"
                   />
                 </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-800">Short Name</label>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Short Name</label>
                   <input
                     type="text"
                     value={editingDivision.shortName}
-                    onChange={e => setEditingDivision({ ...editingDivision, shortName: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:bg-white focus:border-blue-500"
-                    required
+                    onChange={e =>
+                      setEditingDivision({
+                        ...editingDivision,
+                        shortName: e.target.value
+                      })
+                    }
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2"
                   />
                 </div>
               </div>
 
-              {/* Tagline & Badge */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-800">Tagline</label>
-                  <input
-                    type="text"
-                    value={editingDivision.tagline}
-                    onChange={e => setEditingDivision({ ...editingDivision, tagline: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:bg-white focus:border-blue-500"
-                    required
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-slate-800">Badge Label</label>
-                  <input
-                    type="text"
-                    value={editingDivision.badge}
-                    onChange={e => setEditingDivision({ ...editingDivision, badge: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:bg-white focus:border-blue-500"
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Description */}
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-800">Comprehensive Description</label>
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Description</label>
                 <textarea
                   rows={3}
                   value={editingDivision.description}
-                  onChange={e => setEditingDivision({ ...editingDivision, description: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:bg-white focus:border-blue-500"
-                  required
+                  onChange={e =>
+                    setEditingDivision({
+                      ...editingDivision,
+                      description: e.target.value
+                    })
+                  }
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2"
                 />
               </div>
 
-              {/* Capabilities List Management */}
               <div className="space-y-2">
-                <label className="text-xs font-bold text-slate-800 flex items-center justify-between">
-                  <span>Key Engineering Capabilities</span>
-                  <span className="text-[11px] text-slate-400 font-normal">Add or remove capability bullet points</span>
-                </label>
-                <div className="flex items-center gap-2">
+                <label className="block font-bold text-slate-700">Capabilities</label>
+                <div className="flex gap-2">
                   <input
                     type="text"
                     value={newCapabilityText}
                     onChange={e => setNewCapabilityText(e.target.value)}
-                    placeholder="e.g. Turnkey RCC Construction with Quality Inspection"
-                    className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:bg-white focus:border-blue-500"
+                    placeholder="Add capability..."
+                    className="flex-1 bg-slate-50 border border-slate-300 rounded-xl px-3 py-2"
                   />
                   <button
                     type="button"
-                    onClick={handleAddCapability}
-                    className="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-colors flex items-center gap-1 shrink-0"
+                    onClick={() => {
+                      if (!newCapabilityText.trim()) return;
+                      setEditingDivision({
+                        ...editingDivision,
+                        capabilities: [
+                          ...editingDivision.capabilities,
+                          newCapabilityText.trim()
+                        ]
+                      });
+                      setNewCapabilityText('');
+                    }}
+                    className="px-3.5 py-2 rounded-xl bg-blue-600 text-white font-bold"
                   >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>Add</span>
+                    + Add
                   </button>
                 </div>
-
-                <div className="space-y-1.5 max-h-40 overflow-y-auto pt-1">
-                  {editingDivision.capabilities.map((cap, i) => (
-                    <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-200 text-xs">
-                      <span className="text-slate-800">{cap}</span>
+                <div className="space-y-1">
+                  {editingDivision.capabilities.map((cap, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-200"
+                    >
+                      <span>{cap}</span>
                       <button
                         type="button"
-                        onClick={() => handleRemoveCapability(i)}
-                        className="p-1 text-slate-400 hover:text-rose-600 transition-colors"
-                        title="Remove capability"
+                        onClick={() =>
+                          setEditingDivision({
+                            ...editingDivision,
+                            capabilities: editingDivision.capabilities.filter(
+                              (_, i) => i !== idx
+                            )
+                          })
+                        }
+                        className="text-rose-600"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -475,31 +363,17 @@ export const AdminConsortiumManager: React.FC<AdminConsortiumManagerProps> = ({
                 </div>
               </div>
 
-              {/* WhatsApp Contact */}
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-800">WhatsApp Inquiry Number</label>
-                <input
-                  type="text"
-                  value={editingDivision.contactWhatsApp}
-                  onChange={e => setEditingDivision({ ...editingDivision, contactWhatsApp: e.target.value })}
-                  placeholder="923365666727"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:bg-white focus:border-blue-500"
-                  required
-                />
-              </div>
-
-              {/* Footer Actions */}
-              <div className="pt-4 border-t border-slate-200 flex items-center justify-end gap-2">
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
                 <button
                   type="button"
                   onClick={() => setEditingDivision(null)}
-                  className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 text-xs font-semibold"
+                  className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-bold"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-md transition-all flex items-center gap-2"
+                  className="px-5 py-2 rounded-xl bg-blue-600 text-white font-bold flex items-center gap-1.5"
                 >
                   <Save className="w-4 h-4" />
                   <span>Save Changes</span>
@@ -512,3 +386,5 @@ export const AdminConsortiumManager: React.FC<AdminConsortiumManagerProps> = ({
     </div>
   );
 };
+
+export default AdminConsortiumManager;
