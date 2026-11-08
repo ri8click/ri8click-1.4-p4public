@@ -1,3 +1,4 @@
+// FILE: src/components/PostPropertyModal.tsx
 import React, { useState } from 'react';
 import {
   X,
@@ -254,6 +255,7 @@ export const PostPropertyModal: React.FC<PostPropertyModalProps> = ({
             <h3 className="text-base font-extrabold mt-0.5">Post New Property Ad</h3>
           </div>
           <button
+            type="button"
             onClick={onClose}
             className="p-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white cursor-pointer"
           >
@@ -303,6 +305,7 @@ export const PostPropertyModal: React.FC<PostPropertyModalProps> = ({
               </p>
               <div className="flex justify-center gap-3 pt-2">
                 <button
+                  type="button"
                   onClick={() => {
                     onClose();
                     onOpenAdmin();
@@ -312,6 +315,7 @@ export const PostPropertyModal: React.FC<PostPropertyModalProps> = ({
                   Open Quota Admin
                 </button>
                 <button
+                  type="button"
                   onClick={onClose}
                   className="px-4 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-700 font-bold text-xs cursor-pointer"
                 >
@@ -416,37 +420,6 @@ export const PostPropertyModal: React.FC<PostPropertyModalProps> = ({
                       </button>
                     )}
                   </div>
-
-                  //========= change location code added =========
-                <div className="sm:col-span-2">
-                  <LocationPickerMap
-                    location={{
-                      province,
-                      city,
-                      society,
-                      address,
-                      latitude,
-                      longitude,
-                      nearbyLandmarks: nearbyLandmarksInput
-                        .split(',')
-                        .map(s => s.trim())
-                        .filter(Boolean)
-                    }}
-                    onChangeLocation={updatedLoc => {
-                      if (updatedLoc.city) setCity(updatedLoc.city);
-                      if (updatedLoc.society) setSociety(updatedLoc.society);
-                      if (updatedLoc.address !== undefined) setAddress(updatedLoc.address);
-                      if (updatedLoc.latitude !== undefined) setLatitude(updatedLoc.latitude);
-                      if (updatedLoc.longitude !== undefined) setLongitude(updatedLoc.longitude);
-                      if (updatedLoc.nearbyLandmarks) {
-                        setNearbyLandmarksInput(updatedLoc.nearbyLandmarks.join(', '));
-                      }
-                    }}
-                    provinceCityData={provinceCityData}
-                  />
-                </div>
-
-                  //==== end change location ========
 
                   {showQuickAddLocation && (
                     <div className="p-3 bg-white rounded-xl border border-blue-200 space-y-2.5 shadow-xs">
@@ -554,18 +527,29 @@ export const PostPropertyModal: React.FC<PostPropertyModalProps> = ({
 
                 <div className="sm:col-span-2">
                   <LocationPickerMap
-                    city={city}
-                    society={society}
-                    address={address}
-                    latitude={latitude}
-                    longitude={longitude}
-                    nearbyLandmarks={nearbyLandmarksInput}
-                    onChangeCoordinates={(lat, lng) => {
-                      setLatitude(lat);
-                      setLongitude(lng);
+                    location={{
+                      province,
+                      city,
+                      society,
+                      address,
+                      latitude,
+                      longitude,
+                      nearbyLandmarks: nearbyLandmarksInput
+                        .split(',')
+                        .map(s => s.trim())
+                        .filter(Boolean)
                     }}
-                    onChangeLandmarks={setNearbyLandmarksInput}
-                    onChangeAddress={setAddress}
+                    onChangeLocation={updatedLoc => {
+                      if (updatedLoc.city) setCity(updatedLoc.city);
+                      if (updatedLoc.society) setSociety(updatedLoc.society);
+                      if (updatedLoc.address !== undefined) setAddress(updatedLoc.address);
+                      if (updatedLoc.latitude !== undefined) setLatitude(updatedLoc.latitude);
+                      if (updatedLoc.longitude !== undefined) setLongitude(updatedLoc.longitude);
+                      if (updatedLoc.nearbyLandmarks) {
+                        setNearbyLandmarksInput(updatedLoc.nearbyLandmarks.join(', '));
+                      }
+                    }}
+                    provinceCityData={provinceCityData}
                   />
                 </div>
 
