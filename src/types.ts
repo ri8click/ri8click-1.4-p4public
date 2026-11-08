@@ -1,13 +1,13 @@
 export type PropertyCategory = 'all' | 'residential' | 'commercial' | 'modular' | 'projects';
 export type PropertyPurpose = 'for_sale' | 'for_rent';
-export type PropertyType = 
-  | 'Villa' 
-  | 'Luxury Apartment' 
-  | 'Commercial Plaza' 
-  | 'Corporate Office' 
-  | 'Retail Shop' 
-  | 'Capsule Smart House' 
-  | 'Commercial Plot' 
+export type PropertyType =
+  | 'Villa'
+  | 'Luxury Apartment'
+  | 'Commercial Plaza'
+  | 'Corporate Office'
+  | 'Retail Shop'
+  | 'Capsule Smart House'
+  | 'Commercial Plot'
   | 'Residential Plot'
   | 'Penthouse'
   | 'Warehouse'
@@ -61,10 +61,12 @@ export interface Property {
   status?: 'active' | 'pending' | 'sold';
   virtualTourVideoUrl?: string;
   virtualTourVideoTitle?: string;
+  hasVirtualTour?: boolean;
 }
 
 export interface CityInfo {
   name: string;
+  isFeatured?: boolean;
   societies: string[];
 }
 
@@ -76,19 +78,27 @@ export interface ProvinceCityData {
 export interface AgencyAccount {
   id: string;
   name: string;
-  ownerName: string;
+  companyName?: string;
+  ownerName?: string;
   logo: string;
+  avatar?: string;
   phone: string;
   whatsapp: string;
   email: string;
   city: string;
-  officeAddress: string;
+  primarySociety?: string;
+  officeAddress?: string;
   rating: number;
-  totalListings: number;
+  totalListings?: number;
+  postLimit?: number;
+  totalPosts?: number;
+  activeListings?: number;
+  joinedDate?: string;
   verified: boolean;
-  specialization: string[];
-  description: string;
+  specialization?: string[];
+  description?: string;
   canPublishAdvibe?: boolean;
+  canManageAdvibe?: boolean;
 }
 
 export interface ConsortiumDivision {
@@ -133,6 +143,7 @@ export interface HeroSlide {
   society: string;
   imageUrl: string;
   galleryImages?: string[];
+  videoUrl?: string;
   tourRoomsCount: number;
   isActive: boolean;
   order: number;
@@ -152,7 +163,13 @@ export interface BlogPost {
   id: string;
   title: string;
   slug: string;
-  category: 'Market Trends' | 'Faisal Hills Updates' | 'Investment Guides' | 'Modular & Prefab Tech' | 'Construction & UPVC' | 'Legal & Tax';
+  category:
+    | 'Market Trends'
+    | 'Faisal Hills Updates'
+    | 'Investment Guides'
+    | 'Modular & Prefab Tech'
+    | 'Construction & UPVC'
+    | 'Legal & Tax';
   excerpt: string;
   content: string;
   coverImage: string;
@@ -169,17 +186,22 @@ export interface BlogPost {
 
 export interface SiteSectionPortion {
   id: string;
+  key?: string;
   name: string;
   title: string;
   subtitle: string;
-  isVisible: boolean;
-  order: number;
+  badge?: string;
   badgeText?: string;
+  description?: string;
+  bannerImage?: string;
+  isVisible?: boolean;
+  isEnabled?: boolean;
+  order: number;
   themeStyle?: 'light' | 'dark' | 'gradient' | 'accent';
 }
 
 // ============================================================================
-// ADVIBE — CINEMATIC MEGAPROJECT SHOWCASE & REAL ESTATE MARKETING ENGINE
+// ADVIBE — LIGHT ARCHITECTURAL MEGAPROJECT & PROPERTY SHOWCASE ENGINE
 // ============================================================================
 
 export type AdVibeProjectType =
@@ -188,19 +210,25 @@ export type AdVibeProjectType =
   | 'Luxury Villa Enclave'
   | 'Waterfront / Eco Resort'
   | 'Mixed-Use Highrise'
-  | 'Modular Smart Community';
+  | 'Modular Smart Community'
+  | string;
 
 export type AdVibeProjectStatus =
   | 'Pre-Launch'
   | 'Booking Open'
   | 'Under Construction'
   | 'Ready for Possession'
-  | 'Completed';
+  | 'Completed'
+  | string;
 
 export type AdVibeSectionType =
   | 'hero'
+  | 'intro'
   | 'story'
   | 'highlights'
+  | 'stats'
+  | 'salient'
+  | 'master_plan'
   | 'masterplan'
   | 'units'
   | 'amenities'
@@ -208,18 +236,25 @@ export type AdVibeSectionType =
   | 'videos'
   | 'location'
   | 'virtual_tour'
+  | 'pricing'
   | 'payment_plan'
   | 'developer'
-  | 'lead_form';
+  | 'enquiry'
+  | 'lead_form'
+  | 'cta';
 
 export interface AdVibeTheme {
   primaryColor: string;
   accentColor: string;
-  darkBg: string;
+  darkBg?: string;
+  bgStyle?: 'light' | 'slate' | 'midnight' | 'luxury_black';
   fontHeading: string;
   fontBody: string;
-  enableParallax: boolean;
-  enableSmoothScroll: boolean;
+  buttonStyle?: string;
+  overlayOpacity?: number;
+  animationIntensity?: string;
+  enableParallax?: boolean;
+  enableSmoothScroll?: boolean;
   ambientAudioUrl?: string;
 }
 
@@ -233,13 +268,16 @@ export interface AdVibeSEO {
 export interface AdVibeDeveloper {
   name: string;
   logo: string;
-  establishedYear: number;
-  deliveredProjectsCount: number;
+  establishedYear?: number;
+  foundedYear?: number;
+  deliveredProjectsCount?: number;
+  completedProjects?: number;
+  rating?: number;
   description: string;
-  headOffice: string;
+  headOffice?: string;
   website?: string;
-  phone: string;
-  whatsapp: string;
+  phone?: string;
+  whatsapp?: string;
   email?: string;
 }
 
@@ -255,7 +293,12 @@ export interface AdVibeHighlight {
 export interface AdVibeAmenity {
   id: string;
   name: string;
-  category: 'Wellness & Sports' | 'Security & Infrastructure' | 'Lifestyle & Leisure' | 'Smart Technology';
+  category:
+    | 'Wellness & Sports'
+    | 'Security & Infrastructure'
+    | 'Lifestyle & Leisure'
+    | 'Smart Technology'
+    | string;
   description: string;
   iconName: string;
   image?: string;
@@ -264,7 +307,14 @@ export interface AdVibeAmenity {
 export interface AdVibeLocationPoint {
   id: string;
   name: string;
-  category: 'Highway & Access' | 'Education' | 'Healthcare' | 'Commercial & Retail' | 'Airport' | 'Natural Landmark';
+  category:
+    | 'Highway & Access'
+    | 'Education'
+    | 'Healthcare'
+    | 'Commercial & Retail'
+    | 'Airport'
+    | 'Natural Landmark'
+    | string;
   distance: string;
   driveTime: string;
   iconName?: string;
@@ -272,12 +322,20 @@ export interface AdVibeLocationPoint {
 
 export interface AdVibeHotspot {
   id: string;
-  x: number; // percentage (0 - 100)
-  y: number; // percentage (0 - 100)
+  x: number;
+  y: number;
   title: string;
-  category: 'Residential Block' | 'Commercial Broadway' | 'Civic Center' | 'Park / Green Spine' | 'Mosque' | 'Clubhouse' | 'Education City';
+  category:
+    | 'Residential Block'
+    | 'Commercial Broadway'
+    | 'Civic Center'
+    | 'Park / Green Spine'
+    | 'Mosque'
+    | 'Clubhouse'
+    | 'Education City'
+    | string;
   description: string;
-  status: 'Available' | 'Booking Fast' | 'Sold Out' | 'Under Development';
+  status: 'Available' | 'Booking Fast' | 'Sold Out' | 'Under Development' | string;
   totalPlots?: number;
   availablePlots?: number;
   linkedPropertyId?: string;
@@ -294,7 +352,14 @@ export interface AdVibeMediaItem {
   id: string;
   url: string;
   type: 'image' | 'video';
-  category: 'Exterior' | 'Interior' | 'Aerial Drone' | 'Master Plan' | 'Construction Update' | 'Amenities';
+  category:
+    | 'Exterior'
+    | 'Interior'
+    | 'Aerial Drone'
+    | 'Master Plan'
+    | 'Construction Update'
+    | 'Amenities'
+    | string;
   caption: string;
   tags?: string[];
 }
@@ -302,7 +367,14 @@ export interface AdVibeMediaItem {
 export interface AdVibeVideoItem {
   id: string;
   title: string;
-  category: 'Project Tour' | 'Location Tour' | 'Amenities' | 'Construction' | 'Apartment Tour' | 'Developer Message';
+  category:
+    | 'Project Tour'
+    | 'Location Tour'
+    | 'Amenities'
+    | 'Construction'
+    | 'Apartment Tour'
+    | 'Developer Message'
+    | string;
   type: 'hosted' | 'youtube' | 'vimeo';
   url: string;
   thumbnail: string;
@@ -362,13 +434,28 @@ export interface AdVibeProject {
   title: string;
   slug: string;
   type: AdVibeProjectType;
+  purpose?: PropertyPurpose;
+  propertyCategory?: Exclude<PropertyCategory, 'all'>;
+  mainImage?: string;
+  bannerImage?: string;
+  heroVideoUrl?: string;
+  heroVideoTitle?: string;
+  province?: string;
+  city: string;
+  society?: string;
+  area: string;
+  address: string;
+  areaSize?: string | number;
+  areaUnit?: 'Marla' | 'Kanal' | 'Sq Ft' | 'Sq Yd' | string;
+  bedrooms?: number;
+  bathrooms?: number;
+  floors?: number;
+  features?: string[];
+  nearbyLandmarks?: string[];
   developer: AdVibeDeveloper;
   logo: string;
   tagline: string;
   description: string;
-  city: string;
-  area: string;
-  address: string;
   coordinates: {
     lat: number;
     lng: number;
