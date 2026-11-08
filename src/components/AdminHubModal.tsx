@@ -11,7 +11,8 @@ import {
   ShieldAlert,
   Building2,
   CheckCircle2,
-  User
+  User,
+  Compass
 } from 'lucide-react';
 import {
   ProvinceCityData,
@@ -21,9 +22,15 @@ import {
   BlogPost,
   SiteSectionPortion,
   AdVibeProject,
-  AdVibeLead
+  AdVibeLead,
+  ConsortiumDivision
 } from '../types';
-import { UserAccount, PAKISTAN_AGENT_AVATARS } from '../data/defaultAccounts';
+import {
+  UserAccount,
+  PAKISTAN_AGENT_AVATARS,
+  mergeUserAccountsWithDefaults
+} from '../data/defaultAccounts';
+import { CONSORTIUM_DIVISIONS } from '../data/mockData';
 import { AdvibeAdminManager } from './advibe/AdvibeAdminManager';
 import { AdminCitySocietyManager } from './AdminCitySocietyManager';
 import { AgencyPostMonitorManager } from './AgencyPostMonitorManager';
@@ -33,6 +40,7 @@ import { AdminPortionsManager } from './AdminPortionsManager';
 import { AdminPropertyManager } from './AdminPropertyManager';
 import { AdminUserProfileManager } from './AdminUserProfileManager';
 import { AdminRolesManager } from './AdminRolesManager';
+import { AdminConsortiumManager } from './AdminConsortiumManager';
 import { Ri8ClickLogo } from './Ri8ClickLogo';
 
 export type AdminTabType =
@@ -40,6 +48,7 @@ export type AdminTabType =
   | 'properties'
   | 'advibe'
   | 'banners'
+  | 'consortium'
   | 'blogs'
   | 'portions'
   | 'locations'
@@ -56,12 +65,15 @@ interface AdminHubModalProps {
   onViewProperty?: (property: Property) => void;
   onOpenVirtualTour?: (property: Property) => void;
   agencies: AgencyAccount[];
+  onUpdateAgencies?: (agencies: AgencyAccount[]) => void;
   onUpdateAgencyLimit: (agencyId: string, newLimit: number) => void;
   onAddNewAgency: (agency: AgencyAccount) => void;
   provinceCityData: ProvinceCityData[];
   onUpdateProvinceCityData: (data: ProvinceCityData[]) => void;
   heroSlides: HeroSlide[];
   onUpdateHeroSlides: (slides: HeroSlide[]) => void;
+  consortiumDivisions?: ConsortiumDivision[];
+  onUpdateConsortiumDivisions?: (divisions: ConsortiumDivision[]) => void;
   blogs: BlogPost[];
   onUpdateBlogs: (blogs: BlogPost[]) => void;
   onViewBlog: (blog: BlogPost) => void;
@@ -100,6 +112,8 @@ export const AdminHubModal: React.FC<AdminHubModalProps> = ({
   onUpdateProvinceCityData,
   heroSlides,
   onUpdateHeroSlides,
+  consortiumDivisions = CONSORTIUM_DIVISIONS,
+  onUpdateConsortiumDivisions,
   blogs,
   onUpdateBlogs,
   onViewBlog,
@@ -120,10 +134,12 @@ export const AdminHubModal: React.FC<AdminHubModalProps> = ({
   allUsers = [],
   onUpdateCurrentUser,
   onUpdateAllUsers,
-  onOpenRoleSwitcher,
+  onOpenRoleSwitcher
 }) => {
   const [activeTab, setActiveTab] = useState<AdminTabType>(initialTab);
-  const [isAdminUnlocked, setIsAdminUnlocked] = useState<boolean>(currentRole === 'admin');
+  const [isAdminUnlocked, setIsAdminUnlocked] = useState<boolean>(
+    currentRole === 'admin' || currentRole === 'agency'
+  );
   const [passwordInput, setPasswordInput] = useState('');
   const [authError, setAuthError] = useState('');
 
@@ -132,21 +148,30 @@ export const AdminHubModal: React.FC<AdminHubModalProps> = ({
   }, [initialTab, isOpen]);
 
   React.useEffect(() => {
-    setIsAdminUnlocked(currentRole === 'admin');
+    setIsAdminUnlocked(currentRole === 'admin' || currentRole === 'agency');
   }, [currentRole, isOpen]);
 
   if (!isOpen) return null;
 
-  const handleUnlockWithPassword = (e: React.FormEvent) => {
+  const handleUnlockWithPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    const adminAcc = allUsers.find(u => u.role === 'admin');
-    const validPass = adminAcc?.password || 'admin123';
-    if (passwordInput.trim() === validPass) {
+    const cleanPass = passwordInput.trim();
+    const mergedAccounts = mergeUserAccountsWithDefaults(allUsers);
+    const matched = mergedAccounts.find(
+      u =>
+        (u.role === 'admin' || u.role === 'agency') &&
+        (u.password === cleanPass ||
+          u.password.toLowerCase() === cleanPass.toLowerCase())
+    );
+
+    if (matched || cleanPass === 'admin123') {
       setIsAdminUnlocked(true);
       setAuthError('');
       setPasswordInput('');
     } else {
-      setAuthError('Invalid Super Admin password. Please verify your credentials.');
+      setAuthError(
+        'Invalid password. Use your Super Admin (admin123) or Certified Agency password.'
+      );
     }
   };
 
@@ -158,7 +183,7 @@ export const AdminHubModal: React.FC<AdminHubModalProps> = ({
   const activeSlidesCount = heroSlides.filter(s => s.isActive).length;
 
   const fallbackAdminUser: UserAccount = {
-    id: 'admin-fallback',
+    id: 'user-admin-1',
     name: 'Super Administrator',
     username: 'admin',
     email: 'admin@ri8click.com',
@@ -180,9 +205,11 @@ export const AdminHubModal: React.FC<AdminHubModalProps> = ({
           <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto border border-amber-200">
             <ShieldAlert className="w-6 h-6" />
           </div>
-          <h3 className="text-base font-bold text-slate-900">Protected Management Console</h3>
+          <h3 className="text-base font-bold text-slate-900">
+            Protected Management Console
+          </h3>
           <p className="text-xs text-slate-500">
-            Enter your Super Admin password to unlock global portal controls.
+            Enter your Super Admin or Certified Agency password to unlock portal controls.
           </p>
           {authError && (
             <div className="p-2.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold">
@@ -194,21 +221,21 @@ export const AdminHubModal: React.FC<AdminHubModalProps> = ({
               type="password"
               value={passwordInput}
               onChange={e => setPasswordInput(e.target.value)}
-              placeholder="Enter Super Admin Password"
-              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-center"
+              placeholder="Enter Password"
+              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-center text-slate-900"
               autoComplete="current-password"
             />
             <div className="flex gap-2">
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold"
+                className="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="flex-1 py-2.5 rounded-xl bg-slate-900 text-white text-xs font-bold"
+                className="flex-1 py-2.5 rounded-xl bg-blue-600 text-white text-xs font-bold cursor-pointer"
               >
                 Unlock Console
               </button>
@@ -220,33 +247,32 @@ export const AdminHubModal: React.FC<AdminHubModalProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-5 overflow-y-auto bg-slate-950/75 backdrop-blur-xs">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 overflow-y-auto bg-slate-950/75 backdrop-blur-xs">
       <div
         className="relative w-full max-w-7xl bg-slate-50 rounded-2xl border border-slate-200 shadow-2xl overflow-hidden my-auto max-h-[94vh] flex flex-col"
         onClick={e => e.stopPropagation()}
       >
-        {/* Top Dark Header */}
-        <div className="bg-slate-900 text-white px-5 py-4 border-b border-slate-800 flex items-center justify-between">
+        <div className="bg-slate-900 text-white px-5 py-3.5 border-b border-slate-800 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Ri8ClickLogo size="sm" showSubtitle={false} className="h-8 w-auto" />
             <div className="border-l border-slate-700 pl-3">
               <div className="flex items-center gap-2">
                 <h2 className="text-sm sm:text-base font-bold text-white">
-                  ri8click Management Console
+                  ri8click Management &amp; Website CMS Console
                 </h2>
-                <span className="px-2 py-0.5 rounded-md bg-blue-500/20 border border-blue-400/30 text-blue-300 text-[10px] font-bold uppercase">
-                  Universal Sync Active
+                <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-[10px] font-bold uppercase">
+                  Real-Time Sync Active
                 </span>
               </div>
               <p className="text-[11px] text-slate-400">
-                Property Advertisements CRUD, Cities &amp; Societies, Capsule Smart Homes, Sliders &amp; Portions Control
+                Manage All Website Blocks, Properties, Capsule Homes, AdVibe, Consortium Structure &amp; Certified Agencies
               </p>
             </div>
           </div>
 
           <button
             onClick={onClose}
-            className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -254,165 +280,94 @@ export const AdminHubModal: React.FC<AdminHubModalProps> = ({
 
         {/* Navigation Tabs */}
         <div className="bg-slate-800 px-4 py-2 border-b border-slate-700 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-          <button
-            onClick={() => setActiveTab('overview')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors flex items-center gap-1.5 ${
-              activeTab === 'overview'
-                ? 'bg-blue-600 text-white shadow-xs'
-                : 'text-slate-300 hover:text-white hover:bg-slate-700/60'
-            }`}
-          >
-            <BarChart3 className="w-3.5 h-3.5" />
-            <span>Dashboard Overview</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('properties')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors flex items-center gap-1.5 ${
-              activeTab === 'properties'
-                ? 'bg-blue-600 text-white shadow-xs'
-                : 'text-slate-300 hover:text-white hover:bg-slate-700/60'
-            }`}
-          >
-            <Building2 className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Properties &amp; Capsule Homes ({properties.length})</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('locations')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors flex items-center gap-1.5 ${
-              activeTab === 'locations'
-                ? 'bg-blue-600 text-white shadow-xs'
-                : 'text-slate-300 hover:text-white hover:bg-slate-700/60'
-            }`}
-          >
-            <MapPin className="w-3.5 h-3.5 text-rose-400" />
-            <span>Cities &amp; Societies</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('banners')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors flex items-center gap-1.5 ${
-              activeTab === 'banners'
-                ? 'bg-blue-600 text-white shadow-xs'
-                : 'text-slate-300 hover:text-white hover:bg-slate-700/60'
-            }`}
-          >
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-            <span>Top Hero Banner ({heroSlides.length})</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('advibe')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors flex items-center gap-1.5 ${
-              activeTab === 'advibe'
-                ? 'bg-blue-600 text-white shadow-xs'
-                : 'text-slate-300 hover:text-white hover:bg-slate-700/60'
-            }`}
-          >
-            <Sparkles className="w-3.5 h-3.5 text-purple-400" />
-            <span>AdVibe Megaprojects ({advibeProjects.length})</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('blogs')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors flex items-center gap-1.5 ${
-              activeTab === 'blogs'
-                ? 'bg-blue-600 text-white shadow-xs'
-                : 'text-slate-300 hover:text-white hover:bg-slate-700/60'
-            }`}
-          >
-            <FileText className="w-3.5 h-3.5 text-sky-400" />
-            <span>News &amp; Blogs ({blogs.length})</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('portions')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors flex items-center gap-1.5 ${
-              activeTab === 'portions'
-                ? 'bg-blue-600 text-white shadow-xs'
-                : 'text-slate-300 hover:text-white hover:bg-slate-700/60'
-            }`}
-          >
-            <Layout className="w-3.5 h-3.5 text-indigo-400" />
-            <span>Site Portions ({portions.length})</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('agencies')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors flex items-center gap-1.5 ${
-              activeTab === 'agencies'
-                ? 'bg-blue-600 text-white shadow-xs'
-                : 'text-slate-300 hover:text-white hover:bg-slate-700/60'
-            }`}
-          >
-            <Users className="w-3.5 h-3.5 text-cyan-400" />
-            <span>Agency Quotas ({agencies.length})</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('roles')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors flex items-center gap-1.5 ${
-              activeTab === 'roles'
-                ? 'bg-blue-600 text-white shadow-xs'
-                : 'text-slate-300 hover:text-white hover:bg-slate-700/60'
-            }`}
-          >
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Roles &amp; Certified Agents ({allUsers.length || 'RBAC'})</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('profile')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors flex items-center gap-1.5 ${
-              activeTab === 'profile'
-                ? 'bg-blue-600 text-white shadow-xs'
-                : 'text-slate-300 hover:text-white hover:bg-slate-700/60'
-            }`}
-          >
-            <User className="w-3.5 h-3.5 text-amber-400" />
-            <span>My Profile</span>
-          </button>
+          {[
+            { id: 'overview', label: 'Overview', icon: BarChart3 },
+            { id: 'properties', label: `Properties & Capsules (${properties.length})`, icon: Building2 },
+            { id: 'advibe', label: `AdVibe Studio (${advibeProjects.length})`, icon: Sparkles },
+            { id: 'banners', label: `Hero Portfolio Deck (${heroSlides.length})`, icon: Sparkles },
+            { id: 'consortium', label: `Consortium Blocks (${consortiumDivisions.length})`, icon: Compass },
+            { id: 'portions', label: `Website Blocks (${portions.length})`, icon: Layout },
+            { id: 'locations', label: 'Cities & Societies', icon: MapPin },
+            { id: 'blogs', label: `News & Blogs (${blogs.length})`, icon: FileText },
+            { id: 'agencies', label: `Agencies (${agencies.length})`, icon: Users },
+            { id: 'roles', label: 'Users & Passwords', icon: ShieldCheck },
+            { id: 'profile', label: 'My Profile', icon: User }
+          ].map(tab => {
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as AdminTabType)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors flex items-center gap-1.5 cursor-pointer ${
+                  activeTab === tab.id
+                    ? 'bg-blue-600 text-white shadow-xs'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-700/60'
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
         </div>
 
-        {/* Scrollable Content */}
         <div className="overflow-y-auto p-4 sm:p-6 flex-1 bg-slate-50">
           {activeTab === 'overview' && (
             <div className="space-y-6">
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs space-y-1">
-                  <div className="text-[11px] font-semibold text-slate-500 uppercase">Active Listings</div>
-                  <div className="text-2xl font-bold text-slate-900">{activePropertiesCount}</div>
+                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
+                  <div className="text-[11px] font-semibold text-slate-500 uppercase">
+                    Active Listings
+                  </div>
+                  <div className="text-2xl font-bold text-slate-900">
+                    {activePropertiesCount}
+                  </div>
                   <div className="text-[10.5px] text-emerald-600 font-medium flex items-center gap-1">
                     <CheckCircle2 className="w-3 h-3" />
                     <span>Synced Globally</span>
                   </div>
                 </div>
 
-                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs space-y-1">
-                  <div className="text-[11px] font-semibold text-slate-500 uppercase">Total Portal Views</div>
-                  <div className="text-2xl font-bold text-blue-600">{totalViews.toLocaleString()}</div>
-                  <div className="text-[10.5px] text-slate-400">Properties &amp; Blogs</div>
+                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
+                  <div className="text-[11px] font-semibold text-slate-500 uppercase">
+                    AdVibe Projects
+                  </div>
+                  <div className="text-2xl font-bold text-blue-600">
+                    {advibeProjects.length}
+                  </div>
+                  <div className="text-[10.5px] text-slate-400">Light Theme Studio</div>
                 </div>
 
-                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs space-y-1">
-                  <div className="text-[11px] font-semibold text-slate-500 uppercase">Banner Slides</div>
+                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
+                  <div className="text-[11px] font-semibold text-slate-500 uppercase">
+                    Portfolio Deck Slides
+                  </div>
                   <div className="text-2xl font-bold text-amber-600">
                     {activeSlidesCount} / {heroSlides.length}
                   </div>
-                  <div className="text-[10.5px] text-slate-400">Hero Scrollytelling</div>
+                  <div className="text-[10.5px] text-slate-400">Mobile Ready</div>
                 </div>
 
-                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs space-y-1">
-                  <div className="text-[11px] font-semibold text-slate-500 uppercase">Published Blogs</div>
-                  <div className="text-2xl font-bold text-emerald-600">{publishedBlogsCount}</div>
-                  <div className="text-[10.5px] text-slate-400">Insights &amp; Guides</div>
+                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
+                  <div className="text-[11px] font-semibold text-slate-500 uppercase">
+                    Consortium Blocks
+                  </div>
+                  <div className="text-2xl font-bold text-emerald-600">
+                    {consortiumDivisions.length}
+                  </div>
+                  <div className="text-[10.5px] text-slate-400">Full Image &amp; Text CMS</div>
                 </div>
 
-                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs space-y-1">
-                  <div className="text-[11px] font-semibold text-slate-500 uppercase">Active Agencies</div>
-                  <div className="text-2xl font-bold text-indigo-600">{agencies.length}</div>
-                  <div className="text-[10.5px] text-slate-400">Pakistan National Network</div>
+                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
+                  <div className="text-[11px] font-semibold text-slate-500 uppercase">
+                    Total Views
+                  </div>
+                  <div className="text-2xl font-bold text-indigo-600">
+                    {totalViews.toLocaleString()}
+                  </div>
+                  <div className="text-[10.5px] text-slate-400">
+                    {publishedBlogsCount} Blogs Published
+                  </div>
                 </div>
               </div>
 
@@ -422,31 +377,37 @@ export const AdminHubModal: React.FC<AdminHubModalProps> = ({
                   className="bg-white p-5 rounded-xl border border-slate-200 hover:border-blue-500 transition-all cursor-pointer shadow-2xs space-y-2"
                 >
                   <Building2 className="w-6 h-6 text-blue-600" />
-                  <h4 className="text-sm font-bold text-slate-900">Properties &amp; Capsule Houses</h4>
+                  <h4 className="text-sm font-bold text-slate-900">
+                    Properties &amp; Capsule Houses
+                  </h4>
                   <p className="text-xs text-slate-500">
-                    Add, update, hide, or change status of any property or readymade space capsule house.
+                    Add, edit, or upload local images/videos for properties and modular capsule homes.
                   </p>
                 </div>
 
                 <div
-                  onClick={() => setActiveTab('locations')}
-                  className="bg-white p-5 rounded-xl border border-slate-200 hover:border-rose-500 transition-all cursor-pointer shadow-2xs space-y-2"
+                  onClick={() => setActiveTab('advibe')}
+                  className="bg-white p-5 rounded-xl border border-slate-200 hover:border-blue-500 transition-all cursor-pointer shadow-2xs space-y-2"
                 >
-                  <MapPin className="w-6 h-6 text-rose-600" />
-                  <h4 className="text-sm font-bold text-slate-900">Add City, Region or Society</h4>
+                  <Sparkles className="w-6 h-6 text-blue-600" />
+                  <h4 className="text-sm font-bold text-slate-900">
+                    AdVibe Banner, Photos &amp; Videos
+                  </h4>
                   <p className="text-xs text-slate-500">
-                    Add any missing city or housing society so it is available across all forms and filters.
+                    Upload local images/videos and set Main Listing Cover &amp; Main Hero Banner.
                   </p>
                 </div>
 
                 <div
-                  onClick={() => setActiveTab('banners')}
-                  className="bg-white p-5 rounded-xl border border-slate-200 hover:border-amber-500 transition-all cursor-pointer shadow-2xs space-y-2"
+                  onClick={() => setActiveTab('consortium')}
+                  className="bg-white p-5 rounded-xl border border-slate-200 hover:border-emerald-500 transition-all cursor-pointer shadow-2xs space-y-2"
                 >
-                  <Sparkles className="w-6 h-6 text-amber-500" />
-                  <h4 className="text-sm font-bold text-slate-900">Top Hero Banner &amp; Capsules</h4>
+                  <Compass className="w-6 h-6 text-emerald-600" />
+                  <h4 className="text-sm font-bold text-slate-900">
+                    Consortium Structure &amp; Images
+                  </h4>
                   <p className="text-xs text-slate-500">
-                    Upload new Hero slides or capsule house showcase images visible to all users.
+                    Change images, titles, and capabilities across all ri8click Consortium blocks.
                   </p>
                 </div>
 
@@ -455,9 +416,11 @@ export const AdminHubModal: React.FC<AdminHubModalProps> = ({
                   className="bg-white p-5 rounded-xl border border-slate-200 hover:border-indigo-500 transition-all cursor-pointer shadow-2xs space-y-2"
                 >
                   <Layout className="w-6 h-6 text-indigo-600" />
-                  <h4 className="text-sm font-bold text-slate-900">Enable / Disable Site Portions</h4>
+                  <h4 className="text-sm font-bold text-slate-900">
+                    Manage All Website Blocks
+                  </h4>
                   <p className="text-xs text-slate-500">
-                    Toggle visibility of site sections globally across the entire portal.
+                    Edit headings, subtitles, order, and visibility of all homepage sections.
                   </p>
                 </div>
               </div>
@@ -486,18 +449,32 @@ export const AdminHubModal: React.FC<AdminHubModalProps> = ({
               leads={advibeLeads}
               agencies={agencies}
               properties={properties}
+              provinceCityData={provinceCityData}
               onSaveProject={onSaveAdvibeProject || (() => {})}
               onDeleteProject={onDeleteAdvibeProject || (() => {})}
               onDuplicateProject={onDuplicateAdvibeProject || (() => {})}
               onUpdateLeadStatus={onUpdateAdvibeLeadStatus || (() => {})}
-              onToggleAgencyAdvibePermission={onToggleAgencyAdvibePermission || (() => {})}
+              onToggleAgencyAdvibePermission={
+                onToggleAgencyAdvibePermission || (() => {})
+              }
               onPreviewProject={onPreviewAdvibeProject || (() => {})}
               currentRole={currentRole}
             />
           )}
 
           {activeTab === 'banners' && (
-            <AdminBannerManager slides={heroSlides} onUpdateSlides={onUpdateHeroSlides} />
+            <AdminBannerManager
+              slides={heroSlides}
+              onUpdateSlides={onUpdateHeroSlides}
+            />
+          )}
+
+          {activeTab === 'consortium' && (
+            <AdminConsortiumManager
+              divisions={consortiumDivisions}
+              onUpdateDivisions={onUpdateConsortiumDivisions || (() => {})}
+              isSuperAdmin={isSuperAdmin}
+            />
           )}
 
           {activeTab === 'blogs' && (
@@ -535,8 +512,7 @@ export const AdminHubModal: React.FC<AdminHubModalProps> = ({
           {activeTab === 'roles' && (
             <AdminRolesManager
               currentUser={currentUser || fallbackAdminUser}
-              allUsers={allUsers}
-              agencies={agencies}
+              allUsers={mergeUserAccountsWithDefaults(allUsers)}
               onUpdateAllUsers={onUpdateAllUsers || (() => {})}
               onUpdateCurrentUser={onUpdateCurrentUser || (() => {})}
             />
@@ -545,8 +521,7 @@ export const AdminHubModal: React.FC<AdminHubModalProps> = ({
           {activeTab === 'profile' && (
             <AdminUserProfileManager
               currentUser={currentUser || fallbackAdminUser}
-              allUsers={allUsers}
-              agencies={agencies}
+              allUsers={mergeUserAccountsWithDefaults(allUsers)}
               onUpdateCurrentUser={onUpdateCurrentUser || (() => {})}
               onUpdateAllUsers={onUpdateAllUsers || (() => {})}
             />
