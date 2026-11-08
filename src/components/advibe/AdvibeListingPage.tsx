@@ -1,23 +1,19 @@
 import React, { useState } from 'react';
-import { 
-  Building2, 
-  Search, 
-  Sparkles, 
-  MapPin, 
-  ArrowRight, 
-  Compass, 
-  CheckCircle2, 
-  SlidersHorizontal,
-  Flame,
+import {
+  Building2,
+  Search,
+  MapPin,
+  ArrowRight,
+  CheckCircle2,
   MessageSquare,
   ShieldCheck,
   TrendingUp,
-  Layers,
-  ExternalLink,
   Play,
-  RotateCw
+  Plus,
+  Compass,
+  Video
 } from 'lucide-react';
-import { AdVibeProject, AdVibeProjectType } from '../../types';
+import { AdVibeProject } from '../../types';
 import Advibe3DVirtualTour from './Advibe3DVirtualTour';
 import AdvibeTourModal from './AdvibeTourModal';
 
@@ -39,194 +35,284 @@ export const AdvibeListingPage: React.FC<AdvibeListingPageProps> = ({
   const [selectedCity, setSelectedCity] = useState<string>('All');
   const [selectedStatus, setSelectedStatus] = useState<string>('All');
   const [tourModalProject, setTourModalProject] = useState<AdVibeProject | null>(null);
-  const [featuredTourProjectId, setFeaturedTourProjectId] = useState<string>(projects[0]?.id || '');
+  const [featuredTourProjectId, setFeaturedTourProjectId] = useState<string>(
+    projects[0]?.id || ''
+  );
+  const [showBannerVideo, setShowBannerVideo] = useState<boolean>(false);
 
-  const projectTypes = ['All', 'Housing Society', 'High-Rise Tower', 'Mixed-Use Megaproject', 'Commercial Development', 'Smart Villa Community'];
-  const cities = ['All', 'Taxila', 'Islamabad', 'Rawalpindi', 'Lahore', 'Rawat'];
+  const projectTypes = [
+    'All',
+    'Housing Society',
+    'Commercial Mall & Tower',
+    'High-Rise Tower',
+    'Mixed-Use Megaproject',
+    'Modular Smart Community'
+  ];
+  const cities = ['All', 'Taxila', 'Islamabad', 'Rawalpindi', 'Lahore'];
 
   const filteredProjects = projects.filter(p => {
     if (!p.published) return false;
     if (selectedType !== 'All' && p.type !== selectedType) return false;
-    if (selectedCity !== 'All' && !p.city.toLowerCase().includes(selectedCity.toLowerCase())) return false;
+    if (
+      selectedCity !== 'All' &&
+      !p.city.toLowerCase().includes(selectedCity.toLowerCase())
+    )
+      return false;
     if (selectedStatus !== 'All' && p.status !== selectedStatus) return false;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       const matchTitle = p.title.toLowerCase().includes(q);
-      const matchArea = p.area.toLowerCase().includes(q);
-      const matchDev = p.developer.name.toLowerCase().includes(q);
-      const matchTag = p.tagline.toLowerCase().includes(q);
+      const matchArea = (p.area || '').toLowerCase().includes(q);
+      const matchDev = (p.developer?.name || '').toLowerCase().includes(q);
+      const matchTag = (p.tagline || '').toLowerCase().includes(q);
       return matchTitle || matchArea || matchDev || matchTag;
     }
     return true;
   });
 
-  const featuredTourProject = projects.find(p => p.id === featuredTourProjectId) || projects[0];
+  const featuredTourProject =
+    projects.find(p => p.id === featuredTourProjectId) || projects[0];
 
-  const featuredProjects = projects.filter(p => p.featured && p.published);
+  const mainBannerImage =
+    featuredTourProject?.bannerImage ||
+    featuredTourProject?.mainImage ||
+    featuredTourProject?.seo?.ogImage ||
+    featuredTourProject?.gallery?.[0]?.url ||
+    'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1920&q=85';
+
+  const mainBannerVideo =
+    featuredTourProject?.heroVideoUrl ||
+    featuredTourProject?.videos?.[0]?.url ||
+    '';
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-slate-50 text-slate-900 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto space-y-10">
-        
-        {/* Top Header & Intro Banner */}
-        <div className="relative rounded-3xl overflow-hidden border border-slate-800 bg-gradient-to-br from-slate-900 via-slate-900/90 to-blue-950/40 p-8 sm:p-12 shadow-2xl">
-          <div className="relative z-10 max-w-3xl space-y-4">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-500/20 text-blue-400 text-xs font-bold uppercase tracking-wider border border-blue-500/30">
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              <span>AdVibe Premium PropTech Showcase</span>
+        {/* MAIN ADVIBE HERO BANNER (Light, Clean & Configurable via Admin) */}
+        <div className="relative rounded-3xl overflow-hidden border border-slate-200 bg-white shadow-lg grid grid-cols-1 lg:grid-cols-12">
+          <div className="lg:col-span-7 p-6 sm:p-10 lg:p-12 flex flex-col justify-between space-y-6">
+            <div className="space-y-4">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50 text-blue-700 text-xs font-extrabold uppercase tracking-wider border border-blue-200">
+                <Building2 className="w-3.5 h-3.5 text-blue-600" />
+                <span>AdVibe Executive Megaproject Showcase</span>
+              </div>
+
+              <h1 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight leading-tight">
+                {featuredTourProject
+                  ? featuredTourProject.title
+                  : 'Master-Planned Societies & High-Rise Developments'}
+              </h1>
+
+              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-2xl">
+                {featuredTourProject?.tagline ||
+                  "Explore Pakistan's premier real estate developments with full-screen walkthroughs, master plans, live unit inventory, and verified pricing."}
+              </p>
+
+              <div className="flex flex-wrap items-center gap-4 pt-1">
+                <div className="flex items-center gap-1.5 text-xs text-emerald-700 font-bold">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  <span>100% Verified Legal Titles</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-xs text-blue-700 font-bold">
+                  <ShieldCheck className="w-4 h-4 text-blue-600" />
+                  <span>RDA / CDA / LDA Approved</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-xs text-amber-700 font-bold">
+                  <TrendingUp className="w-4 h-4 text-amber-600" />
+                  <span>Flexible Installment Plans</span>
+                </div>
+              </div>
             </div>
 
-            <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight leading-tight">
-              Iconic Master-Planned Societies & High-Rise Developments
-            </h1>
+            <div className="flex flex-wrap items-center gap-3 pt-2">
+              {featuredTourProject && (
+                <button
+                  onClick={() => onOpenProject(featuredTourProject.slug)}
+                  className="px-5 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-extrabold flex items-center gap-2 shadow-sm cursor-pointer"
+                >
+                  <span>Open Full Project Showcase</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              )}
 
-            <p className="text-sm sm:text-base text-slate-300 leading-relaxed max-w-2xl font-light">
-              Experience Pakistan's most prestigious real estate mega-projects through full-screen 100vh scrollytelling, interactive GIS master plans, and live unit inventories.
-            </p>
+              {mainBannerVideo && (
+                <button
+                  onClick={() => setShowBannerVideo(prev => !prev)}
+                  className="px-4 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold flex items-center gap-2 border border-slate-200 cursor-pointer"
+                >
+                  <Video className="w-4 h-4 text-blue-600" />
+                  <span>{showBannerVideo ? 'Show Banner Image' : 'Watch Banner Video'}</span>
+                </button>
+              )}
 
-            <div className="flex flex-wrap items-center gap-4 pt-2">
-              <div className="flex items-center gap-1.5 text-xs text-emerald-400 font-semibold">
-                <CheckCircle2 className="w-4 h-4" />
-                <span>100% Certified Legal Titles</span>
-              </div>
-              <div className="flex items-center gap-1.5 text-xs text-amber-400 font-semibold">
-                <ShieldCheck className="w-4 h-4" />
-                <span>RDA / TMA Approved Schematics</span>
-              </div>
-              <div className="flex items-center gap-1.5 text-xs text-blue-400 font-semibold">
-                <TrendingUp className="w-4 h-4" />
-                <span>Guaranteed Commercial ROIs</span>
-              </div>
+              {canManageAdvibe && onOpenCreateProject && (
+                <button
+                  onClick={onOpenCreateProject}
+                  className="px-4 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Manage / Add AdVibe Project</span>
+                </button>
+              )}
             </div>
           </div>
 
-          {/* Abstract Backdrop Glow */}
-          <div className="absolute top-0 right-0 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
+          {/* Right Media Column: Displays Main AdVibe Banner Image or Video */}
+          <div className="lg:col-span-5 relative min-h-[280px] sm:min-h-[360px] bg-slate-100 border-t lg:border-t-0 lg:border-l border-slate-200 overflow-hidden">
+            {showBannerVideo && mainBannerVideo ? (
+              <video
+                src={mainBannerVideo}
+                poster={mainBannerImage}
+                controls
+                autoPlay
+                muted
+                playsInline
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <img
+                src={mainBannerImage}
+                alt={featuredTourProject?.title || 'AdVibe Banner'}
+                className="w-full h-full object-cover"
+              />
+            )}
+            <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-2 bg-white/95 backdrop-blur-md px-3.5 py-2 rounded-xl border border-slate-200 shadow-sm">
+              <div className="min-w-0">
+                <span className="text-[10px] font-bold uppercase text-slate-400 block">
+                  Featured Banner Project
+                </span>
+                <span className="text-xs font-extrabold text-slate-900 truncate block">
+                  {featuredTourProject?.title}
+                </span>
+              </div>
+              <span className="text-xs font-black text-blue-600 shrink-0">
+                {featuredTourProject?.starting_price_formatted}
+              </span>
+            </div>
+          </div>
         </div>
 
-        {/* FEATURED 3D VIRTUAL TOUR SHOWCASE (Auto-Run Enabled By Default) */}
+        {/* Project Switcher & Interactive 360° Walkthrough Section */}
         {featuredTourProject && (
-          <div className="bg-slate-900/90 rounded-3xl border border-slate-800 p-5 sm:p-7 shadow-2xl space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-slate-800">
+          <div className="bg-white rounded-3xl border border-slate-200 p-5 sm:p-7 shadow-sm space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200">
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                  <span className="px-2.5 py-0.5 rounded-md bg-gradient-to-r from-amber-400 to-yellow-300 text-slate-950 font-black text-[10px] uppercase tracking-wider shadow-sm flex items-center gap-1">
-                    <Sparkles className="w-3 h-3 fill-current" />
-                    <span>Live 3D Virtual Tour</span>
-                  </span>
-                  <span className="text-[11px] font-bold text-blue-400 flex items-center gap-1 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">
-                    <RotateCw className="w-3 h-3 animate-spin" />
-                    <span>Auto-Run Active</span>
+                  <span className="px-2.5 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200 font-bold text-[10px] uppercase tracking-wider">
+                    Interactive 360° Digital Walkthrough
                   </span>
                 </div>
-                <h2 className="text-xl sm:text-2xl font-black text-white">
-                  {featuredTourProject.title}
+                <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900">
+                  {featuredTourProject.title} — Panoramic View
                 </h2>
-                <p className="text-xs text-slate-400">
-                  Auto-running 360° architectural walkthrough. Drag anytime to explore or select another showcase project below.
+                <p className="text-xs text-slate-500">
+                  Drag to look around or select any megaproject below to switch the active banner and 3D view.
                 </p>
               </div>
 
-              {/* Project Switcher Tabs */}
               <div className="flex items-center gap-2 overflow-x-auto self-start sm:self-center">
-                {projects.slice(0, 3).map(p => (
+                {projects.map(p => (
                   <button
                     key={p.id}
-                    onClick={() => setFeaturedTourProjectId(p.id)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                    onClick={() => {
+                      setFeaturedTourProjectId(p.id);
+                      setShowBannerVideo(false);
+                    }}
+                    className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer border ${
                       featuredTourProjectId === p.id
-                        ? 'bg-blue-600 text-white shadow-md'
-                        : 'bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700'
+                        ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                        : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                     }`}
                   >
-                    {p.title.split(' ')[0]} {p.title.split(' ')[1] || ''}
+                    {p.title.split('—')[0].trim()}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Embedded 3D Tour with Auto-Run By Default */}
             <div className="w-full">
               <Advibe3DVirtualTour
                 project={featuredTourProject}
                 embedded={true}
-                className="w-full h-[480px] sm:h-[560px] shadow-2xl rounded-2xl"
+                className="w-full h-[420px] sm:h-[520px] rounded-2xl border border-slate-200"
               />
             </div>
           </div>
         )}
 
-        {/* Filter & Search Bar */}
-        <div className="bg-slate-900/90 rounded-2xl border border-slate-800 p-4 shadow-xl space-y-3">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            
-            {/* Search Input */}
+        {/* Filter & Search Bar (Light & User Friendly) */}
+        <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs space-y-3">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-3">
             <div className="relative w-full md:w-80">
               <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
-                placeholder="Search megaprojects, developers, areas..."
+                placeholder="Search megaprojects, developers, cities..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-700 rounded-xl pl-10 pr-3.5 py-2.5 text-xs text-white placeholder:text-slate-500 focus:outline-hidden focus:border-blue-500"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-3.5 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-blue-600"
               />
             </div>
 
-            {/* City & Type Dropdowns */}
             <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
               <select
                 value={selectedCity}
                 onChange={e => setSelectedCity(e.target.value)}
-                className="bg-slate-950 border border-slate-700 text-xs text-white rounded-xl px-3 py-2.5 focus:outline-hidden focus:border-blue-500"
+                className="bg-slate-50 border border-slate-200 text-xs text-slate-800 font-semibold rounded-xl px-3 py-2.5 focus:outline-none focus:border-blue-600"
               >
                 {cities.map(c => (
-                  <option key={c} value={c}>{c === 'All' ? 'All Cities' : c}</option>
+                  <option key={c} value={c}>
+                    {c === 'All' ? 'All Cities' : c}
+                  </option>
                 ))}
               </select>
 
               <select
                 value={selectedStatus}
                 onChange={e => setSelectedStatus(e.target.value)}
-                className="bg-slate-950 border border-slate-700 text-xs text-white rounded-xl px-3 py-2.5 focus:outline-hidden focus:border-blue-500"
+                className="bg-slate-50 border border-slate-200 text-xs text-slate-800 font-semibold rounded-xl px-3 py-2.5 focus:outline-none focus:border-blue-600"
               >
                 <option value="All">All Statuses</option>
                 <option value="Booking Open">Booking Open</option>
                 <option value="Under Construction">Under Construction</option>
-                <option value="Ready to Move">Ready to Move</option>
+                <option value="Ready for Possession">Ready for Possession</option>
               </select>
 
               {canManageAdvibe && onOpenCreateProject && (
                 <button
                   onClick={onOpenCreateProject}
-                  className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition-colors ml-auto shadow-md"
+                  className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition-colors ml-auto shadow-xs cursor-pointer"
                 >
-                  + Add Project
+                  + Add / Edit AdVibe
                 </button>
               )}
             </div>
-
           </div>
 
-          {/* Type Pills */}
-          <div className="flex items-center gap-2 overflow-x-auto pt-1 pb-1">
+          <div className="flex items-center gap-2 overflow-x-auto pt-1 pb-1 no-scrollbar">
             {projectTypes.map(t => {
-              const count = t === 'All' 
-                ? projects.filter(p => p.published).length 
-                : projects.filter(p => p.published && p.type === t).length;
+              const count =
+                t === 'All'
+                  ? projects.filter(p => p.published).length
+                  : projects.filter(p => p.published && p.type === t).length;
               return (
                 <button
                   key={t}
                   onClick={() => setSelectedType(t)}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 ${
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer border ${
                     selectedType === t
-                      ? 'bg-blue-600 text-white shadow-xs'
-                      : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'
+                      ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                      : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
                   }`}
                 >
                   <span>{t === 'All' ? 'All Categories' : t}</span>
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                    selectedType === t ? 'bg-blue-800/80 text-blue-100' : 'bg-slate-700 text-slate-300'
-                  }`}>
+                  <span
+                    className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                      selectedType === t
+                        ? 'bg-white/20 text-white'
+                        : 'bg-slate-200 text-slate-700'
+                    }`}
+                  >
                     {count}
                   </span>
                 </button>
@@ -235,142 +321,163 @@ export const AdvibeListingPage: React.FC<AdvibeListingPageProps> = ({
           </div>
         </div>
 
-        {/* Project Cards Grid */}
+        {/* Project Cards Grid (Clean Light Cards with Main Listing Image) */}
         <div className="space-y-4">
-          <div className="flex items-center justify-between text-xs text-slate-400">
-            <span>Showing <strong className="text-white">{filteredProjects.length}</strong> premium showcase developments</span>
-            <span>Sorted by Featured Priority</span>
+          <div className="flex items-center justify-between text-xs text-slate-500">
+            <span>
+              Showing <strong className="text-slate-900">{filteredProjects.length}</strong>{' '}
+              verified showcase developments
+            </span>
+            <span>Click any card to open full interactive showcase</span>
           </div>
 
           {filteredProjects.length === 0 ? (
-            <div className="py-20 text-center bg-slate-900/40 rounded-3xl border border-slate-800 text-slate-400 text-xs">
-              No projects matched your search criteria. Try adjusting your filters.
+            <div className="py-16 text-center bg-white rounded-3xl border border-slate-200 text-slate-500 text-xs">
+              No projects matched your search criteria. Try clearing your filters.
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredProjects.map((project) => (
-                <div
-                  key={project.id}
-                  onClick={() => onOpenProject(project.slug)}
-                  className="group rounded-3xl overflow-hidden bg-slate-900 border border-slate-800 shadow-xl hover:shadow-2xl hover:border-blue-500/50 transition-all duration-300 hover:-translate-y-1.5 flex flex-col justify-between cursor-pointer"
-                >
-                  {/* Top Cover Media Container */}
-                  <div className="relative h-64 w-full overflow-hidden bg-slate-950">
-                    <img
-                      src={project.seo.ogImage || project.gallery[0]?.url || project.logo}
-                      alt={project.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                      loading="lazy"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-transparent" />
+              {filteredProjects.map(project => {
+                const coverImage =
+                  project.mainImage ||
+                  project.seo?.ogImage ||
+                  project.gallery?.[0]?.url ||
+                  project.logo;
 
-                    {/* Top Badges */}
-                    <div className="absolute top-3.5 left-3.5 flex flex-wrap gap-2">
-                      <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md bg-slate-900/90 text-white border border-slate-700 backdrop-blur-xs">
-                        {project.type}
-                      </span>
-                      {project.featured && (
-                        <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md bg-amber-500 text-slate-950 font-mono flex items-center gap-1 shadow-md">
-                          <Flame className="w-3 h-3 fill-current" />
-                          <span>Featured</span>
+                return (
+                  <div
+                    key={project.id}
+                    onClick={() => onOpenProject(project.slug)}
+                    className="group rounded-3xl overflow-hidden bg-white border border-slate-200 shadow-xs hover:shadow-xl hover:border-blue-400 transition-all duration-300 flex flex-col justify-between cursor-pointer"
+                  >
+                    {/* Main Listing Image Container */}
+                    <div className="relative h-60 w-full overflow-hidden bg-slate-100">
+                      <img
+                        src={coverImage}
+                        alt={project.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        loading="lazy"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/75 via-transparent to-transparent" />
+
+                      <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
+                        <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg bg-white/95 text-slate-900 shadow-xs">
+                          {project.type}
                         </span>
-                      )}
-                    </div>
+                        {project.featured && (
+                          <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg bg-amber-400 text-slate-950 shadow-xs">
+                            Featured
+                          </span>
+                        )}
+                      </div>
 
-                    {/* Status Badge */}
-                    <div className="absolute top-3.5 right-3.5">
-                      <span className="text-[10px] font-bold px-2.5 py-1 rounded-md bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 backdrop-blur-xs">
-                        {project.status}
-                      </span>
-                    </div>
-
-                    {/* Bottom Price Floating Bar */}
-                    <div className="absolute bottom-3.5 left-3.5 right-3.5 flex items-center justify-between text-xs">
-                      <div className="bg-slate-900/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-700">
-                        <span className="text-[9.5px] text-slate-400 uppercase block font-bold">Starts From:</span>
-                        <span className="text-sm font-black text-amber-400 font-mono">
-                          {project.starting_price_formatted}
+                      <div className="absolute top-3 right-3">
+                        <span className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-emerald-600 text-white shadow-xs">
+                          {project.status}
                         </span>
                       </div>
 
-                      <div className="text-[11px] text-slate-300 bg-slate-900/90 backdrop-blur-md px-2.5 py-1 rounded-lg border border-slate-700 flex items-center gap-1">
-                        <MapPin className="w-3 h-3 text-blue-400" />
-                        <span>{project.city}</span>
-                      </div>
-                    </div>
-                  </div>
+                      <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between text-xs">
+                        <div className="bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-xl shadow-xs">
+                          <span className="text-[9.5px] text-slate-500 uppercase block font-bold">
+                            Starts From
+                          </span>
+                          <span className="text-sm font-black text-blue-700">
+                            {project.starting_price_formatted}
+                          </span>
+                        </div>
 
-                  {/* Body Content */}
-                  <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
-                    <div>
-                      <div className="flex items-center gap-2 mb-2">
-                        <img
-                          src={project.logo}
-                          alt={project.title}
-                          className="w-6 h-6 rounded-md object-cover border border-slate-700"
-                        />
-                        <span className="text-xs font-semibold text-slate-400 truncate">
-                          {project.developer.name}
-                        </span>
-                      </div>
-
-                      <h3 className="text-lg font-bold text-white group-hover:text-blue-400 transition-colors line-clamp-1">
-                        {project.title}
-                      </h3>
-
-                      <p className="text-xs text-slate-300 line-clamp-2 mt-1.5 leading-relaxed font-light">
-                        {project.tagline}
-                      </p>
-                    </div>
-
-                    {/* Quick Specs Snippet */}
-                    <div className="grid grid-cols-3 gap-2 bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80 text-[11px] text-center">
-                      <div>
-                        <span className="text-[9px] text-slate-400 block uppercase font-bold">Units</span>
-                        <span className="font-bold text-white">{project.linkedPropertyIds.length || 10}+</span>
-                      </div>
-                      <div>
-                        <span className="text-[9px] text-slate-400 block uppercase font-bold">Sections</span>
-                        <span className="font-bold text-white">{project.sections.length}</span>
-                      </div>
-                      <div>
-                        <span className="text-[9px] text-slate-400 block uppercase font-bold">Delivery</span>
-                        <span className="font-bold text-emerald-400">2026-28</span>
+                        <div className="text-[11px] font-bold text-slate-800 bg-white/95 backdrop-blur-md px-2.5 py-1.5 rounded-xl flex items-center gap-1 shadow-xs">
+                          <MapPin className="w-3 h-3 text-rose-500" />
+                          <span>{project.city}</span>
+                        </div>
                       </div>
                     </div>
 
-                    {/* Action Bar */}
-                    <div className="pt-2 flex flex-col gap-2">
-                      <div className="flex items-center gap-2">
+                    {/* Card Body */}
+                    <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <img
+                            src={project.logo}
+                            alt={project.title}
+                            className="w-6 h-6 rounded-md object-cover border border-slate-200"
+                          />
+                          <span className="text-xs font-bold text-slate-500 truncate">
+                            {project.developer?.name}
+                          </span>
+                        </div>
+
+                        <h3 className="text-base sm:text-lg font-extrabold text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-1">
+                          {project.title}
+                        </h3>
+
+                        <p className="text-xs text-slate-600 line-clamp-2 mt-1 leading-relaxed">
+                          {project.tagline}
+                        </p>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-100 text-[11px] text-center">
+                        <div>
+                          <span className="text-[9px] text-slate-400 block uppercase font-bold">
+                            Area / Size
+                          </span>
+                          <span className="font-bold text-slate-800">
+                            {project.areaSize
+                              ? `${project.areaSize} ${project.areaUnit || ''}`
+                              : 'Master Plan'}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[9px] text-slate-400 block uppercase font-bold">
+                            Gallery
+                          </span>
+                          <span className="font-bold text-slate-800">
+                            {project.gallery?.length || 1} Photos
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[9px] text-slate-400 block uppercase font-bold">
+                            Video / 3D
+                          </span>
+                          <span className="font-bold text-emerald-700">Available</span>
+                        </div>
+                      </div>
+
+                      <div className="pt-1 flex items-center gap-2">
                         <button
-                          onClick={(e) => {
+                          onClick={e => {
                             e.stopPropagation();
                             onOpenProject(project.slug);
                           }}
-                          className="flex-1 py-2.5 px-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs transition-colors flex items-center justify-center gap-1.5 shadow-md"
+                          className="flex-1 py-2.5 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
                         >
-                          <span>Launch Scrollytelling</span>
-                          <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                          <span>Explore Project</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
                         </button>
 
                         <button
-                          onClick={(e) => {
+                          onClick={e => {
                             e.stopPropagation();
                             setTourModalProject(project);
                           }}
-                          className="py-2.5 px-3 rounded-xl bg-amber-500/20 hover:bg-amber-500 text-amber-300 hover:text-slate-950 font-bold text-xs border border-amber-400/40 transition-all flex items-center gap-1.5 shadow-md"
-                          title="Launch 3D Virtual Tour (Auto-Run)"
+                          className="py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs border border-slate-200 transition-all flex items-center gap-1.5 cursor-pointer"
+                          title="Open 360° Tour"
                         >
-                          <RotateCw className="w-3.5 h-3.5 animate-spin" />
-                          <span>3D Tour</span>
+                          <Compass className="w-3.5 h-3.5 text-blue-600" />
+                          <span>360°</span>
                         </button>
 
                         <a
-                          href={`https://wa.me/${project.dealerWhatsApp || '923365666727'}?text=${encodeURIComponent(`Salam! I am inquiring about ${project.title}`)}`}
+                          href={`https://wa.me/${
+                            project.dealerWhatsApp || '923365666727'
+                          }?text=${encodeURIComponent(
+                            `Assalam-o-Alaikum! I am inquiring about ${project.title} on ri8click.`
+                          )}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={e => e.stopPropagation()}
-                          className="p-2.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-600/40 transition-colors"
+                          className="p-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white border border-emerald-200 transition-colors"
                           title="Chat on WhatsApp"
                         >
                           <MessageSquare className="w-4 h-4" />
@@ -378,16 +485,13 @@ export const AdvibeListingPage: React.FC<AdvibeListingPageProps> = ({
                       </div>
                     </div>
                   </div>
-
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
-
       </div>
 
-      {/* 3D Virtual Tour Modal with Auto-Run By Default */}
       {tourModalProject && (
         <AdvibeTourModal
           project={tourModalProject}
