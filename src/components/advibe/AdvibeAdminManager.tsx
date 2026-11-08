@@ -1,3 +1,4 @@
+// FILE: src/components/advibe/AdvibeAdminManager.tsx
 import React, { useState, useRef } from 'react';
 import {
   Building2,
@@ -455,6 +456,7 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
       <div className="flex flex-wrap items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
         <div className="flex flex-wrap items-center gap-2">
           <button
+            type="button"
             onClick={() => {
               setActiveTab('projects');
               setEditingProject(null);
@@ -470,6 +472,7 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
           </button>
 
           <button
+            type="button"
             onClick={() => {
               setActiveTab('leads');
               setEditingProject(null);
@@ -486,6 +489,7 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
 
           {currentRole === 'admin' && (
             <button
+              type="button"
               onClick={() => {
                 setActiveTab('permissions');
                 setEditingProject(null);
@@ -504,6 +508,7 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
 
         {activeTab === 'projects' && !editingProject && (
           <button
+            type="button"
             onClick={handleCreateNewProject}
             className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
           >
@@ -604,6 +609,7 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
                         <td className="py-3 px-4 text-right">
                           <div className="flex items-center justify-end gap-1.5">
                             <button
+                              type="button"
                               onClick={() => onPreviewProject(project.slug)}
                               className="p-1.5 rounded-lg bg-slate-100 hover:bg-blue-600 text-slate-700 hover:text-white transition-colors cursor-pointer"
                               title="Preview Showcase"
@@ -612,6 +618,7 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
                             </button>
 
                             <button
+                              type="button"
                               onClick={() => {
                                 setEditingProject({ ...project });
                                 setEditorSubTab('basics');
@@ -623,6 +630,7 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
                             </button>
 
                             <button
+                              type="button"
                               onClick={() => onDuplicateProject(project.id)}
                               className="p-1.5 rounded-lg bg-slate-100 hover:bg-indigo-600 text-slate-700 hover:text-white transition-colors cursor-pointer"
                               title="Duplicate"
@@ -631,6 +639,7 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
                             </button>
 
                             <button
+                              type="button"
                               onClick={() => {
                                 if (
                                   window.confirm(`Delete AdVibe project "${project.title}"?`)
@@ -680,8 +689,7 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
 
               <button
                 type="button"
-                onClick={()
-                   setEditingProject(null)}
+                onClick={() => setEditingProject(null)}
                 className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold cursor-pointer"
               >
                 Cancel
@@ -795,7 +803,7 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
                 </select>
               </div>
 
-              {/* Province / City / Society Selectors (Matching Post Property) */}
+              {/* Province / City / Society Selectors */}
               <div>
                 <label className="block text-slate-700 font-bold mb-1">Province</label>
                 <select
@@ -1057,7 +1065,6 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
           {/* SUB-TAB 2: MAIN IMAGE, BANNER IMAGE, LOCAL GALLERY & VIDEO UPLOADER */}
           {editorSubTab === 'media' && (
             <div className="space-y-6 text-xs">
-              {/* Main Listing Image & Main Hero Banner Image */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 {/* 1. Main Listing Card Image */}
                 <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
@@ -1091,8 +1098,7 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
 
                   <input
                     type="text"
-                    placeholder="Or paste Main Listing Image URL..."
-                    value={editingProject.mainImage || editingProject.seo?.ogImage || ''}
+                    value={editingProject.mainImage || ''}
                     onChange={e =>
                       setEditingProject({
                         ...editingProject,
@@ -1100,10 +1106,11 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
                         seo: { ...editingProject.seo, ogImage: e.target.value }
                       })
                     }
+                    placeholder="Or paste Main Listing Image URL..."
                     className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-900"
                   />
 
-                  <div className="h-44 rounded-xl overflow-hidden bg-slate-200 border border-slate-300">
+                  <div className="h-44 rounded-xl overflow-hidden bg-slate-200 border border-slate-300 relative">
                     <img
                       src={
                         editingProject.mainImage ||
@@ -1114,6 +1121,9 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
                       alt="Main Listing Preview"
                       className="w-full h-full object-cover"
                     />
+                    <span className="absolute top-2 left-2 px-2 py-0.5 rounded bg-blue-600 text-white text-[10px] font-bold">
+                      MAIN LISTING IMAGE
+                    </span>
                   </div>
                 </div>
 
@@ -1125,7 +1135,7 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
                         Main AdVibe Hero Banner Image
                       </h4>
                       <p className="text-[11px] text-slate-500">
-                        Displayed in the top AdVibe showcase banner &amp; project hero stage.
+                        Displayed on the top AdVibe showcase banner and project hero stage.
                       </p>
                     </div>
                     <input
@@ -1140,32 +1150,27 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
                     <button
                       type="button"
                       onClick={() => bannerImageFileRef.current?.click()}
-                      className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold flex items-center gap-1.5 cursor-pointer"
+                      className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold flex items-center gap-1.5 cursor-pointer"
                     >
                       <Upload className="w-3.5 h-3.5" />
-                      <span>Upload from PC</span>
+                      <span>Upload Banner</span>
                     </button>
                   </div>
 
                   <input
                     type="text"
-                    placeholder="Or paste Main Hero Banner Image URL..."
-                    value={
-                      editingProject.bannerImage ||
-                      editingProject.mainImage ||
-                      editingProject.seo?.ogImage ||
-                      ''
-                    }
+                    value={editingProject.bannerImage || ''}
                     onChange={e =>
                       setEditingProject({
                         ...editingProject,
                         bannerImage: e.target.value
                       })
                     }
+                    placeholder="Or paste Hero Banner Image URL..."
                     className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-900"
                   />
 
-                  <div className="h-44 rounded-xl overflow-hidden bg-slate-200 border border-slate-300">
+                  <div className="h-44 rounded-xl overflow-hidden bg-slate-200 border border-slate-300 relative">
                     <img
                       src={
                         editingProject.bannerImage ||
@@ -1174,49 +1179,54 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
                         editingProject.gallery?.[0]?.url ||
                         editingProject.logo
                       }
-                      alt="Banner Preview"
+                      alt="Main Banner Preview"
                       className="w-full h-full object-cover"
                     />
+                    <span className="absolute top-2 left-2 px-2 py-0.5 rounded bg-indigo-600 text-white text-[10px] font-bold">
+                      HERO BANNER IMAGE
+                    </span>
                   </div>
                 </div>
               </div>
 
-              {/* 3. Gallery Photos Upload from Local Computer + Quick Switch to Main/Banner */}
-              <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
+              {/* 3. Multi-Photo Gallery Uploader */}
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
                     <h4 className="font-extrabold text-slate-900 text-sm">
                       Project Photo Gallery ({editingProject.gallery?.length || 0} Photos)
                     </h4>
                     <p className="text-[11px] text-slate-500">
-                      Upload multiple photos from your computer or add by URL. Click &ldquo;Set Listing Cover&rdquo; or &ldquo;Set Main Banner&rdquo; on any photo.
+                      Upload multiple photos from your computer or add by URL. Click any photo to set it as Main Image or Banner.
                     </p>
                   </div>
 
-                  <input
-                    ref={galleryFileRef}
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    className="hidden"
-                    onChange={e => handleUploadGalleryFiles(e.target.files)}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => galleryFileRef.current?.click()}
-                    className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <Upload className="w-4 h-4" />
-                    <span>Upload Photos from Computer</span>
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <input
+                      ref={galleryFileRef}
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      className="hidden"
+                      onChange={e => handleUploadGalleryFiles(e.target.files)}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => galleryFileRef.current?.click()}
+                      className="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>Upload Multiple Photos from PC</span>
+                    </button>
+                  </div>
                 </div>
 
                 <div className="flex gap-2">
                   <input
                     type="text"
-                    placeholder="Or paste image URL to add to gallery..."
                     value={newGalleryUrl}
                     onChange={e => setNewGalleryUrl(e.target.value)}
+                    placeholder="Paste image URL to add to gallery..."
                     className="flex-1 bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-900"
                   />
                   <button
@@ -1238,93 +1248,82 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
                     }}
                     className="px-4 py-2 rounded-xl bg-slate-900 text-white font-bold cursor-pointer"
                   >
-                    + Add URL
+                    + Add Image URL
                   </button>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {(editingProject.gallery || []).map((item, idx) => {
-                    const isMain = editingProject.mainImage === item.url;
-                    const isBanner = editingProject.bannerImage === item.url;
-                    return (
-                      <div
-                        key={item.id || idx}
-                        className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-2xs flex flex-col justify-between"
-                      >
-                        <div className="relative h-28 bg-slate-100">
-                          <img
-                            src={item.url}
-                            alt={item.caption}
-                            className="w-full h-full object-cover"
-                          />
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setEditingProject({
-                                ...editingProject,
-                                gallery: editingProject.gallery.filter(
-                                  (_, i) => i !== idx
-                                )
-                              })
-                            }
-                            className="absolute top-1.5 right-1.5 p-1 rounded bg-rose-600 text-white hover:bg-rose-700 cursor-pointer"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </button>
-                        </div>
-                        <div className="p-2 flex flex-col gap-1">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setEditingProject({
-                                ...editingProject,
-                                mainImage: item.url,
-                                seo: { ...editingProject.seo, ogImage: item.url }
-                              });
-                              notifyStatus('Updated Main Listing Cover Image!');
-                            }}
-                            className={`w-full py-1 rounded text-[10px] font-bold cursor-pointer ${
-                              isMain
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-slate-100 hover:bg-blue-50 text-slate-700'
-                            }`}
-                          >
-                            {isMain ? '★ Main Listing Image' : 'Set Listing Cover'}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setEditingProject({
-                                ...editingProject,
-                                bannerImage: item.url
-                              });
-                              notifyStatus('Updated Main Hero Banner Image!');
-                            }}
-                            className={`w-full py-1 rounded text-[10px] font-bold cursor-pointer ${
-                              isBanner
-                                ? 'bg-amber-400 text-slate-950'
-                                : 'bg-slate-100 hover:bg-amber-50 text-slate-700'
-                            }`}
-                          >
-                            {isBanner ? '★ Main Hero Banner' : 'Set Main Banner'}
-                          </button>
-                        </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                  {(editingProject.gallery || []).map((item, idx) => (
+                    <div
+                      key={item.id || idx}
+                      className="rounded-xl overflow-hidden bg-white border border-slate-200 shadow-2xs flex flex-col justify-between"
+                    >
+                      <div className="relative h-28 bg-slate-100">
+                        <img
+                          src={item.url}
+                          alt={item.caption}
+                          className="w-full h-full object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setEditingProject({
+                              ...editingProject,
+                              gallery: editingProject.gallery.filter((_, i) => i !== idx)
+                            })
+                          }
+                          className="absolute top-1.5 right-1.5 p-1 rounded-lg bg-rose-600 text-white hover:bg-rose-700 cursor-pointer"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
                       </div>
-                    );
-                  })}
+
+                      <div className="p-2 flex items-center justify-between gap-1 bg-slate-50 border-t border-slate-100">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingProject({
+                              ...editingProject,
+                              mainImage: item.url,
+                              seo: { ...editingProject.seo, ogImage: item.url }
+                            });
+                            notifyStatus('Set as Main Listing Card Image!');
+                          }}
+                          className="px-2 py-1 rounded bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-[10px] cursor-pointer flex items-center gap-1"
+                        >
+                          <Star className="w-2.5 h-2.5" />
+                          <span>Set Main</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingProject({
+                              ...editingProject,
+                              bannerImage: item.url
+                            });
+                            notifyStatus('Set as Main Hero Banner Image!');
+                          }}
+                          className="px-2 py-1 rounded bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-[10px] cursor-pointer"
+                        >
+                          Set Banner
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
 
-              {/* 4. Video Walkthrough Upload from Local Computer or URL */}
-              <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
+              {/* 4. Walkthrough Video Uploader (Local MP4/WebM or URL) */}
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
-                    <h4 className="font-extrabold text-slate-900 text-sm flex items-center gap-2">
+                    <h4 className="font-extrabold text-slate-900 text-sm flex items-center gap-1.5">
                       <Video className="w-4 h-4 text-blue-600" />
-                      <span>AdVibe Walkthrough Videos ({editingProject.videos?.length || 0})</span>
+                      <span>Walkthrough Video &amp; Banner Video Upload</span>
                     </h4>
                     <p className="text-[11px] text-slate-500">
-                      Upload an MP4/WebM video file from your computer or paste a direct video / YouTube URL.
+                      Upload a local MP4/WebM video clip from your computer or paste a direct video URL.
                     </p>
                   </div>
 
@@ -1338,10 +1337,10 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
                   <button
                     type="button"
                     onClick={() => videoFileRef.current?.click()}
-                    className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold flex items-center gap-1.5 cursor-pointer"
+                    className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold flex items-center gap-1.5 cursor-pointer"
                   >
-                    <Film className="w-4 h-4" />
-                    <span>Upload Video from Computer (MP4)</span>
+                    <Film className="w-3.5 h-3.5" />
+                    <span>Upload Video Clip from PC</span>
                   </button>
                 </div>
 
@@ -1355,7 +1354,7 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
                   />
                   <input
                     type="text"
-                    placeholder="Direct MP4 or YouTube URL..."
+                    placeholder="Paste MP4 or YouTube URL..."
                     value={newVideoUrl}
                     onChange={e => setNewVideoUrl(e.target.value)}
                     className="bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-900"
@@ -1364,13 +1363,14 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
                     type="button"
                     onClick={() => {
                       if (!newVideoUrl.trim()) return;
-                      const vidItem = {
+                      const vTitle = newVideoTitle.trim() || 'Project Walkthrough';
+                      const vItem = {
                         id: `vid-${Date.now()}`,
-                        title: newVideoTitle.trim() || 'Project Walkthrough Video',
+                        title: vTitle,
                         category: 'Project Tour',
-                        type: (newVideoUrl.includes('youtube') ? 'youtube' : 'hosted') as
-                          | 'youtube'
-                          | 'hosted',
+                        type: (newVideoUrl.includes('youtube') || newVideoUrl.includes('youtu.be')
+                          ? 'youtube'
+                          : 'hosted') as 'youtube' | 'hosted',
                         url: newVideoUrl.trim(),
                         thumbnail:
                           editingProject.mainImage ||
@@ -1381,43 +1381,64 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
                       setEditingProject({
                         ...editingProject,
                         heroVideoUrl: newVideoUrl.trim(),
-                        videos: [vidItem, ...(editingProject.videos || [])]
+                        heroVideoTitle: vTitle,
+                        videos: [vItem, ...(editingProject.videos || [])]
                       });
                       setNewVideoUrl('');
                       setNewVideoTitle('');
-                      notifyStatus('Added video walkthrough!');
+                      notifyStatus('Added video & set as Hero Walkthrough!');
                     }}
-                    className="px-4 py-2 rounded-xl bg-slate-900 text-white font-bold cursor-pointer"
+                    className="px-4 py-2 rounded-xl bg-blue-600 text-white font-bold cursor-pointer"
                   >
-                    + Add Video URL
+                    + Add &amp; Set Hero Video
                   </button>
                 </div>
 
                 {(editingProject.videos || []).length > 0 && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-2">
                     {editingProject.videos.map((v, vIdx) => (
                       <div
                         key={v.id || vIdx}
-                        className="p-3 rounded-xl bg-white border border-slate-200 flex items-center justify-between gap-3"
+                        className="flex items-center justify-between p-2.5 rounded-xl bg-white border border-slate-200"
                       >
-                        <div className="min-w-0">
-                          <div className="font-bold text-slate-900 truncate">{v.title}</div>
-                          <div className="text-[10px] text-slate-400 truncate">
-                            {v.url.startsWith('data:') ? 'Local Uploaded MP4 Clip' : v.url}
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <Film className="w-4 h-4 text-blue-600 shrink-0" />
+                          <div className="min-w-0">
+                            <div className="font-bold text-slate-900 truncate">{v.title}</div>
+                            <div className="text-[10px] text-slate-400 truncate">
+                              {v.url.startsWith('data:') ? 'Local Uploaded Video File' : v.url}
+                            </div>
                           </div>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setEditingProject({
-                              ...editingProject,
-                              videos: editingProject.videos.filter((_, i) => i !== vIdx)
-                            })
-                          }
-                          className="p-1.5 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white cursor-pointer"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingProject({
+                                ...editingProject,
+                                heroVideoUrl: v.url,
+                                heroVideoTitle: v.title
+                              });
+                              notifyStatus(`Set "${v.title}" as Hero Banner Video!`);
+                            }}
+                            className="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 font-bold text-[10px] cursor-pointer"
+                          >
+                            {editingProject.heroVideoUrl === v.url ? 'Active Hero Video' : 'Set as Hero'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setEditingProject({
+                                ...editingProject,
+                                videos: editingProject.videos.filter((_, i) => i !== vIdx)
+                              })
+                            }
+                            className="p-1 text-rose-600 hover:bg-rose-50 rounded cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -1426,49 +1447,48 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
             </div>
           )}
 
-          {/* SUB-TAB 3: SECTIONS */}
+          {/* SUB-TAB 3: SECTIONS MANAGER */}
           {editorSubTab === 'sections' && (
-            <div className="space-y-3">
+            <div className="space-y-3 text-xs">
               {editingProject.sections.map((sec, idx) => (
                 <div
                   key={sec.id}
-                  className={`p-3.5 rounded-2xl border flex items-center justify-between gap-3 ${
-                    sec.isEnabled
-                      ? 'bg-slate-50 border-slate-200 text-slate-900'
-                      : 'bg-slate-100 border-slate-200 text-slate-400 opacity-60'
-                  }`}
+                  className="p-3.5 rounded-2xl border border-slate-200 bg-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
                 >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <span className="w-6 h-6 rounded-lg bg-white border border-slate-200 flex items-center justify-center font-mono text-xs font-bold text-slate-600">
+                  <div className="flex items-center gap-3 flex-1">
+                    <span className="w-7 h-7 rounded-lg bg-white border border-slate-200 text-slate-700 font-bold flex items-center justify-center">
                       {idx + 1}
                     </span>
-                    <input
-                      type="checkbox"
-                      checked={sec.isEnabled}
-                      onChange={() =>
-                        setEditingProject({
-                          ...editingProject,
-                          sections: editingProject.sections.map(s =>
-                            s.id === sec.id ? { ...s, isEnabled: !s.isEnabled } : s
-                          )
-                        })
-                      }
-                      className="w-4 h-4 rounded text-blue-600"
-                    />
-                    <div className="min-w-0">
-                      <div className="font-bold text-xs text-slate-900 truncate">
-                        {sec.title} ({sec.type})
-                      </div>
-                      <div className="text-[11px] text-slate-500 truncate">{sec.subtitle}</div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 flex-1">
+                      <input
+                        type="text"
+                        value={sec.title}
+                        onChange={e => {
+                          const updated = [...editingProject.sections];
+                          updated[idx] = { ...sec, title: e.target.value };
+                          setEditingProject({ ...editingProject, sections: updated });
+                        }}
+                        className="bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 font-bold text-slate-900"
+                      />
+                      <input
+                        type="text"
+                        value={sec.subtitle}
+                        onChange={e => {
+                          const updated = [...editingProject.sections];
+                          updated[idx] = { ...sec, subtitle: e.target.value };
+                          setEditingProject({ ...editingProject, sections: updated });
+                        }}
+                        className="bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-slate-600"
+                      />
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1.5">
                     <button
                       type="button"
                       onClick={() => handleMoveSection(idx, 'up')}
                       disabled={idx === 0}
-                      className="p-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 disabled:opacity-30 cursor-pointer"
+                      className="p-1.5 rounded-lg bg-white border border-slate-200 disabled:opacity-40 cursor-pointer"
                     >
                       <ArrowUp className="w-3.5 h-3.5" />
                     </button>
@@ -1476,9 +1496,24 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
                       type="button"
                       onClick={() => handleMoveSection(idx, 'down')}
                       disabled={idx === editingProject.sections.length - 1}
-                      className="p-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 disabled:opacity-30 cursor-pointer"
+                      className="p-1.5 rounded-lg bg-white border border-slate-200 disabled:opacity-40 cursor-pointer"
                     >
                       <ArrowDown className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const updated = [...editingProject.sections];
+                        updated[idx] = { ...sec, isEnabled: !sec.isEnabled };
+                        setEditingProject({ ...editingProject, sections: updated });
+                      }}
+                      className={`px-3 py-1.5 rounded-lg font-bold cursor-pointer ${
+                        sec.isEnabled
+                          ? 'bg-emerald-600 text-white'
+                          : 'bg-slate-200 text-slate-600'
+                      }`}
+                    >
+                      {sec.isEnabled ? 'Visible' : 'Hidden'}
                     </button>
                   </div>
                 </div>
@@ -1486,12 +1521,14 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
             </div>
           )}
 
-          {/* SUB-TAB 4: 360 VIRTUAL TOUR */}
+          {/* SUB-TAB 4: 360° VIRTUAL TOUR */}
           {editorSubTab === 'tour3d' && (
             <div className="space-y-4 text-xs">
-              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-200">
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">360° Panorama Image URL</label>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    360° Panorama Image URL
+                  </label>
                   <input
                     type="text"
                     value={editingProject.virtualTour?.url || ''}
@@ -1499,7 +1536,8 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
                       setEditingProject({
                         ...editingProject,
                         virtualTour: {
-                          ...(editingProject.virtualTour || { provider: 'custom360', url: '' }),
+                          ...editingProject.virtualTour,
+                          provider: 'custom360',
                           url: e.target.value
                         }
                       })
@@ -1508,7 +1546,9 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-700 font-bold mb-1">Tour Title</label>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Tour Title
+                  </label>
                   <input
                     type="text"
                     value={editingProject.virtualTour?.title || '360° Walkthrough'}
@@ -1516,7 +1556,7 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
                       setEditingProject({
                         ...editingProject,
                         virtualTour: {
-                          ...(editingProject.virtualTour || { provider: 'custom360', url: '' }),
+                          ...editingProject.virtualTour,
                           title: e.target.value
                         }
                       })
@@ -1525,6 +1565,7 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
                   />
                 </div>
               </div>
+
               <Advibe3DVirtualTour
                 project={editingProject}
                 embedded={true}
@@ -1533,152 +1574,270 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
             </div>
           )}
 
-          {/* SUB-TAB 5: MASTER PLAN */}
+          {/* SUB-TAB 5: MASTER PLAN HOTSPOTS */}
           {editorSubTab === 'hotspots' && (
             <div className="space-y-4 text-xs">
               <div>
-                <label className="block text-slate-700 font-bold mb-1">Master Plan Image URL</label>
+                <label className="block text-slate-700 font-bold mb-1">
+                  Master Plan Map Image URL
+                </label>
                 <input
                   type="text"
                   value={editingProject.masterPlan.imageUrl}
                   onChange={e =>
                     setEditingProject({
                       ...editingProject,
-                      masterPlan: { ...editingProject.masterPlan, imageUrl: e.target.value }
+                      masterPlan: {
+                        ...editingProject.masterPlan,
+                        imageUrl: e.target.value
+                      }
                     })
                   }
                   className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900"
                 />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-slate-700">
+                  Interactive Sector Pins ({editingProject.masterPlan.hotspots.length})
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const newPin = {
+                      id: `hp-${Date.now()}`,
+                      x: 50,
+                      y: 50,
+                      title: 'New Block / Sector',
+                      category: 'Residential Block',
+                      description: 'Prime plots and villas available.',
+                      status: 'Available'
+                    };
+                    setEditingProject({
+                      ...editingProject,
+                      masterPlan: {
+                        ...editingProject.masterPlan,
+                        hotspots: [...editingProject.masterPlan.hotspots, newPin]
+                      }
+                    });
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-blue-600 text-white font-bold cursor-pointer"
+                >
+                  + Add Sector Pin
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {editingProject.masterPlan.hotspots.map((hp, hIdx) => (
+                  <div
+                    key={hp.id}
+                    className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <input
+                        type="text"
+                        value={hp.title}
+                        onChange={e => {
+                          const updated = [...editingProject.masterPlan.hotspots];
+                          updated[hIdx] = { ...hp, title: e.target.value };
+                          setEditingProject({
+                            ...editingProject,
+                            masterPlan: { ...editingProject.masterPlan, hotspots: updated }
+                          });
+                        }}
+                        className="flex-1 bg-white border border-slate-300 rounded-lg px-2.5 py-1 font-bold text-slate-900"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const updated = editingProject.masterPlan.hotspots.filter(
+                            (_, i) => i !== hIdx
+                          );
+                          setEditingProject({
+                            ...editingProject,
+                            masterPlan: { ...editingProject.masterPlan, hotspots: updated }
+                          });
+                        }}
+                        className="text-rose-600 p-1 cursor-pointer"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           )}
 
           {/* SUB-TAB 6: LINKED UNITS */}
           {editorSubTab === 'units' && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto p-1 text-xs">
               {properties.map(prop => {
                 const isLinked = editingProject.linkedPropertyIds.includes(prop.id);
                 return (
-                  <label
+                  <div
                     key={prop.id}
-                    className={`p-3 rounded-xl border flex items-center gap-3 cursor-pointer ${
+                    onClick={() => {
+                      const nextIds = isLinked
+                        ? editingProject.linkedPropertyIds.filter(id => id !== prop.id)
+                        : [...editingProject.linkedPropertyIds, prop.id];
+                      setEditingProject({
+                        ...editingProject,
+                        linkedPropertyIds: nextIds
+                      });
+                    }}
+                    className={`p-3 rounded-xl border cursor-pointer flex items-center gap-3 ${
                       isLinked
-                        ? 'bg-blue-50 border-blue-400'
-                        : 'bg-slate-50 border-slate-200'
+                        ? 'bg-blue-50 border-blue-500'
+                        : 'bg-slate-50 border-slate-200 hover:bg-slate-100'
                     }`}
                   >
-                    <input
-                      type="checkbox"
-                      checked={isLinked}
-                      onChange={() => {
-                        const next = isLinked
-                          ? editingProject.linkedPropertyIds.filter(id => id !== prop.id)
-                          : [...editingProject.linkedPropertyIds, prop.id];
-                        setEditingProject({ ...editingProject, linkedPropertyIds: next });
-                      }}
-                      className="w-4 h-4 rounded text-blue-600"
+                    <img
+                      src={prop.images[0]}
+                      alt={prop.title}
+                      className="w-12 h-12 rounded-lg object-cover shrink-0"
                     />
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <div className="font-bold text-slate-900 truncate">{prop.title}</div>
                       <div className="text-[11px] text-blue-600 font-bold">
                         {prop.priceFormatted}
                       </div>
                     </div>
-                  </label>
+                  </div>
                 );
               })}
             </div>
           )}
 
-          {/* SUB-TAB 7: PRICING */}
+          {/* SUB-TAB 7: PRICING PLANS */}
           {editorSubTab === 'pricing' && (
-            <div className="space-y-3 text-xs">
-              {editingProject.pricingTiers.map((tier, tIdx) => (
-                <div
-                  key={tier.id}
-                  className="p-4 rounded-2xl bg-slate-50 border border-slate-200 grid grid-cols-1 sm:grid-cols-4 gap-3"
+            <div className="space-y-4 text-xs">
+              <div className="flex justify-between items-center">
+                <span className="font-bold text-slate-700">
+                  Payment Plans ({editingProject.pricingTiers.length})
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const newTier = {
+                      id: `pt-${Date.now()}`,
+                      unitType: '10 Marla Residential Plot',
+                      size: '250 Sq Yds',
+                      totalPrice: 'PKR 65,00,000',
+                      downPayment: '20% Down Payment',
+                      monthlyInstallment: '36 Monthly Installments',
+                      possession: 'Possession in 18 Months',
+                      features: ['RDA Approved', 'Corner Options Available']
+                    };
+                    setEditingProject({
+                      ...editingProject,
+                      pricingTiers: [...editingProject.pricingTiers, newTier]
+                    });
+                  }}
+                  className="px-3.5 py-1.5 rounded-xl bg-blue-600 text-white font-bold cursor-pointer"
                 >
-                  <input
-                    type="text"
-                    value={tier.unitType}
-                    onChange={e => {
-                      const next = [...editingProject.pricingTiers];
-                      next[tIdx] = { ...tier, unitType: e.target.value };
-                      setEditingProject({ ...editingProject, pricingTiers: next });
-                    }}
-                    className="bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-900 font-bold"
-                    placeholder="Unit Type"
-                  />
-                  <input
-                    type="text"
-                    value={tier.size}
-                    onChange={e => {
-                      const next = [...editingProject.pricingTiers];
-                      next[tIdx] = { ...tier, size: e.target.value };
-                      setEditingProject({ ...editingProject, pricingTiers: next });
-                    }}
-                    className="bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-900"
-                    placeholder="Size"
-                  />
-                  <input
-                    type="text"
-                    value={tier.totalPrice}
-                    onChange={e => {
-                      const next = [...editingProject.pricingTiers];
-                      next[tIdx] = { ...tier, totalPrice: e.target.value };
-                      setEditingProject({ ...editingProject, pricingTiers: next });
-                    }}
-                    className="bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-900 font-bold"
-                    placeholder="Total Price"
-                  />
-                  <input
-                    type="text"
-                    value={tier.monthlyInstallment}
-                    onChange={e => {
-                      const next = [...editingProject.pricingTiers];
-                      next[tIdx] = { ...tier, monthlyInstallment: e.target.value };
-                      setEditingProject({ ...editingProject, pricingTiers: next });
-                    }}
-                    className="bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-900"
-                    placeholder="Monthly Installment"
-                  />
-                </div>
-              ))}
+                  + Add Payment Plan Tier
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {editingProject.pricingTiers.map((tier, tIdx) => (
+                  <div
+                    key={tier.id}
+                    className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2.5"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <input
+                        type="text"
+                        value={tier.unitType}
+                        onChange={e => {
+                          const updated = [...editingProject.pricingTiers];
+                          updated[tIdx] = { ...tier, unitType: e.target.value };
+                          setEditingProject({ ...editingProject, pricingTiers: updated });
+                        }}
+                        className="flex-1 bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 font-bold text-slate-900"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const updated = editingProject.pricingTiers.filter(
+                            (_, i) => i !== tIdx
+                          );
+                          setEditingProject({ ...editingProject, pricingTiers: updated });
+                        }}
+                        className="text-rose-600 p-1 cursor-pointer"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <input
+                        type="text"
+                        value={tier.totalPrice}
+                        onChange={e => {
+                          const updated = [...editingProject.pricingTiers];
+                          updated[tIdx] = { ...tier, totalPrice: e.target.value };
+                          setEditingProject({ ...editingProject, pricingTiers: updated });
+                        }}
+                        placeholder="Total Price"
+                        className="bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-slate-900"
+                      />
+                      <input
+                        type="text"
+                        value={tier.monthlyInstallment}
+                        onChange={e => {
+                          const updated = [...editingProject.pricingTiers];
+                          updated[tIdx] = { ...tier, monthlyInstallment: e.target.value };
+                          setEditingProject({ ...editingProject, pricingTiers: updated });
+                        }}
+                        placeholder="Installment Plan"
+                        className="bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-slate-900"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
       )}
 
-      {/* 3. LEADS TAB */}
+      {/* 3. LEADS & INQUIRIES TAB */}
       {activeTab === 'leads' && (
-        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
+        <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-xs">
           <table className="w-full text-left text-xs text-slate-700">
             <thead className="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold border-b border-slate-200">
               <tr>
-                <th className="py-3 px-4">Client Name</th>
-                <th className="py-3 px-4">Project</th>
-                <th className="py-3 px-4">Phone</th>
-                <th className="py-3 px-4">Status</th>
+                <th className="py-3.5 px-4">Client</th>
+                <th className="py-3.5 px-4">Project</th>
+                <th className="py-3.5 px-4">Unit / Message</th>
+                <th className="py-3.5 px-4">Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {leads.map(lead => (
-                <tr key={lead.id}>
-                  <td className="py-3 px-4 font-bold text-slate-900">{lead.name}</td>
-                  <td className="py-3 px-4">{lead.projectTitle}</td>
-                  <td className="py-3 px-4 font-mono">{lead.phone}</td>
+                <tr key={lead.id} className="hover:bg-slate-50">
+                  <td className="py-3 px-4">
+                    <div className="font-bold text-slate-900">{lead.name}</div>
+                    <div className="text-[11px] text-blue-600">{lead.phone}</div>
+                  </td>
+                  <td className="py-3 px-4 font-semibold">{lead.projectTitle}</td>
+                  <td className="py-3 px-4">
+                    <div className="font-bold">{lead.preferredUnit}</div>
+                    <div className="text-slate-500">{lead.message}</div>
+                  </td>
                   <td className="py-3 px-4">
                     <select
                       value={lead.status}
                       onChange={e =>
-                        onUpdateLeadStatus(lead.id, e.target.value as any)
+                        onUpdateLeadStatus(lead.id, e.target.value as AdVibeLead['status'])
                       }
-                      className="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xs font-bold"
+                      className="bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1 text-xs font-bold"
                     >
-                      <option value="new">New</option>
+                      <option value="new">New Inquiry</option>
                       <option value="contacted">Contacted</option>
                       <option value="site_visit_booked">Site Visit Booked</option>
-                      <option value="closed">Closed</option>
+                      <option value="closed">Closed / Booked</option>
                     </select>
                   </td>
                 </tr>
@@ -1688,32 +1847,40 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
         </div>
       )}
 
-      {/* 4. PERMISSIONS TAB */}
-      {activeTab === 'permissions' && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {agencies.map(ag => {
-            const allowed = Boolean(ag.canManageAdvibe || ag.canPublishAdvibe);
+      {/* 4. AGENCY PERMISSIONS TAB */}
+      {activeTab === 'permissions' && currentRole === 'admin' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {agencies.map(agency => {
+            const hasPerm = Boolean(agency.canManageAdvibe || agency.canPublishAdvibe);
             return (
               <div
-                key={ag.id}
-                className="bg-white p-4 rounded-2xl border border-slate-200 flex items-center justify-between"
+                key={agency.id}
+                className="p-4 rounded-2xl border border-slate-200 bg-white flex items-center justify-between gap-4 shadow-2xs"
               >
-                <div>
-                  <div className="font-bold text-slate-900 text-xs">
-                    {ag.companyName || ag.name}
+                <div className="flex items-center gap-3 min-w-0">
+                  <img
+                    src={agency.avatar || agency.logo}
+                    alt={agency.name}
+                    className="w-11 h-11 rounded-xl object-cover border border-slate-200"
+                  />
+                  <div className="min-w-0">
+                    <div className="text-xs font-bold text-slate-900 truncate">
+                      {agency.companyName || agency.name}
+                    </div>
+                    <div className="text-[11px] text-slate-500">{agency.city}</div>
                   </div>
-                  <div className="text-[11px] text-slate-500">{ag.name}</div>
                 </div>
+
                 <button
                   type="button"
-                  onClick={() => onToggleAgencyAdvibePermission(ag.id, !allowed)}
+                  onClick={() => onToggleAgencyAdvibePermission(agency.id, !hasPerm)}
                   className={`px-3 py-1.5 rounded-xl text-xs font-bold cursor-pointer ${
-                    allowed
+                    hasPerm
                       ? 'bg-emerald-600 text-white'
-                      : 'bg-slate-100 text-slate-700'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                   }`}
                 >
-                  {allowed ? 'Authorized' : 'Grant Access'}
+                  {hasPerm ? 'Authorized' : 'Grant Access'}
                 </button>
               </div>
             );
