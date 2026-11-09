@@ -5,6 +5,19 @@ import { createServer as createViteServer } from "vite";
 import dotenv from "dotenv";
 import { GoogleGenAI } from "@google/genai";
 import { initialUserAccounts } from "./src/data/defaultAccounts";
+import {
+  INITIAL_PROPERTIES,
+  INITIAL_AGENCIES,
+  INITIAL_PROVINCE_CITIES,
+  CONSORTIUM_DIVISIONS,
+  INITIAL_HERO_SLIDES,
+  INITIAL_BLOGS,
+  INITIAL_SITE_PORTIONS,
+} from "./src/data/mockData";
+import {
+  initialAdvibeProjects,
+  initialAdvibeLeads,
+} from "./src/data/advibeDemoData";
 
 dotenv.config({ path: ".envRE" });
 dotenv.config();
@@ -13,18 +26,18 @@ const DATA_DIR = path.resolve(process.cwd(), "data");
 const STATE_FILE = path.join(DATA_DIR, "portal-state.json");
 
 interface GlobalPortalState {
-  properties?: any[];
-  agencies?: any[];
-  provinceCityData?: any[];
-  heroSlides?: any[];
-  blogs?: any[];
-  sitePortions?: any[];
-  consortiumDivisions?: any[];
-  userAccounts?: any[];
-  advibeProjects?: any[];
-  advibeLeads?: any[];
-  updatedAt?: string;
-  revision?: number;
+  properties: any[];
+  agencies: any[];
+  provinceCityData: any[];
+  heroSlides: any[];
+  blogs: any[];
+  sitePortions: any[];
+  consortiumDivisions: any[];
+  userAccounts: any[];
+  advibeProjects: any[];
+  advibeLeads: any[];
+  updatedAt: string;
+  revision: number;
 }
 
 function ensureDataDir() {
@@ -57,7 +70,6 @@ function mergeAccountsWithDefaultPasswords(savedAccounts?: any[]): any[] {
     };
   });
 
-  // Ensure all default accounts exist so Super Admin / Certified Agents never get locked out
   for (const defAcc of initialUserAccounts) {
     const exists = merged.some(
       (m) =>
@@ -72,32 +84,93 @@ function mergeAccountsWithDefaultPasswords(savedAccounts?: any[]): any[] {
   return merged;
 }
 
+function buildDefaultState(): GlobalPortalState {
+  return {
+    properties: INITIAL_PROPERTIES,
+    agencies: INITIAL_AGENCIES,
+    provinceCityData: INITIAL_PROVINCE_CITIES,
+    heroSlides: INITIAL_HERO_SLIDES,
+    blogs: INITIAL_BLOGS,
+    sitePortions: INITIAL_SITE_PORTIONS,
+    consortiumDivisions: CONSORTIUM_DIVISIONS,
+    userAccounts: mergeAccountsWithDefaultPasswords(initialUserAccounts),
+    advibeProjects: initialAdvibeProjects,
+    advibeLeads: initialAdvibeLeads,
+    updatedAt: new Date().toISOString(),
+    revision: 1,
+  };
+}
+
 function loadGlobalState(): GlobalPortalState {
+  const defaults = buildDefaultState();
   try {
     ensureDataDir();
     if (fs.existsSync(STATE_FILE)) {
       const raw = fs.readFileSync(STATE_FILE, "utf-8");
       const parsed = JSON.parse(raw);
       if (parsed && typeof parsed === "object") {
-        parsed.userAccounts = mergeAccountsWithDefaultPasswords(parsed.userAccounts);
-        return parsed;
+        const hydrated: GlobalPortalState = {
+          properties:
+            Array.isArray(parsed.properties) && parsed.properties.length > 0
+              ? parsed.properties
+              : defaults.properties,
+          agencies:
+            Array.isArray(parsed.agencies) && parsed.agencies.length > 0
+              ? parsed.agencies
+              : defaults.agencies,
+          provinceCityData:
+            Array.isArray(parsed.provinceCityData) &&
+            parsed.provinceCityData.length > 0
+              ? parsed.provinceCityData
+              : defaults.provinceCityData,
+          heroSlides:
+            Array.isArray(parsed.heroSlides) && parsed.heroSlides.length > 0
+              ? parsed.heroSlides
+              : defaults.heroSlides,
+          blogs:
+            Array.isArray(parsed.blogs) && parsed.blogs.length > 0
+              ? parsed.blogs
+              : defaults.blogs,
+          sitePortions:
+            Array.isArray(parsed.sitePortions) && parsed.sitePortions.length > 0
+              ? parsed.sitePortions
+              : defaults.sitePortions,
+          consortiumDivisions:
+            Array.isArray(parsed.consortiumDivisions) &&
+            parsed.consortiumDivisions.length > 0
+              ? parsed.consortiumDivisions
+              : defaults.consortiumDivisions,
+          userAccounts: mergeAccountsWithDefaultPasswords(parsed.userAccounts),
+          advibeProjects:
+            Array.isArray(parsed.advibeProjects) &&
+            parsed.advibeProjects.length > 0
+              ? parsed.advibeProjects
+              : defaults.advibeProjects,
+          advibeLeads: Array.isArray(parsed.advibeLeads)
+            ? parsed.advibeLeads
+            : defaults.advibeLeads,
+          updatedAt: parsed.updatedAt || defaults.updatedAt,
+          revision:
+            typeof parsed.revision === "number" && parsed.revision > 0
+              ? parsed.revision
+              : 1,
+        };
+        return hydrated;
       }
     }
   } catch (err) {
     console.error("Failed to read portal-state.json:", err);
   }
-  return {
-    userAccounts: mergeAccountsWithDefaultPasswords([]),
-    updatedAt: new Date().toISOString(),
-    revision: 1,
-  };
+  saveGlobalState(defaults);
+  return defaults;
 }
 
 function saveGlobalState(state: GlobalPortalState) {
   try {
     ensureDataDir();
     state.updatedAt = new Date().toISOString();
-    state.revision = (typeof state.revision === "number" ? state.revision : 0) + 1;
+    state.revision =
+      (typeof state.revision === "number" ? state.revision : 0) + 1;
     const tempFile = `${STATE_FILE}.tmp`;
     fs.writeFileSync(tempFile, JSON.stringify(state, null, 2), "utf-8");
     fs.renameSync(tempFile, STATE_FILE);
@@ -154,11 +227,11 @@ async function startServer() {
       );
       res.setHeader("Pragma", "no-cache");
       res.setHeader("Expires", "0");
+      res.setHeader("Surrogate-Control", "no-store");
     }
     next();
   });
 
-  // 50MB payload limit to support local Base64 images and short MP4/WebM video clips
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
@@ -191,7 +264,7 @@ async function startServer() {
         sseClients.delete(client);
       }
     }
-  }, 20000);
+  }, 15000);
 
   app.get("/api/state/stream", (req, res) => {
     res.setHeader("Content-Type", "text/event-stream");
@@ -250,20 +323,28 @@ async function startServer() {
           const currentAccounts = mergeAccountsWithDefaultPasswords(
             globalPortalState.userAccounts
           );
-          const existingById = new Map(currentAccounts.map((u: any) => [u.id, u]));
+          const existingById = new Map(
+            currentAccounts.map((u: any) => [u.id, u])
+          );
           const existingByUsername = new Map(
-            currentAccounts.map((u: any) => [String(u.username || "").toLowerCase(), u])
+            currentAccounts.map((u: any) => [
+              String(u.username || "").toLowerCase(),
+              u,
+            ])
           );
 
           const updatedAccounts = updates.userAccounts.map((incoming: any) => {
             const existing =
               existingById.get(incoming.id) ||
-              existingByUsername.get(String(incoming.username || "").toLowerCase());
+              existingByUsername.get(
+                String(incoming.username || "").toLowerCase()
+              );
             return {
               ...existing,
               ...incoming,
               password:
-                incoming.password && String(incoming.password).trim().length > 0
+                incoming.password &&
+                String(incoming.password).trim().length > 0
                   ? String(incoming.password).trim()
                   : existing?.password || "admin123",
             };
@@ -291,19 +372,21 @@ async function startServer() {
     });
   });
 
-  // Reliable Server-Side Authentication Verification Endpoint
   app.post("/api/auth/verify", (req, res) => {
     const { identifier, password } = sanitizeIncomingPayload(req.body || {});
     if (!identifier || !password) {
-      return res
-        .status(400)
-        .json({ verified: false, error: "Username/email and password are required." });
+      return res.status(400).json({
+        verified: false,
+        error: "Username/email and password are required.",
+      });
     }
 
     const cleanId = String(identifier).trim().toLowerCase();
     const cleanPass = String(password).trim();
 
-    const accounts = mergeAccountsWithDefaultPasswords(globalPortalState.userAccounts);
+    const accounts = mergeAccountsWithDefaultPasswords(
+      globalPortalState.userAccounts
+    );
     globalPortalState.userAccounts = accounts;
 
     const matched = accounts.find((acc: any) => {
@@ -329,7 +412,6 @@ async function startServer() {
     return res.json({ verified: true, user: matched });
   });
 
-  // AdVibe Endpoints
   app.get("/api/advibe/projects", (_req, res) => {
     const projects = Array.isArray(globalPortalState.advibeProjects)
       ? globalPortalState.advibeProjects
@@ -344,18 +426,22 @@ async function startServer() {
   app.post("/api/advibe/leads", (req, res) => {
     const leadData = sanitizeIncomingPayload(req.body);
     if (!leadData || !leadData.name || !leadData.phone) {
-      return res
-        .status(400)
-        .json({ error: "Name and Phone are required for enquiries." });
+      return res.status(400).json({
+        error: "Name and Phone are required for enquiries.",
+      });
     }
     const newLead = {
       id: `lead-adv-${Date.now()}`,
       projectId: String(leadData.projectId || ""),
-      projectTitle: String(leadData.projectTitle || "General Megaproject Inquiry"),
+      projectTitle: String(
+        leadData.projectTitle || "General Megaproject Inquiry"
+      ),
       name: String(leadData.name).slice(0, 120),
       phone: String(leadData.phone).slice(0, 40),
       email: String(leadData.email || "").slice(0, 120),
-      preferredUnit: String(leadData.preferredUnit || "General Inquiry").slice(0, 120),
+      preferredUnit: String(
+        leadData.preferredUnit || "General Inquiry"
+      ).slice(0, 120),
       message: String(leadData.message || "").slice(0, 1500),
       contactPreference: leadData.contactPreference || "whatsapp",
       source: leadData.source || "website_advibe",
@@ -385,9 +471,13 @@ async function startServer() {
 
   app.post("/api/gemini/chat", async (req, res) => {
     try {
-      const { message, systemContext } = sanitizeIncomingPayload(req.body || {});
+      const { message, systemContext } = sanitizeIncomingPayload(
+        req.body || {}
+      );
       if (!message || typeof message !== "string") {
-        return res.status(400).json({ error: "A valid message is required." });
+        return res
+          .status(400)
+          .json({ error: "A valid message is required." });
       }
 
       const apiKey = process.env.GEMINI_API_KEY;
