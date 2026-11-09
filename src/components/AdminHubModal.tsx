@@ -12,7 +12,8 @@ import {
   Building2,
   CheckCircle2,
   User,
-  Compass
+  Compass,
+  Award
 } from 'lucide-react';
 import {
   ProvinceCityData,
@@ -85,7 +86,10 @@ interface AdminHubModalProps {
   onSaveAdvibeProject?: (project: AdVibeProject) => void;
   onDeleteAdvibeProject?: (projectId: string) => void;
   onDuplicateAdvibeProject?: (projectId: string) => void;
-  onUpdateAdvibeLeadStatus?: (leadId: string, status: AdVibeLead['status']) => void;
+  onUpdateAdvibeLeadStatus?: (
+    leadId: string,
+    status: AdVibeLead['status']
+  ) => void;
   onToggleAgencyAdvibePermission?: (agencyId: string, allowed: boolean) => void;
   onPreviewAdvibeProject?: (slug: string) => void;
   currentRole?: 'admin' | 'agency' | 'customer';
@@ -106,6 +110,7 @@ export const AdminHubModal: React.FC<AdminHubModalProps> = ({
   onViewProperty,
   onOpenVirtualTour,
   agencies,
+  onUpdateAgencies,
   onUpdateAgencyLimit,
   onAddNewAgency,
   provinceCityData,
@@ -164,13 +169,16 @@ export const AdminHubModal: React.FC<AdminHubModalProps> = ({
           u.password.toLowerCase() === cleanPass.toLowerCase())
     );
 
-    if (matched || cleanPass === 'admin123') {
+    if (matched) {
+      if (onUpdateCurrentUser) {
+        onUpdateCurrentUser(matched);
+      }
       setIsAdminUnlocked(true);
       setAuthError('');
       setPasswordInput('');
     } else {
       setAuthError(
-        'Invalid password. Use your Super Admin (admin123) or Certified Agency password.'
+        'Invalid password. Please enter a valid Super Admin or Certified Agency password.'
       );
     }
   };
@@ -178,8 +186,12 @@ export const AdminHubModal: React.FC<AdminHubModalProps> = ({
   const totalViews =
     properties.reduce((sum, p) => sum + (p.viewsCount || 0), 0) +
     blogs.reduce((sum, b) => sum + (b.viewsCount || 0), 0);
-  const activePropertiesCount = properties.filter(p => p.status !== 'pending').length;
-  const publishedBlogsCount = blogs.filter(b => b.status === 'published').length;
+  const activePropertiesCount = properties.filter(
+    p => p.status !== 'pending'
+  ).length;
+  const publishedBlogsCount = blogs.filter(
+    b => b.status === 'published'
+  ).length;
   const activeSlidesCount = heroSlides.filter(s => s.isActive).length;
 
   const fallbackAdminUser: UserAccount = {
@@ -197,6 +209,8 @@ export const AdminHubModal: React.FC<AdminHubModalProps> = ({
     avatar: PAKISTAN_AGENT_AVATARS.adminPrincipal,
     permissions: ['all', 'manage_all_posts']
   };
+
+  const activeUserAccount = currentUser || fallbackAdminUser;
 
   if (!isAdminUnlocked) {
     return (
@@ -252,46 +266,128 @@ export const AdminHubModal: React.FC<AdminHubModalProps> = ({
         className="relative w-full max-w-7xl bg-slate-50 rounded-2xl border border-slate-200 shadow-2xl overflow-hidden my-auto max-h-[94vh] flex flex-col"
         onClick={e => e.stopPropagation()}
       >
-        <div className="bg-slate-900 text-white px-5 py-3.5 border-b border-slate-800 flex items-center justify-between">
+        {/* Top Console Header */}
+        <div className="bg-slate-900 text-white px-4 sm:px-5 py-3.5 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <Ri8ClickLogo size="sm" showSubtitle={false} className="h-8 w-auto" />
             <div className="border-l border-slate-700 pl-3">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <h2 className="text-sm sm:text-base font-bold text-white">
                   ri8click Management &amp; Website CMS Console
                 </h2>
                 <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-[10px] font-bold uppercase">
-                  Real-Time Sync Active
+                  Global Sync Active
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400">
-                Manage All Website Blocks, Properties, Capsule Homes, AdVibe, Consortium Structure &amp; Certified Agencies
+              <p className="text-[11px] text-slate-400 hidden sm:block">
+                Manage Hero Portfolio Deck, Properties, Capsule Homes, AdVibe, Roles (Super Admin / Agency / Visitor) &amp; User Profiles
               </p>
             </div>
           </div>
 
-          <button
-            onClick={onClose}
-            className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Active User & Role Switcher Pill */}
+            <div className="flex items-center gap-2 bg-slate-800/90 border border-slate-700 rounded-xl px-2.5 py-1.5">
+              <img
+                src={activeUserAccount.avatar}
+                alt={activeUserAccount.name}
+                className="w-7 h-7 rounded-lg object-cover border border-amber-400/60"
+              />
+              <div className="hidden md:block text-left">
+                <div className="text-[11px] font-bold text-white leading-tight">
+                  {activeUserAccount.name}
+                </div>
+                <div className="text-[9.5px] text-amber-300 font-semibold uppercase">
+                  {activeUserAccount.role === 'admin'
+                    ? 'Super Admin'
+                    : activeUserAccount.role === 'agency'
+                      ? 'Certified Agency'
+                      : 'Visitor / Customer'}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveTab('profile')}
+                className="px-2 py-1 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-bold cursor-pointer"
+                title="Edit My Profile & Photo"
+              >
+                Edit Profile
+              </button>
+              {onOpenRoleSwitcher && (
+                <button
+                  type="button"
+                  onClick={onOpenRoleSwitcher}
+                  className="px-2 py-1 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 text-[10px] font-black cursor-pointer"
+                  title="Switch Active Role (Super Admin / Agency / Visitor)"
+                >
+                  Switch Role
+                </button>
+              )}
+            </div>
+
+            <button
+              onClick={onClose}
+              className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Navigation Tabs */}
-        <div className="bg-slate-800 px-4 py-2 border-b border-slate-700 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+        <div className="bg-slate-800 px-3 sm:px-4 py-2 border-b border-slate-700 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
           {[
             { id: 'overview', label: 'Overview', icon: BarChart3 },
-            { id: 'properties', label: `Properties & Capsules (${properties.length})`, icon: Building2 },
-            { id: 'advibe', label: `AdVibe Studio (${advibeProjects.length})`, icon: Sparkles },
-            { id: 'banners', label: `Hero Portfolio Deck (${heroSlides.length})`, icon: Sparkles },
-            { id: 'consortium', label: `Consortium Blocks (${consortiumDivisions.length})`, icon: Compass },
-            { id: 'portions', label: `Website Blocks (${portions.length})`, icon: Layout },
-            { id: 'locations', label: 'Cities & Societies', icon: MapPin },
-            { id: 'blogs', label: `News & Blogs (${blogs.length})`, icon: FileText },
-            { id: 'agencies', label: `Agencies (${agencies.length})`, icon: Users },
-            { id: 'roles', label: 'Users & Passwords', icon: ShieldCheck },
-            { id: 'profile', label: 'My Profile', icon: User }
+            {
+              id: 'banners',
+              label: `Hero Portfolio Deck (${heroSlides.length})`,
+              icon: Sparkles
+            },
+            {
+              id: 'properties',
+              label: `Properties & Capsules (${properties.length})`,
+              icon: Building2
+            },
+            {
+              id: 'roles',
+              label: `Roles & Users (${mergeUserAccountsWithDefaults(allUsers).length})`,
+              icon: ShieldCheck
+            },
+            {
+              id: 'profile',
+              label: 'My Profile & Photo',
+              icon: User
+            },
+            {
+              id: 'agencies',
+              label: `Agencies (${agencies.length})`,
+              icon: Users
+            },
+            {
+              id: 'advibe',
+              label: `AdVibe Studio (${advibeProjects.length})`,
+              icon: Sparkles
+            },
+            {
+              id: 'consortium',
+              label: `Consortium Blocks (${consortiumDivisions.length})`,
+              icon: Compass
+            },
+            {
+              id: 'portions',
+              label: `Website Blocks (${portions.length})`,
+              icon: Layout
+            },
+            {
+              id: 'locations',
+              label: 'Cities & Societies',
+              icon: MapPin
+            },
+            {
+              id: 'blogs',
+              label: `News & Blogs (${blogs.length})`,
+              icon: FileText
+            }
           ].map(tab => {
             const Icon = tab.icon;
             return (
@@ -330,32 +426,38 @@ export const AdminHubModal: React.FC<AdminHubModalProps> = ({
 
                 <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
                   <div className="text-[11px] font-semibold text-slate-500 uppercase">
-                    AdVibe Projects
-                  </div>
-                  <div className="text-2xl font-bold text-blue-600">
-                    {advibeProjects.length}
-                  </div>
-                  <div className="text-[10.5px] text-slate-400">Light Theme Studio</div>
-                </div>
-
-                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
-                  <div className="text-[11px] font-semibold text-slate-500 uppercase">
                     Portfolio Deck Slides
                   </div>
                   <div className="text-2xl font-bold text-amber-600">
                     {activeSlidesCount} / {heroSlides.length}
                   </div>
-                  <div className="text-[10.5px] text-slate-400">Mobile Ready</div>
+                  <div className="text-[10.5px] text-slate-400">
+                    Synced with HeroSection
+                  </div>
                 </div>
 
                 <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
                   <div className="text-[11px] font-semibold text-slate-500 uppercase">
-                    Consortium Blocks
+                    User Roles &amp; Profiles
+                  </div>
+                  <div className="text-2xl font-bold text-purple-600">
+                    {mergeUserAccountsWithDefaults(allUsers).length}
+                  </div>
+                  <div className="text-[10.5px] text-slate-400">
+                    Admin, Agency &amp; Visitor
+                  </div>
+                </div>
+
+                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
+                  <div className="text-[11px] font-semibold text-slate-500 uppercase">
+                    Certified Agencies
                   </div>
                   <div className="text-2xl font-bold text-emerald-600">
-                    {consortiumDivisions.length}
+                    {agencies.length}
                   </div>
-                  <div className="text-[10.5px] text-slate-400">Full Image &amp; Text CMS</div>
+                  <div className="text-[10.5px] text-slate-400">
+                    Pakistan Regional Network
+                  </div>
                 </div>
 
                 <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
@@ -371,7 +473,46 @@ export const AdminHubModal: React.FC<AdminHubModalProps> = ({
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div
+                  onClick={() => setActiveTab('banners')}
+                  className="bg-white p-5 rounded-xl border border-slate-200 hover:border-amber-500 transition-all cursor-pointer shadow-2xs space-y-2"
+                >
+                  <Sparkles className="w-6 h-6 text-amber-500" />
+                  <h4 className="text-sm font-bold text-slate-900">
+                    Hero Section &amp; Crystal Portfolio Deck
+                  </h4>
+                  <p className="text-xs text-slate-500">
+                    Reorder, add, edit, or hide Hero Banner &amp; Portfolio Deck slides (including Model Q3 Forest Cabin Pod, Highrises &amp; UPVC).
+                  </p>
+                </div>
+
+                <div
+                  onClick={() => setActiveTab('roles')}
+                  className="bg-white p-5 rounded-xl border border-slate-200 hover:border-purple-500 transition-all cursor-pointer shadow-2xs space-y-2"
+                >
+                  <ShieldCheck className="w-6 h-6 text-purple-600" />
+                  <h4 className="text-sm font-bold text-slate-900">
+                    User Roles (Super Admin, Agency &amp; Visitor)
+                  </h4>
+                  <p className="text-xs text-slate-500">
+                    Manage roles, permissions, profile photos, passwords, and authority levels for Super Admin, Certified Agencies, and Visitors.
+                  </p>
+                </div>
+
+                <div
+                  onClick={() => setActiveTab('profile')}
+                  className="bg-white p-5 rounded-xl border border-slate-200 hover:border-blue-500 transition-all cursor-pointer shadow-2xs space-y-2"
+                >
+                  <Award className="w-6 h-6 text-blue-600" />
+                  <h4 className="text-sm font-bold text-slate-900">
+                    My Profile, Photo Upload &amp; Credentials
+                  </h4>
+                  <p className="text-xs text-slate-500">
+                    Upload your profile photo from your device, update phone/WhatsApp numbers, company details, and security password.
+                  </p>
+                </div>
+
                 <div
                   onClick={() => setActiveTab('properties')}
                   className="bg-white p-5 rounded-xl border border-slate-200 hover:border-blue-500 transition-all cursor-pointer shadow-2xs space-y-2"
@@ -386,28 +527,15 @@ export const AdminHubModal: React.FC<AdminHubModalProps> = ({
                 </div>
 
                 <div
-                  onClick={() => setActiveTab('advibe')}
-                  className="bg-white p-5 rounded-xl border border-slate-200 hover:border-blue-500 transition-all cursor-pointer shadow-2xs space-y-2"
-                >
-                  <Sparkles className="w-6 h-6 text-blue-600" />
-                  <h4 className="text-sm font-bold text-slate-900">
-                    AdVibe Banner, Photos &amp; Videos
-                  </h4>
-                  <p className="text-xs text-slate-500">
-                    Upload local images/videos and set Main Listing Cover &amp; Main Hero Banner.
-                  </p>
-                </div>
-
-                <div
-                  onClick={() => setActiveTab('consortium')}
+                  onClick={() => setActiveTab('agencies')}
                   className="bg-white p-5 rounded-xl border border-slate-200 hover:border-emerald-500 transition-all cursor-pointer shadow-2xs space-y-2"
                 >
-                  <Compass className="w-6 h-6 text-emerald-600" />
+                  <Users className="w-6 h-6 text-emerald-600" />
                   <h4 className="text-sm font-bold text-slate-900">
-                    Consortium Structure &amp; Images
+                    Certified Agencies &amp; Specialist Photos
                   </h4>
                   <p className="text-xs text-slate-500">
-                    Change images, titles, and capabilities across all ri8click Consortium blocks.
+                    Edit agency profiles, upload specialist photos, adjust ad posting quotas, and onboard regional brokerages.
                   </p>
                 </div>
 
@@ -506,12 +634,13 @@ export const AdminHubModal: React.FC<AdminHubModalProps> = ({
               properties={properties}
               onUpdateAgencyLimit={onUpdateAgencyLimit}
               onAddNewAgency={onAddNewAgency}
+              onUpdateAgencies={onUpdateAgencies}
             />
           )}
 
           {activeTab === 'roles' && (
             <AdminRolesManager
-              currentUser={currentUser || fallbackAdminUser}
+              currentUser={activeUserAccount}
               allUsers={mergeUserAccountsWithDefaults(allUsers)}
               onUpdateAllUsers={onUpdateAllUsers || (() => {})}
               onUpdateCurrentUser={onUpdateCurrentUser || (() => {})}
@@ -520,7 +649,7 @@ export const AdminHubModal: React.FC<AdminHubModalProps> = ({
 
           {activeTab === 'profile' && (
             <AdminUserProfileManager
-              currentUser={currentUser || fallbackAdminUser}
+              currentUser={activeUserAccount}
               allUsers={mergeUserAccountsWithDefaults(allUsers)}
               onUpdateCurrentUser={onUpdateCurrentUser || (() => {})}
               onUpdateAllUsers={onUpdateAllUsers || (() => {})}
