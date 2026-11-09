@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   Plus,
   Trash2,
@@ -17,11 +17,12 @@ import {
   Star,
   ArrowLeft,
   ArrowRight,
-  RotateCcw,
-  Search
+  Search,
+  Video,
+  Film,
+  AlertCircle
 } from 'lucide-react';
 import { HeroSlide } from '../types';
-import { INITIAL_HERO_SLIDES } from '../data/mockData';
 
 interface AdminBannerManagerProps {
   slides: HeroSlide[];
@@ -123,6 +124,77 @@ const INITIAL_PRESET_IMAGES: PresetImageItem[] = [
   }
 ];
 
+const SAMPLE_360_TOUR_VIDEOS = [
+  {
+    label: 'Capsule Smart Pod 360° Interior Walkthrough',
+    url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4'
+  },
+  {
+    label: 'Highrise Commercial Tower 360° Flyover',
+    url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4'
+  },
+  {
+    label: 'Luxury 1-Kanal Villa 360° Drone & Interior Tour',
+    url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4'
+  }
+];
+
+async function uploadMediaDataUrlToServer(
+  dataUrl: string,
+  fileName: string
+): Promise<string> {
+  try {
+    const res = await fetch('/api/media/upload', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ dataUrl, fileName })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data?.url) return data.url;
+    }
+  } catch (err) {
+    console.error('Upload fallback to inline DataURL:', err);
+  }
+  return dataUrl;
+}
+
+function compressImageToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_W = 1600;
+        const MAX_H = 1080;
+        let w = img.width;
+        let h = img.height;
+        if (w > h && w > MAX_W) {
+          h = Math.round((h * MAX_W) / w);
+          w = MAX_W;
+        } else if (h > MAX_H) {
+          w = Math.round((w * MAX_H) / h);
+          h = MAX_H;
+        }
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(e.target?.result as string);
+          return;
+        }
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', 0.85));
+      };
+      img.onerror = () => reject(new Error('Image load error'));
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = () => reject(new Error('File read error'));
+    reader.readAsDataURL(file);
+  });
+}
+
 export const AdminBannerManager: React.FC<AdminBannerManagerProps> = ({
   slides,
   onUpdateSlides
@@ -134,8 +206,17 @@ export const AdminBannerManager: React.FC<AdminBannerManagerProps> = ({
   const [statusNotice, setStatusNotice] = useState<string | null>(null);
 
   const [presetImages] = useState<PresetImageItem[]>(INITIAL_PRESET_IMAGES);
-  const [presetClickMode, setPresetClickMode] = useState<'replace_cover' | 'append_gallery'>('append_gallery');
+  const [presetClickMode, setPresetClickMode] = useState<
+    'replace_cover' | 'append_gallery'
+  >('append_gallery');
   const [additionalImageUrlInput, setAdditionalImageUrlInput] = useState('');
+  const [isUploadingImages, setIsUploadingImages] = useState(false);
+
+  // 360° Tour Video Upload States
+  const [videoUploadTab, setVideoUploadTab] = useState<'local' | 'url'>('local');
+  const [isUploadingVideo, setIsUploadingVideo] = useState(false);
+  const [videoUploadError, setVideoUploadError] = useState<string | null>(null);
+  const videoFileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [formData, setFormData] = useState<HeroSlide>({
     id: '',
@@ -149,13 +230,21 @@ export const AdminBannerManager: React.FC<AdminBannerManagerProps> = ({
     society: 'Faisal Hills & Resort Estates',
     imageUrl: INITIAL_PRESET_IMAGES[0].url,
     galleryImages: [INITIAL_PRESET_IMAGES[0].url],
+    videoUrl: '',
+    videoTitle: '',
     tourRoomsCount: 4,
     isActive: true,
     order: slides.length + 1,
-    features: ['270° Panoramic Low-E Glass', 'Ri8click UPVC Thermal Glazing', 'Turnkey 7-Day Setup'],
+    features: [
+      '270° Panoramic Low-E Glass',
+      'Ri8click UPVC Thermal Glazing',
+      'Turnkey 7-Day Setup'
+    ],
     samplePropertyData: {
       title: '',
       category: 'modular',
+      virtualTourVideoUrl: '',
+      virtualTourVideoTitle: '',
       location: {
         city: 'Taxila',
         society: 'Faisal Hills',
@@ -168,10 +257,12 @@ export const AdminBannerManager: React.FC<AdminBannerManagerProps> = ({
 
   const showToast = (msg: string) => {
     setStatusNotice(msg);
-    setTimeout(() => setStatusNotice(null), 4000);
+    setTimeout(() => setStatusNotice(null), 5000);
   };
 
-  const sortedSlides = [...slides].sort((a, b) => (a.order ?? 999) - (b.order ?? 999));
+  const sortedSlides = [...slides].sort(
+    (a, b) => (a.order ?? 999) - (b.order ?? 999)
+  );
 
   const filteredSlides = sortedSlides.filter(s => {
     const matchesSearch =
@@ -193,11 +284,13 @@ export const AdminBannerManager: React.FC<AdminBannerManagerProps> = ({
     setFormData(prev => ({
       ...prev,
       imageUrl: primaryCover,
-      galleryImages: cleaned.length > 0 ? cleaned : primaryCover ? [primaryCover] : []
+      galleryImages:
+        cleaned.length > 0 ? cleaned : primaryCover ? [primaryCover] : []
     }));
   };
 
   const handleStartCreate = () => {
+    setVideoUploadError(null);
     setFormData({
       id: `slide-${Date.now()}`,
       categoryTag: 'Contemporary Modular Capsule',
@@ -210,13 +303,21 @@ export const AdminBannerManager: React.FC<AdminBannerManagerProps> = ({
       society: 'Faisal Hills & Resort Estates',
       imageUrl: INITIAL_PRESET_IMAGES[0].url,
       galleryImages: [INITIAL_PRESET_IMAGES[0].url],
+      videoUrl: '',
+      videoTitle: '',
       tourRoomsCount: 4,
       isActive: true,
       order: slides.length + 1,
-      features: ['270° Curved UPVC Glass', 'Smart Voice Automation', 'Crane Installed'],
+      features: [
+        '270° Curved UPVC Glass',
+        'Smart Voice Automation',
+        'Crane Installed'
+      ],
       samplePropertyData: {
         title: '',
         category: 'modular',
+        virtualTourVideoUrl: '',
+        virtualTourVideoTitle: '',
         location: {
           city: 'Taxila',
           society: 'Faisal Hills',
@@ -229,21 +330,34 @@ export const AdminBannerManager: React.FC<AdminBannerManagerProps> = ({
   };
 
   const handleStartEdit = (slide: HeroSlide) => {
+    setVideoUploadError(null);
     const existingGallery =
       slide.galleryImages && slide.galleryImages.length > 0
         ? slide.galleryImages
         : slide.imageUrl
         ? [slide.imageUrl]
         : [];
+    const existingVideoUrl =
+      slide.videoUrl ||
+      slide.samplePropertyData?.virtualTourVideoUrl ||
+      '';
+    const existingVideoTitle =
+      slide.videoTitle ||
+      slide.samplePropertyData?.virtualTourVideoTitle ||
+      '';
 
     setFormData({
       ...slide,
       galleryImages: existingGallery,
+      videoUrl: existingVideoUrl,
+      videoTitle: existingVideoTitle,
       features: [...(slide.features || [])],
-      samplePropertyData: slide.samplePropertyData || {
-        title: slide.title,
-        category: 'modular',
-        location: {
+      samplePropertyData: {
+        title: slide.samplePropertyData?.title || slide.title,
+        category: slide.samplePropertyData?.category || 'modular',
+        virtualTourVideoUrl: existingVideoUrl,
+        virtualTourVideoTitle: existingVideoTitle,
+        location: slide.samplePropertyData?.location || {
           city: slide.location || 'Taxila',
           society: slide.society || 'Faisal Hills',
           province: 'Punjab'
@@ -280,35 +394,104 @@ export const AdminBannerManager: React.FC<AdminBannerManagerProps> = ({
     }
   };
 
-  const handleLocalFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLocalFileUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    Array.from(files).forEach((file: File) => {
-      const reader = new FileReader();
-      reader.onload = event => {
+    setIsUploadingImages(true);
+    try {
+      const uploadedUrls: string[] = [];
+      for (const file of Array.from(files)) {
+        if (!file.type.startsWith('image/')) continue;
+        const compressed = await compressImageToDataUrl(file);
+        const permanentUrl = await uploadMediaDataUrlToServer(
+          compressed,
+          file.name
+        );
+        uploadedUrls.push(permanentUrl);
+      }
+
+      if (uploadedUrls.length > 0) {
+        setFormData(prev => {
+          const existing =
+            prev.galleryImages && prev.galleryImages.length > 0
+              ? [...prev.galleryImages]
+              : prev.imageUrl
+              ? [prev.imageUrl]
+              : [];
+          const updated = [...existing, ...uploadedUrls];
+          return {
+            ...prev,
+            imageUrl: updated[0],
+            galleryImages: updated
+          };
+        });
+        showToast(
+          `Uploaded ${uploadedUrls.length} image(s) to permanent server storage!`
+        );
+      }
+    } catch (err) {
+      console.error('Failed to upload banner images:', err);
+    } finally {
+      setIsUploadingImages(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleLocalVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setVideoUploadError(null);
+
+    if (!file.type.startsWith('video/')) {
+      setVideoUploadError(
+        'Please select a valid video file (MP4, WebM, or MOV).'
+      );
+      return;
+    }
+
+    const sizeMB = file.size / (1024 * 1024);
+    if (sizeMB > 80) {
+      setVideoUploadError(
+        `Video size (${sizeMB.toFixed(1)} MB) exceeds 80 MB. Please choose a shorter 360° tour clip or paste a video URL.`
+      );
+      return;
+    }
+
+    setIsUploadingVideo(true);
+    const reader = new FileReader();
+    reader.onload = async event => {
+      try {
         const dataUrl = event.target?.result as string;
         if (dataUrl) {
-          setFormData(prev => {
-            const existing =
-              prev.galleryImages && prev.galleryImages.length > 0
-                ? [...prev.galleryImages]
-                : prev.imageUrl
-                ? [prev.imageUrl]
-                : [];
-            const updated = [...existing, dataUrl];
-            return {
-              ...prev,
-              imageUrl: updated[0],
-              galleryImages: updated
-            };
-          });
+          const permanentVideoUrl = await uploadMediaDataUrlToServer(
+            dataUrl,
+            file.name
+          );
+          const cleanName = file.name.replace(/\.[^/.]+$/, '');
+          setFormData(prev => ({
+            ...prev,
+            videoUrl: permanentVideoUrl,
+            videoTitle: prev.videoTitle || `360° Virtual Tour: ${cleanName}`
+          }));
+          showToast(
+            `Uploaded 360° tour video "${file.name}" to permanent server storage!`
+          );
         }
-      };
-      reader.readAsDataURL(file);
-    });
-
-    e.target.value = '';
+      } catch {
+        setVideoUploadError('Failed to upload video file. Please try again.');
+      } finally {
+        setIsUploadingVideo(false);
+        if (videoFileInputRef.current) videoFileInputRef.current.value = '';
+      }
+    };
+    reader.onerror = () => {
+      setVideoUploadError('Could not read video file from device.');
+      setIsUploadingVideo(false);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleRemoveSlideImageAt = (idx: number) => {
@@ -367,14 +550,27 @@ export const AdminBannerManager: React.FC<AdminBannerManagerProps> = ({
         ? formData.galleryImages
         : [formData.imageUrl];
 
+    const cleanVideoUrl = (formData.videoUrl || '').trim();
+    const cleanVideoTitle =
+      (formData.videoTitle || '').trim() ||
+      `${formData.title.trim()} — 360° Virtual Tour`;
+
     const updatedSlide: HeroSlide = {
       ...formData,
+      title: formData.title.trim(),
       imageUrl: ensuredGallery[0],
       galleryImages: ensuredGallery,
-      tourRoomsCount: Math.max(ensuredGallery.length, formData.tourRoomsCount || 3),
+      videoUrl: cleanVideoUrl,
+      videoTitle: cleanVideoTitle,
+      tourRoomsCount: Math.max(
+        ensuredGallery.length,
+        formData.tourRoomsCount || 4
+      ),
       samplePropertyData: {
-        title: formData.title,
+        title: formData.title.trim(),
         category: formData.samplePropertyData?.category || 'modular',
+        virtualTourVideoUrl: cleanVideoUrl,
+        virtualTourVideoTitle: cleanVideoTitle,
         location: {
           city: formData.location.split('/')[0]?.trim() || 'Taxila',
           society: formData.society || 'Faisal Hills',
@@ -389,11 +585,17 @@ export const AdminBannerManager: React.FC<AdminBannerManagerProps> = ({
         order: idx + 1
       }));
       onUpdateSlides(nextSlides);
-      showToast(`Added "${updatedSlide.title}" to Portfolio Deck & Hero Banner!`);
+      showToast(
+        `Permanently added "${updatedSlide.title}" to Global Hero Banner & Portfolio Deck for all users!`
+      );
     } else if (editingSlide) {
-      const nextSlides = sortedSlides.map(s => (s.id === updatedSlide.id ? updatedSlide : s));
+      const nextSlides = sortedSlides.map(s =>
+        s.id === updatedSlide.id ? updatedSlide : s
+      );
       onUpdateSlides(nextSlides);
-      showToast(`Updated "${updatedSlide.title}" across all live browsers!`);
+      showToast(
+        `Permanently updated "${updatedSlide.title}" across all live browsers!`
+      );
     }
 
     setIsCreatingNew(false);
@@ -413,13 +615,20 @@ export const AdminBannerManager: React.FC<AdminBannerManagerProps> = ({
         : s
     );
     onUpdateSlides(updated);
-    showToast(`Rotated primary cover photo for "${slide.title}".`);
+    showToast(`Rotated primary cover photo for "${slide.title}" globally.`);
   };
 
   const handleDeleteSlide = (id: string) => {
     const target = slides.find(s => s.id === id);
     if (slides.length <= 1) {
       alert('At least 1 slide must remain in the Portfolio Deck.');
+      return;
+    }
+    if (
+      !window.confirm(
+        `Remove "${target?.title || 'this slide'}" from the Global Hero Banner?`
+      )
+    ) {
       return;
     }
     const updated = sortedSlides
@@ -429,7 +638,9 @@ export const AdminBannerManager: React.FC<AdminBannerManagerProps> = ({
     if (editingSlide?.id === id) {
       setEditingSlide(null);
     }
-    showToast(`Removed "${target?.title || 'Slide'}" from Portfolio Deck & Hero Banner.`);
+    showToast(
+      `Removed "${target?.title || 'Slide'}" from Global Hero Banner.`
+    );
   };
 
   const handleToggleActive = (id: string) => {
@@ -439,19 +650,22 @@ export const AdminBannerManager: React.FC<AdminBannerManagerProps> = ({
       alert('At least 1 slide must stay Active in the Portfolio Deck.');
       return;
     }
-    const updated = sortedSlides.map(s => (s.id === id ? { ...s, isActive: !s.isActive } : s));
+    const updated = sortedSlides.map(s =>
+      s.id === id ? { ...s, isActive: !s.isActive } : s
+    );
     onUpdateSlides(updated);
     showToast(
       target?.isActive
         ? `Hidden "${target.title}" from live Portfolio Deck.`
-        : `Activated "${target?.title}" in live Portfolio Deck.`
+        : `Activated "${target?.title}" in live Portfolio Deck for all users.`
     );
   };
 
   const handleMoveOrder = (slideId: string, direction: 'up' | 'down') => {
     const currentIndex = sortedSlides.findIndex(s => s.id === slideId);
     if (currentIndex === -1) return;
-    const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    const targetIndex =
+      direction === 'up' ? currentIndex - 1 : currentIndex + 1;
     if (targetIndex < 0 || targetIndex >= sortedSlides.length) return;
 
     const reordered = [...sortedSlides];
@@ -461,13 +675,21 @@ export const AdminBannerManager: React.FC<AdminBannerManagerProps> = ({
 
     const normalized = reordered.map((s, idx) => ({ ...s, order: idx + 1 }));
     onUpdateSlides(normalized);
-    showToast(`Moved "${temp.title.slice(0, 32)}..." to Position #${targetIndex + 1} in Portfolio Deck.`);
+    showToast(
+      `Moved "${temp.title.slice(0, 32)}..." to Position #${targetIndex + 1} globally.`
+    );
   };
 
-  const handleMoveToPosition = (slideId: string, newOneBasedPosition: number) => {
+  const handleMoveToPosition = (
+    slideId: string,
+    newOneBasedPosition: number
+  ) => {
     const currentIndex = sortedSlides.findIndex(s => s.id === slideId);
     if (currentIndex === -1) return;
-    const clampedIndex = Math.max(0, Math.min(sortedSlides.length - 1, newOneBasedPosition - 1));
+    const clampedIndex = Math.max(
+      0,
+      Math.min(sortedSlides.length - 1, newOneBasedPosition - 1)
+    );
     if (currentIndex === clampedIndex) return;
 
     const reordered = [...sortedSlides];
@@ -476,18 +698,9 @@ export const AdminBannerManager: React.FC<AdminBannerManagerProps> = ({
 
     const normalized = reordered.map((s, idx) => ({ ...s, order: idx + 1 }));
     onUpdateSlides(normalized);
-    showToast(`Moved "${movedItem.title.slice(0, 32)}..." to Position #${clampedIndex + 1}.`);
-  };
-
-  const handleResetToDefaultDeck = () => {
-    if (
-      window.confirm(
-        'Restore all 16 default Portfolio Deck & Hero Banner slides (Capsules, Highrises, Villas & UPVC)?'
-      )
-    ) {
-      onUpdateSlides(INITIAL_HERO_SLIDES);
-      showToast('Restored default 16-slide Portfolio Deck sequence.');
-    }
+    showToast(
+      `Moved "${movedItem.title.slice(0, 32)}..." to Position #${clampedIndex + 1} globally.`
+    );
   };
 
   const handleAddFeature = () => {
@@ -516,37 +729,31 @@ export const AdminBannerManager: React.FC<AdminBannerManagerProps> = ({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs">        <div>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs">
+        <div>
           <div className="inline-flex items-center gap-2 text-blue-600 font-bold text-xs uppercase tracking-wider mb-1">
             <Sparkles className="w-3.5 h-3.5" />
             <span>Hero Banner &amp; Crystal Portfolio Deck Manager</span>
           </div>
           <h3 className="text-lg font-extrabold text-slate-900">
-            Top Hero Banner &amp; Portfolio Deck Sequence ({slides.filter(s => s.isActive).length} Active / {slides.length} Total)
+            Top Hero Banner &amp; Portfolio Deck Sequence (
+            {slides.filter(s => s.isActive).length} Active / {slides.length}{' '}
+            Total)
           </h3>
           <p className="text-xs text-slate-500 mt-0.5">
-            Every slide below directly controls both the Top Hero Banner and the Crystal Portfolio Deck (including Model Q3 Forest Cabin Pod, Capsules, Highrises, Plots &amp; UPVC).
+            Every slide added or edited here is permanently saved on the server
+            and displayed globally to all users across all browsers.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
           <button
             type="button"
-            onClick={handleResetToDefaultDeck}
-            className="flex items-center gap-1.5 px-3 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-all cursor-pointer"
-            title="Restore all 16 default Portfolio Deck slides"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-            <span>Restore Default 16 Slides</span>
-          </button>
-
-          <button
-            type="button"
             onClick={handleStartCreate}
             className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold rounded-xl shadow-md transition-all cursor-pointer"
           >
             <Plus className="w-4 h-4" />
-            <span>Add New Banner / Deck Slide</span>
+            <span>Add New Hero Banner / 360° Tour Slide</span>
           </button>
         </div>
       </div>
@@ -557,7 +764,10 @@ export const AdminBannerManager: React.FC<AdminBannerManagerProps> = ({
             <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
             <span>{statusNotice}</span>
           </div>
-          <button onClick={() => setStatusNotice(null)} className="text-emerald-600 hover:text-emerald-900">
+          <button
+            onClick={() => setStatusNotice(null)}
+            className="text-emerald-600 hover:text-emerald-900 cursor-pointer"
+          >
             <X className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -576,10 +786,13 @@ export const AdminBannerManager: React.FC<AdminBannerManagerProps> = ({
               </div>
               <div>
                 <h4 className="font-bold text-slate-900 text-sm">
-                  {isCreatingNew ? 'Create New Portfolio Deck & Hero Slide' : `Editing Slide: ${editingSlide?.title}`}
+                  {isCreatingNew
+                    ? 'Create New Permanent Global Hero Banner & 360° Tour Slide'
+                    : `Editing Global Hero Slide: ${editingSlide?.title}`}
                 </h4>
                 <p className="text-xs text-slate-500">
-                  Changes sync immediately to the Hero Banner and Portfolio Deck for all visitors.
+                  Changes and uploaded 360° videos/photos are saved permanently
+                  for all visitors globally.
                 </p>
               </div>
             </div>
@@ -589,7 +802,7 @@ export const AdminBannerManager: React.FC<AdminBannerManagerProps> = ({
                 setIsCreatingNew(false);
                 setEditingSlide(null);
               }}
-              className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg"
+              className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -598,13 +811,15 @@ export const AdminBannerManager: React.FC<AdminBannerManagerProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="md:col-span-2">
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                Slide Headline / Model Title *
+                Slide Headline / Project Title *
               </label>
               <input
                 type="text"
                 required
                 value={formData.title}
-                onChange={e => setFormData({ ...formData, title: e.target.value })}
+                onChange={e =>
+                  setFormData({ ...formData, title: e.target.value })
+                }
                 placeholder="e.g. Model Q3 Forest Cabin Pod — Panoramic Glass"
                 className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 focus:border-blue-600 focus:outline-none"
               />
@@ -622,6 +837,8 @@ export const AdminBannerManager: React.FC<AdminBannerManagerProps> = ({
                     samplePropertyData: {
                       title: formData.title,
                       category: e.target.value as any,
+                      virtualTourVideoUrl: formData.videoUrl,
+                      virtualTourVideoTitle: formData.videoTitle,
                       location: formData.samplePropertyData?.location || {
                         city: 'Taxila',
                         society: 'Faisal Hills',
@@ -632,10 +849,18 @@ export const AdminBannerManager: React.FC<AdminBannerManagerProps> = ({
                 }
                 className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 focus:border-blue-600 focus:outline-none bg-white font-semibold"
               >
-                <option value="modular">Capsules (Container &amp; Capsule Houses)</option>
-                <option value="commercial">Highrise (Islamabad Highrise Projects)</option>
-                <option value="residential">Plots/Villas (Properties &amp; Houses)</option>
-                <option value="projects">UPVC (German UPVC &amp; Engineering)</option>
+                <option value="modular">
+                  Capsules (Container &amp; Capsule Houses)
+                </option>
+                <option value="commercial">
+                  Highrise (Islamabad Highrise Projects)
+                </option>
+                <option value="residential">
+                  Plots/Villas (Properties &amp; Houses)
+                </option>
+                <option value="projects">
+                  UPVC (German UPVC &amp; Engineering)
+                </option>
               </select>
             </div>
 
@@ -646,7 +871,9 @@ export const AdminBannerManager: React.FC<AdminBannerManagerProps> = ({
               <input
                 type="text"
                 value={formData.subtitle}
-                onChange={e => setFormData({ ...formData, subtitle: e.target.value })}
+                onChange={e =>
+                  setFormData({ ...formData, subtitle: e.target.value })
+                }
                 placeholder="e.g. Compact Luxury Capsule Pod • 28–38 Sq.M"
                 className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 focus:border-blue-600 focus:outline-none"
               />
@@ -659,7 +886,9 @@ export const AdminBannerManager: React.FC<AdminBannerManagerProps> = ({
               <input
                 type="text"
                 value={formData.categoryTag}
-                onChange={e => setFormData({ ...formData, categoryTag: e.target.value })}
+                onChange={e =>
+                  setFormData({ ...formData, categoryTag: e.target.value })
+                }
                 placeholder="e.g. Contemporary Modular Capsule"
                 className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 focus:border-blue-600 focus:outline-none"
               />
@@ -672,7 +901,9 @@ export const AdminBannerManager: React.FC<AdminBannerManagerProps> = ({
               <input
                 type="text"
                 value={formData.price}
-                onChange={e => setFormData({ ...formData, price: e.target.value })}
+                onChange={e =>
+                  setFormData({ ...formData, price: e.target.value })
+                }
                 placeholder="e.g. PKR 48 Lakh – 68 Lakh"
                 className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 focus:border-blue-600 focus:outline-none"
               />
@@ -685,7 +916,9 @@ export const AdminBannerManager: React.FC<AdminBannerManagerProps> = ({
               <input
                 type="text"
                 value={formData.location}
-                onChange={e => setFormData({ ...formData, location: e.target.value })}
+                onChange={e =>
+                  setFormData({ ...formData, location: e.target.value })
+                }
                 placeholder="e.g. Taxila / Islamabad"
                 className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 focus:border-blue-600 focus:outline-none"
               />
@@ -698,7 +931,9 @@ export const AdminBannerManager: React.FC<AdminBannerManagerProps> = ({
               <input
                 type="text"
                 value={formData.society}
-                onChange={e => setFormData({ ...formData, society: e.target.value })}
+                onChange={e =>
+                  setFormData({ ...formData, society: e.target.value })
+                }
                 placeholder="e.g. Faisal Hills Executive Block"
                 className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 focus:border-blue-600 focus:outline-none"
               />
@@ -710,14 +945,26 @@ export const AdminBannerManager: React.FC<AdminBannerManagerProps> = ({
               </label>
               <select
                 value={formData.badgeColor}
-                onChange={e => setFormData({ ...formData, badgeColor: e.target.value })}
+                onChange={e =>
+                  setFormData({ ...formData, badgeColor: e.target.value })
+                }
                 className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 focus:border-blue-600 focus:outline-none bg-white"
               >
-                <option value="bg-indigo-600 text-white">Indigo (Modular / Capsules)</option>
-                <option value="bg-emerald-600 text-white">Emerald (Highrise / Commercial)</option>
-                <option value="bg-blue-600 text-white">Royal Blue (Residential / Villas)</option>
-                <option value="bg-amber-600 text-white">Amber Gold (UPVC / Engineering)</option>
-                <option value="bg-rose-600 text-white">Crimson Rose (Hot Deal)</option>
+                <option value="bg-indigo-600 text-white">
+                  Indigo (Modular / Capsules)
+                </option>
+                <option value="bg-emerald-600 text-white">
+                  Emerald (Highrise / Commercial)
+                </option>
+                <option value="bg-blue-600 text-white">
+                  Royal Blue (Residential / Villas)
+                </option>
+                <option value="bg-amber-600 text-white">
+                  Amber Gold (UPVC / Engineering)
+                </option>
+                <option value="bg-rose-600 text-white">
+                  Crimson Rose (Hot Deal)
+                </option>
               </select>
             </div>
 
@@ -728,32 +975,41 @@ export const AdminBannerManager: React.FC<AdminBannerManagerProps> = ({
               <textarea
                 rows={2}
                 value={formData.description}
-                onChange={e => setFormData({ ...formData, description: e.target.value })}
+                onChange={e =>
+                  setFormData({ ...formData, description: e.target.value })
+                }
                 className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 focus:border-blue-600 focus:outline-none"
               />
             </div>
           </div>
 
-          {/* Multi-Image Gallery & Sequence Manager */}
+          {/* 1. Multi-Image Gallery & Sequence Manager */}
           <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/90 space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
                 <label className="block text-xs font-extrabold text-slate-800">
-                  Slide Pictures &amp; Image Sequence ({currentSlideGallery.length} Attached)
+                  Slide Pictures &amp; 360° Room Angles (
+                  {currentSlideGallery.length} Attached)
                 </label>
                 <p className="text-[11px] text-slate-500">
-                  Image #1 is the Main Cover. Reorder with arrows, set cover, or delete any photo.
+                  Image #1 is the Main Hero Cover. Additional images act as
+                  interactive 360° room angles.
                 </p>
               </div>
 
               <div className="flex items-center gap-2">
                 <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold cursor-pointer shadow-xs transition-all">
                   <Upload className="w-3.5 h-3.5" />
-                  <span>Upload From Computer</span>
+                  <span>
+                    {isUploadingImages
+                      ? 'Uploading Photos...'
+                      : 'Upload Photos From Computer'}
+                  </span>
                   <input
                     type="file"
                     accept="image/*"
                     multiple
+                    disabled={isUploadingImages}
                     onChange={handleLocalFileUpload}
                     className="hidden"
                   />
@@ -780,7 +1036,9 @@ export const AdminBannerManager: React.FC<AdminBannerManagerProps> = ({
                   <div
                     key={`${imgUrl}-${idx}`}
                     className={`group relative rounded-xl overflow-hidden border-2 bg-slate-900 transition-all ${
-                      idx === 0 ? 'border-amber-500 ring-2 ring-amber-400/30' : 'border-slate-200'
+                      idx === 0
+                        ? 'border-amber-500 ring-2 ring-amber-400/30'
+                        : 'border-slate-200'
                     }`}
                   >
                     <div className="h-24 w-full relative">
@@ -788,14 +1046,17 @@ export const AdminBannerManager: React.FC<AdminBannerManagerProps> = ({
                         src={imgUrl}
                         alt={`Slide Angle ${idx + 1}`}
                         onError={e => {
-                          (e.target as HTMLImageElement).src = INITIAL_PRESET_IMAGES[0].fallbackUrl;
+                          (e.target as HTMLImageElement).src =
+                            INITIAL_PRESET_IMAGES[0].fallbackUrl;
                         }}
                         className="w-full h-full object-cover"
                       />
                       <div className="absolute top-1.5 left-1.5 flex items-center gap-1">
                         <span
                           className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded shadow-xs ${
-                            idx === 0 ? 'bg-amber-400 text-slate-950' : 'bg-slate-900/80 text-white'
+                            idx === 0
+                              ? 'bg-amber-400 text-slate-950'
+                              : 'bg-slate-900/80 text-white'
                           }`}
                         >
                           {idx === 0 ? '#1 COVER' : `#${idx + 1}`}
@@ -841,7 +1102,9 @@ export const AdminBannerManager: React.FC<AdminBannerManagerProps> = ({
                           <span>Set Cover</span>
                         </button>
                       ) : (
-                        <span className="text-[10px] font-bold text-emerald-700 px-1">Primary</span>
+                        <span className="text-[10px] font-bold text-emerald-700 px-1">
+                          Primary
+                        </span>
                       )}
                     </div>
                   </div>
@@ -864,7 +1127,7 @@ export const AdminBannerManager: React.FC<AdminBannerManagerProps> = ({
                     const rest = currentSlideGallery.slice(1);
                     syncSlideGallery(val ? [val, ...rest] : rest, val);
                   }}
-                  placeholder="https://... or data:image/..."
+                  placeholder="https://... or /uploads/..."
                   className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white focus:border-blue-600 focus:outline-none"
                 />
               </div>
@@ -885,7 +1148,10 @@ export const AdminBannerManager: React.FC<AdminBannerManagerProps> = ({
                     type="button"
                     onClick={() => {
                       if (!additionalImageUrlInput.trim()) return;
-                      syncSlideGallery([...currentSlideGallery, additionalImageUrlInput.trim()]);
+                      syncSlideGallery([
+                        ...currentSlideGallery,
+                        additionalImageUrlInput.trim()
+                      ]);
                       setAdditionalImageUrlInput('');
                     }}
                     className="px-3 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl shrink-0 cursor-pointer"
@@ -953,6 +1219,228 @@ export const AdminBannerManager: React.FC<AdminBannerManagerProps> = ({
             </div>
           </div>
 
+          {/* 2. 360° Project Virtual Tour Video Uploader */}
+          <div className="p-4 rounded-2xl bg-indigo-950/5 border border-indigo-200/90 space-y-3.5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0">
+                  <Video className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs font-extrabold text-slate-900 uppercase tracking-wider">
+                      360° Project Virtual Tour Video Upload
+                    </label>
+                    <span className="px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 font-bold text-[10px]">
+                      Hero Video &amp; 360° Tour Modal
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-500">
+                    Upload an MP4/WebM 360° walkthrough video from your computer
+                    or paste a video URL for this Hero Banner project.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1.5 bg-white p-1 rounded-xl border border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => setVideoUploadTab('local')}
+                  className={`px-3 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                    videoUploadTab === 'local'
+                      ? 'bg-indigo-600 text-white'
+                      : 'text-slate-600 hover:bg-slate-100'
+                  }`}
+                >
+                  Upload Video File (MP4/WebM)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setVideoUploadTab('url')}
+                  className={`px-3 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                    videoUploadTab === 'url'
+                      ? 'bg-indigo-600 text-white'
+                      : 'text-slate-600 hover:bg-slate-100'
+                  }`}
+                >
+                  Video URL / Presets
+                </button>
+              </div>
+            </div>
+
+            {videoUploadTab === 'local' ? (
+              <div
+                onClick={() => videoFileInputRef.current?.click()}
+                className="border-2 border-dashed border-indigo-300 hover:border-indigo-600 bg-white rounded-xl p-5 text-center cursor-pointer transition-all"
+              >
+                <input
+                  ref={videoFileInputRef}
+                  type="file"
+                  accept="video/mp4,video/webm,video/ogg,video/quicktime"
+                  onChange={handleLocalVideoUpload}
+                  className="hidden"
+                />
+                <Film className="w-7 h-7 text-indigo-600 mx-auto mb-1.5" />
+                <div className="text-xs font-bold text-slate-800">
+                  {isUploadingVideo
+                    ? 'Uploading & Saving 360° Tour Video to Server...'
+                    : 'Click to Upload 360° Virtual Tour Video From Computer (MP4 / WebM / MOV)'}
+                </div>
+                <div className="text-[11px] text-slate-400 mt-0.5">
+                  Automatically saved on the server for global playback in both
+                  the Hero Banner and 360° Virtual Tour viewer
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2.5 bg-white p-3.5 rounded-xl border border-slate-200">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={formData.videoUrl || ''}
+                    onChange={e =>
+                      setFormData({ ...formData, videoUrl: e.target.value })
+                    }
+                    placeholder="https://.../360-tour.mp4 or /uploads/... or YouTube URL"
+                    className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-indigo-600"
+                  />
+                  {formData.videoUrl && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setFormData({
+                          ...formData,
+                          videoUrl: '',
+                          videoTitle: ''
+                        })
+                      }
+                      className="px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold rounded-xl border border-rose-200 shrink-0 cursor-pointer"
+                    >
+                      Clear Video
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase mr-1">
+                    One-Click Sample 360° Video Tours:
+                  </span>
+                  {SAMPLE_360_TOUR_VIDEOS.map((vid, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() =>
+                        setFormData(prev => ({
+                          ...prev,
+                          videoUrl: vid.url,
+                          videoTitle: prev.videoTitle || vid.label
+                        }))
+                      }
+                      className={`text-[10px] font-bold px-2.5 py-1 rounded-lg border transition-colors cursor-pointer ${
+                        formData.videoUrl === vid.url
+                          ? 'bg-indigo-600 text-white border-indigo-600'
+                          : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200'
+                      }`}
+                    >
+                      ▶ {vid.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {videoUploadError && (
+              <div className="flex items-center gap-1.5 text-xs font-bold text-rose-600 bg-rose-50 px-3 py-2 rounded-xl border border-rose-200">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{videoUploadError}</span>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  360° Tour Video Title / Caption
+                </label>
+                <input
+                  type="text"
+                  value={formData.videoTitle || ''}
+                  onChange={e =>
+                    setFormData({ ...formData, videoTitle: e.target.value })
+                  }
+                  placeholder="e.g. Full 360° Project Walkthrough & Drone Tour"
+                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-indigo-600"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  Active 360° Video Stream Path / URL
+                </label>
+                <input
+                  type="text"
+                  value={formData.videoUrl || ''}
+                  onChange={e =>
+                    setFormData({ ...formData, videoUrl: e.target.value })
+                  }
+                  placeholder="Upload a file above or paste a direct video URL..."
+                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-mono focus:outline-none focus:border-indigo-600"
+                />
+              </div>
+            </div>
+
+            {formData.videoUrl && (
+              <div className="rounded-xl overflow-hidden bg-slate-950 border border-indigo-500/40">
+                <div className="px-3.5 py-2 bg-indigo-950 text-indigo-200 text-[11px] font-bold flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>
+                      360° Tour Video Attached:{' '}
+                      {formData.videoTitle || 'Project 360° Walkthrough'}
+                    </span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFormData({ ...formData, videoUrl: '', videoTitle: '' })
+                    }
+                    className="text-rose-300 hover:text-rose-200 text-[10px] font-bold cursor-pointer"
+                  >
+                    Remove Video
+                  </button>
+                </div>
+                <div className="relative h-48 bg-black flex items-center justify-center">
+                  {formData.videoUrl.includes('youtube.com') ||
+                  formData.videoUrl.includes('youtu.be') ? (
+                    <iframe
+                      src={
+                        formData.videoUrl.includes('watch?v=')
+                          ? formData.videoUrl.replace('watch?v=', 'embed/')
+                          : formData.videoUrl.includes('youtu.be/')
+                          ? `https://www.youtube.com/embed/${
+                              formData.videoUrl
+                                .split('youtu.be/')[1]
+                                ?.split('?')[0]
+                            }`
+                          : formData.videoUrl
+                      }
+                      title="360 Tour Video Preview"
+                      className="w-full h-full"
+                      allowFullScreen
+                    />
+                  ) : (
+                    <video
+                      key={formData.videoUrl}
+                      src={formData.videoUrl}
+                      controls
+                      muted
+                      playsInline
+                      className="w-full h-full object-contain bg-black"
+                    />
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Features Manager */}
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1.5">
@@ -990,7 +1478,7 @@ export const AdminBannerManager: React.FC<AdminBannerManagerProps> = ({
                   <button
                     type="button"
                     onClick={() => handleRemoveFeature(idx)}
-                    className="text-blue-400 hover:text-rose-600"
+                    className="text-blue-400 hover:text-rose-600 cursor-pointer"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -1012,10 +1500,15 @@ export const AdminBannerManager: React.FC<AdminBannerManagerProps> = ({
             </button>
             <button
               type="submit"
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md cursor-pointer"
+              disabled={isUploadingImages || isUploadingVideo}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-bold shadow-md cursor-pointer"
             >
               <Save className="w-4 h-4" />
-              <span>{isCreatingNew ? 'Save & Publish Slide' : 'Update Slide Changes'}</span>
+              <span>
+                {isCreatingNew
+                  ? 'Save & Publish Globally to All Users'
+                  : 'Save & Update Global Slide'}
+              </span>
             </button>
           </div>
         </form>
@@ -1029,7 +1522,7 @@ export const AdminBannerManager: React.FC<AdminBannerManagerProps> = ({
             type="text"
             value={searchFilter}
             onChange={e => setSearchFilter(e.target.value)}
-            placeholder="Search slides (e.g. Model Q3 Forest Cabin Pod, Centaurus, UPVC)..."
+            placeholder="Search slides (e.g. AeroPod, ModuLoft, Icon Mall, Villa)..."
             className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-200 focus:border-blue-600 focus:outline-none"
           />
         </div>
@@ -1039,19 +1532,33 @@ export const AdminBannerManager: React.FC<AdminBannerManagerProps> = ({
             { id: 'all', label: `All (${slides.length})` },
             {
               id: 'modular',
-              label: `Capsules (${slides.filter(s => (s.samplePropertyData?.category || 'modular') === 'modular').length})`
+              label: `Capsules (${
+                slides.filter(
+                  s => (s.samplePropertyData?.category || 'modular') === 'modular'
+                ).length
+              })`
             },
             {
               id: 'commercial',
-              label: `Highrises (${slides.filter(s => s.samplePropertyData?.category === 'commercial').length})`
+              label: `Highrises (${
+                slides.filter(s => s.samplePropertyData?.category === 'commercial')
+                  .length
+              })`
             },
             {
               id: 'residential',
-              label: `Villas/Plots (${slides.filter(s => s.samplePropertyData?.category === 'residential').length})`
+              label: `Villas/Plots (${
+                slides.filter(
+                  s => s.samplePropertyData?.category === 'residential'
+                ).length
+              })`
             },
             {
               id: 'projects',
-              label: `UPVC (${slides.filter(s => s.samplePropertyData?.category === 'projects').length})`
+              label: `UPVC (${
+                slides.filter(s => s.samplePropertyData?.category === 'projects')
+                  .length
+              })`
             }
           ].map(tab => (
             <button
@@ -1060,7 +1567,7 @@ export const AdminBannerManager: React.FC<AdminBannerManagerProps> = ({
               onClick={() => setCategoryFilter(tab.id)}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 categoryFilter === tab.id
-                  ? 'bg-slate-900 text-white'
+                  ? 'bg-slate-900 text-white shadow-xs'
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
@@ -1070,77 +1577,133 @@ export const AdminBannerManager: React.FC<AdminBannerManagerProps> = ({
         </div>
       </div>
 
-      {/* Slides Sequence List */}
+      {/* Slides List */}
       <div className="space-y-3">
         {filteredSlides.map(slide => {
-          const globalIdx = sortedSlides.findIndex(s => s.id === slide.id);
-          const slideGallery =
+          const fullPositionIndex = sortedSlides.findIndex(
+            s => s.id === slide.id
+          );
+          const galleryCount =
             slide.galleryImages && slide.galleryImages.length > 0
-              ? slide.galleryImages
-              : [slide.imageUrl];
+              ? slide.galleryImages.length
+              : 1;
+          const hasVideoTour = Boolean(
+            slide.videoUrl || slide.samplePropertyData?.virtualTourVideoUrl
+          );
+          const slideCategory =
+            slide.samplePropertyData?.category || 'modular';
 
           return (
             <div
               key={slide.id}
-              className={`bg-white rounded-2xl border p-4 transition-all flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 ${
+              className={`bg-white rounded-2xl border transition-all p-4 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 ${
                 slide.isActive
                   ? 'border-slate-200/90 shadow-xs'
-                  : 'border-slate-200/50 bg-slate-50/60 opacity-65'
+                  : 'border-slate-200/50 opacity-60 bg-slate-50'
               }`}
             >
-              <div className="flex items-start sm:items-center gap-4 min-w-0 flex-1">
-                <div className="relative w-28 h-20 rounded-xl overflow-hidden shrink-0 bg-slate-900 border border-slate-200">
+              {/* Left Thumbnail + Info */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 flex-1 min-w-0">
+                <div className="relative w-full sm:w-44 h-28 rounded-xl overflow-hidden bg-slate-900 shrink-0 border border-slate-200">
                   <img
                     src={slide.imageUrl}
                     alt={slide.title}
                     onError={e => {
-                      (e.target as HTMLImageElement).src = INITIAL_PRESET_IMAGES[0].fallbackUrl;
+                      (e.target as HTMLImageElement).src =
+                        INITIAL_PRESET_IMAGES[0].fallbackUrl;
                     }}
                     className="w-full h-full object-cover"
                   />
-                  <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded bg-slate-900/85 text-amber-300 font-black text-[10px]">
-                    #{globalIdx + 1}
-                  </span>
-                  {slideGallery.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => handleQuickRotateSlide(slide)}
-                      className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-blue-600/90 hover:bg-blue-600 text-white font-bold text-[9px] flex items-center gap-0.5 shadow-xs cursor-pointer"
-                      title="Click to cycle next photo as cover"
-                    >
-                      <RotateCcw className="w-2.5 h-2.5" />
-                      <span>{slideGallery.length}</span>
-                    </button>
-                  )}
-                </div>
-
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2 mb-1">
-                    <span
-                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${slide.badgeColor}`}
-                    >
-                      {slide.categoryTag}
+                  <div className="absolute top-2 left-2 flex items-center gap-1">
+                    <span className="px-2 py-0.5 rounded-md bg-slate-950/85 text-amber-300 font-extrabold text-[10px]">
+                      #{fullPositionIndex + 1}
                     </span>
-                    <span className="text-xs font-extrabold text-blue-600">{slide.price}</span>
-                    <span className="text-[11px] text-slate-400 flex items-center gap-1">
-                      <MapPin className="w-3 h-3" />
-                      {slide.society}, {slide.location}
+                    <span className="px-2 py-0.5 rounded-md bg-blue-600/90 text-white font-bold text-[10px] uppercase">
+                      {slideCategory === 'modular'
+                        ? 'Capsule'
+                        : slideCategory === 'commercial'
+                        ? 'Highrise'
+                        : slideCategory === 'projects'
+                        ? 'UPVC'
+                        : 'Villa'}
                     </span>
                   </div>
-                  <h4 className="font-bold text-slate-900 text-sm truncate">{slide.title}</h4>
-                  <p className="text-xs text-slate-500 line-clamp-1 mt-0.5">{slide.description}</p>
+
+                  {hasVideoTour && (
+                    <span className="absolute top-2 right-2 px-1.5 py-0.5 rounded bg-indigo-600/95 text-white text-[9px] font-bold flex items-center gap-0.5 shadow-xs">
+                      <Video className="w-2.5 h-2.5" />
+                      <span>360° Video</span>
+                    </span>
+                  )}
+
+                  <div className="absolute bottom-1.5 left-2 right-2 flex items-center justify-between">
+                    <span className="px-1.5 py-0.5 rounded bg-slate-950/80 text-white text-[9.5px] font-bold">
+                      {galleryCount} {galleryCount === 1 ? 'Photo' : 'Photos'}
+                    </span>
+                    {galleryCount > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => handleQuickRotateSlide(slide)}
+                        className="px-1.5 py-0.5 rounded bg-amber-400 hover:bg-amber-300 text-slate-950 text-[9.5px] font-extrabold cursor-pointer"
+                        title="Rotate next gallery photo to cover"
+                      >
+                         Next Cover
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-1.5 flex-1 min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                      {slide.categoryTag}
+                    </span>
+                    <span className="text-xs font-extrabold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                      {slide.price}
+                    </span>
+                    {!slide.isActive && (
+                      <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-rose-100 text-rose-700">
+                        Hidden
+                      </span>
+                    )}
+                  </div>
+
+                  <h4 className="text-sm font-extrabold text-slate-900 truncate">
+                    {slide.title}
+                  </h4>
+                  <p className="text-xs text-slate-500 line-clamp-1">
+                    {slide.subtitle}
+                  </p>
+
+                  <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-500 pt-0.5">
+                    <span className="inline-flex items-center gap-1">
+                      <MapPin className="w-3 h-3 text-blue-600" />
+                      <span>
+                        {slide.society} • {slide.location}
+                      </span>
+                    </span>
+                    {hasVideoTour && (
+                      <span className="inline-flex items-center gap-1 text-indigo-600 font-bold">
+                        <Video className="w-3 h-3" />
+                        <span>360° Tour Video Ready</span>
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              {/* Direct Sequence & Action Controls */}
-              <div className="flex flex-wrap items-center gap-1.5 self-end lg:self-center shrink-0">
-                <div className="flex items-center gap-1 mr-1">
-                  <span className="text-[10px] font-bold text-slate-400">Pos:</span>
+              {/* Right Controls: Sequence Position, Up/Down, Active Toggle, Edit, Delete */}
+              <div className="flex flex-wrap items-center justify-end gap-2 pt-3 lg:pt-0 border-t lg:border-t-0 border-slate-100 shrink-0">
+                <div className="flex items-center gap-1 bg-slate-100 px-2 py-1 rounded-xl border border-slate-200">
+                  <span className="text-[10px] font-bold text-slate-500">
+                    Pos:
+                  </span>
                   <select
-                    value={globalIdx + 1}
-                    onChange={e => handleMoveToPosition(slide.id, Number(e.target.value))}
-                    className="px-2 py-1.5 rounded-lg border border-slate-200 bg-slate-50 text-xs font-extrabold text-slate-700 cursor-pointer"
-                    title="Jump slide directly to position"
+                    value={fullPositionIndex + 1}
+                    onChange={e =>
+                      handleMoveToPosition(slide.id, Number(e.target.value))
+                    }
+                    className="text-xs font-extrabold text-slate-900 bg-transparent focus:outline-none cursor-pointer"
                   >
                     {sortedSlides.map((_, posIdx) => (
                       <option key={posIdx} value={posIdx + 1}>
@@ -1150,29 +1713,31 @@ export const AdminBannerManager: React.FC<AdminBannerManagerProps> = ({
                   </select>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => handleMoveOrder(slide.id, 'up')}
-                  disabled={globalIdx === 0}
-                  className="p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-30 cursor-pointer"
-                  title="Move Up in Portfolio Deck"
-                >
-                  <ArrowUp className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleMoveOrder(slide.id, 'down')}
-                  disabled={globalIdx === sortedSlides.length - 1}
-                  className="p-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-30 cursor-pointer"
-                  title="Move Down in Portfolio Deck"
-                >
-                  <ArrowDown className="w-3.5 h-3.5" />
-                </button>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    disabled={fullPositionIndex === 0}
+                    onClick={() => handleMoveOrder(slide.id, 'up')}
+                    className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 disabled:opacity-30 text-slate-700 cursor-pointer"
+                    title="Move Earlier in Deck"
+                  >
+                    <ArrowUp className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    disabled={fullPositionIndex === sortedSlides.length - 1}
+                    onClick={() => handleMoveOrder(slide.id, 'down')}
+                    className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 disabled:opacity-30 text-slate-700 cursor-pointer"
+                    title="Move Later in Deck"
+                  >
+                    <ArrowDown className="w-3.5 h-3.5" />
+                  </button>
+                </div>
 
                 <button
                   type="button"
                   onClick={() => handleToggleActive(slide.id)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 border cursor-pointer ${
+                  className={`px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 border transition-all cursor-pointer ${
                     slide.isActive
                       ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
                       : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
@@ -1194,20 +1759,19 @@ export const AdminBannerManager: React.FC<AdminBannerManagerProps> = ({
                 <button
                   type="button"
                   onClick={() => handleStartEdit(slide)}
-                  className="px-3 py-1.5 rounded-lg border border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 text-xs font-bold flex items-center gap-1 cursor-pointer"
+                  className="px-3 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
                 >
                   <Edit3 className="w-3.5 h-3.5" />
-                  <span>Edit</span>
+                  <span>Edit / 360° Video</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => handleDeleteSlide(slide.id)}
-                  className="px-2.5 py-1.5 rounded-lg border border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100 text-xs font-bold flex items-center gap-1 cursor-pointer"
-                  title="Remove slide from Portfolio Deck"
+                  className="p-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 cursor-pointer"
+                  title="Delete Slide"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
-                  <span>Remove</span>
                 </button>
               </div>
             </div>
