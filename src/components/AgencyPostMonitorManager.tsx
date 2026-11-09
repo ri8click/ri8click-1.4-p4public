@@ -1,40 +1,44 @@
-import React, { useState } from 'react';
-import { 
-  Building2, 
-  ShieldCheck, 
-  Plus, 
-  Search, 
-  Edit3, 
-  Save, 
-  X, 
-  AlertCircle,
+import React, { useState, useRef } from 'react';
+import {
+  Building2,
+  ShieldCheck,
+  Plus,
+  Search,
+  Edit3,
+  Save,
+  X,
   Phone,
-  MessageSquare,
-  CheckCircle2,
-  TrendingUp,
-  UserCheck
+  UserCheck,
+  Camera
 } from 'lucide-react';
 import { AgencyAccount, Property } from '../types';
+import { PAKISTAN_AGENT_AVATARS } from '../data/defaultAccounts';
+import { resolvePakistanAgentAvatar } from './AgenciesSection';
 
 interface AgencyPostMonitorManagerProps {
   agencies: AgencyAccount[];
   properties: Property[];
   onUpdateAgencyLimit: (agencyId: string, newLimit: number) => void;
   onAddNewAgency?: (agency: AgencyAccount) => void;
+  onUpdateAgencies?: (agencies: AgencyAccount[]) => void;
 }
 
-export const AgencyPostMonitorManager: React.FC<AgencyPostMonitorManagerProps> = ({
+export const AgencyPostMonitorManager: React.FC<
+  AgencyPostMonitorManagerProps
+> = ({
   agencies,
   properties,
   onUpdateAgencyLimit,
-  onAddNewAgency
+  onAddNewAgency,
+  onUpdateAgencies
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [editingAgencyId, setEditingAgencyId] = useState<string | null>(null);
-  const [tempLimit, setTempLimit] = useState<number>(10);
+  const [editingAgency, setEditingAgency] = useState<AgencyAccount | null>(
+    null
+  );
   const [isAddingAgency, setIsAddingAgency] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  // New Agency Form State
   const [newAgencyForm, setNewAgencyForm] = useState({
     name: '',
     companyName: '',
@@ -44,26 +48,67 @@ export const AgencyPostMonitorManager: React.FC<AgencyPostMonitorManagerProps> =
     city: 'Taxila',
     primarySociety: 'Faisal Hills',
     postLimit: 25,
-    role: 'agency' as const,
+    avatar: PAKISTAN_AGENT_AVATARS.malikZeeshan,
+    role: 'agency' as const
   });
 
-  const filteredAgencies = agencies.filter(a => 
-    a.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    a.companyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    a.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    a.primarySociety.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredAgencies = agencies.filter(
+    a =>
+      a.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      a.companyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      a.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (a.primarySociety || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleStartEdit = (agency: AgencyAccount) => {
-    setEditingAgencyId(agency.id);
-    setTempLimit(agency.postLimit);
+  const handlePhotoUpload = (
+    file: File | undefined,
+    onDone: (dataUrl: string) => void
+  ) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_SIZE = 500;
+        let w = img.width;
+        let h = img.height;
+        if (w > h && w > MAX_SIZE) {
+          h = Math.round((h * MAX_SIZE) / w);
+          w = MAX_SIZE;
+        } else if (h > MAX_SIZE) {
+          w = Math.round((w * MAX_SIZE) / h);
+          h = MAX_SIZE;
+        }
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0, w, h);
+        onDone(canvas.toDataURL('image/jpeg', 0.86));
+      };
+      img.src = ev.target?.result as string;
+    };
+    reader.readAsDataURL(file);
   };
 
-  const handleSaveLimit = (agencyId: string) => {
-    if (tempLimit >= 1) {
-      onUpdateAgencyLimit(agencyId, tempLimit);
+  const handleSaveEditedAgency = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingAgency) return;
+
+    if (onUpdateAgencies) {
+      const updated = agencies.map(a =>
+        a.id === editingAgency.id
+          ? {
+              ...editingAgency,
+              logo: editingAgency.avatar || editingAgency.logo
+            }
+          : a
+      );
+      onUpdateAgencies(updated);
+    } else {
+      onUpdateAgencyLimit(editingAgency.id, editingAgency.postLimit);
     }
-    setEditingAgencyId(null);
+    setEditingAgency(null);
   };
 
   const handleCreateAgency = (e: React.FormEvent) => {
@@ -75,10 +120,13 @@ export const AgencyPostMonitorManager: React.FC<AgencyPostMonitorManagerProps> =
       name: newAgencyForm.name,
       companyName: newAgencyForm.companyName,
       role: 'agency',
-      email: newAgencyForm.email || `${newAgencyForm.name.toLowerCase().replace(/\s+/g, '')}@ri8click.pk`,
+      email:
+        newAgencyForm.email ||
+        `${newAgencyForm.name.toLowerCase().replace(/\s+/g, '')}@ri8click.pk`,
       phone: newAgencyForm.phone,
-      whatsapp: newAgencyForm.whatsapp,
-      avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=400&q=80',
+      whatsapp: newAgencyForm.whatsapp.replace(/[^0-9]/g, ''),
+      avatar: newAgencyForm.avatar || PAKISTAN_AGENT_AVATARS.malikZeeshan,
+      logo: newAgencyForm.avatar || PAKISTAN_AGENT_AVATARS.malikZeeshan,
       verified: true,
       rating: 4.9,
       totalPosts: 0,
@@ -86,7 +134,10 @@ export const AgencyPostMonitorManager: React.FC<AgencyPostMonitorManagerProps> =
       activeListings: 0,
       city: newAgencyForm.city,
       primarySociety: newAgencyForm.primarySociety,
-      memberSince: new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+      memberSince: new Date().toLocaleDateString('en-US', {
+        month: 'short',
+        year: 'numeric'
+      }),
       status: 'active'
     };
 
@@ -104,21 +155,21 @@ export const AgencyPostMonitorManager: React.FC<AgencyPostMonitorManagerProps> =
       city: 'Taxila',
       primarySociety: 'Faisal Hills',
       postLimit: 25,
-      role: 'agency',
+      avatar: PAKISTAN_AGENT_AVATARS.malikZeeshan,
+      role: 'agency'
     });
   };
 
   return (
-    <div className="p-5 sm:p-6 space-y-6 overflow-y-auto max-h-[calc(96vh-120px)]">
-      {/* Header with Search and Add Action */}
+    <div className="p-4 sm:p-6 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
         <div>
           <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
             <Building2 className="w-5 h-5 text-blue-600" />
-            <span>Multi-Agent Quotas & Post Monitor</span>
+            <span>Certified Agencies, Quotas &amp; Specialist Profiles</span>
           </h3>
           <p className="text-xs text-slate-500">
-            Control maximum allowed advertisements, monitor real-time utilization, and onboard verified brokerages.
+            Edit agency details, upload regional specialist portraits, adjust ad limits, and onboard verified Pakistani brokerages.
           </p>
         </div>
 
@@ -130,13 +181,13 @@ export const AgencyPostMonitorManager: React.FC<AgencyPostMonitorManagerProps> =
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
               placeholder="Filter agencies..."
-              className="pl-9 pr-3 py-1.5 rounded-lg border border-slate-200 text-xs bg-white text-slate-900 focus:outline-hidden focus:border-blue-600 w-44 sm:w-56"
+              className="pl-9 pr-3 py-1.5 rounded-lg border border-slate-200 text-xs bg-white text-slate-900 w-44 sm:w-56"
             />
           </div>
 
           <button
             onClick={() => setIsAddingAgency(true)}
-            className="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-2xs transition-colors flex items-center gap-1.5 shrink-0"
+            className="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-2xs transition-colors flex items-center gap-1.5 shrink-0 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>Add Brokerage</span>
@@ -144,7 +195,7 @@ export const AgencyPostMonitorManager: React.FC<AgencyPostMonitorManagerProps> =
         </div>
       </div>
 
-      {/* Modal / Card for Adding New Agency */}
+      {/* Add New Agency Card */}
       {isAddingAgency && (
         <div className="bg-blue-50/70 border border-blue-200 rounded-xl p-5 space-y-4">
           <div className="flex items-center justify-between">
@@ -154,77 +205,117 @@ export const AgencyPostMonitorManager: React.FC<AgencyPostMonitorManagerProps> =
             </h4>
             <button
               onClick={() => setIsAddingAgency(false)}
-              className="text-slate-400 hover:text-slate-700"
+              className="text-slate-400 hover:text-slate-700 cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
 
-          <form onSubmit={handleCreateAgency} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+          <form
+            onSubmit={handleCreateAgency}
+            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3"
+          >
             <div>
-              <label className="block text-[11px] font-semibold text-slate-700 mb-1">Agent / Principal Name</label>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                Agent / Principal Name
+              </label>
               <input
                 type="text"
                 required
                 value={newAgencyForm.name}
-                onChange={e => setNewAgencyForm({ ...newAgencyForm, name: e.target.value })}
+                onChange={e =>
+                  setNewAgencyForm({ ...newAgencyForm, name: e.target.value })
+                }
                 placeholder="e.g. Malik Arshad"
                 className="w-full px-3 py-1.5 rounded-lg border border-slate-300 text-xs bg-white"
               />
             </div>
 
             <div>
-              <label className="block text-[11px] font-semibold text-slate-700 mb-1">Company / Agency Name</label>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                Company / Agency Name
+              </label>
               <input
                 type="text"
                 required
                 value={newAgencyForm.companyName}
-                onChange={e => setNewAgencyForm({ ...newAgencyForm, companyName: e.target.value })}
+                onChange={e =>
+                  setNewAgencyForm({
+                    ...newAgencyForm,
+                    companyName: e.target.value
+                  })
+                }
                 placeholder="e.g. Margalla Premier Real Estate"
                 className="w-full px-3 py-1.5 rounded-lg border border-slate-300 text-xs bg-white"
               />
             </div>
 
             <div>
-              <label className="block text-[11px] font-semibold text-slate-700 mb-1">City Hub</label>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                City Hub
+              </label>
               <input
                 type="text"
                 value={newAgencyForm.city}
-                onChange={e => setNewAgencyForm({ ...newAgencyForm, city: e.target.value })}
+                onChange={e =>
+                  setNewAgencyForm({ ...newAgencyForm, city: e.target.value })
+                }
                 placeholder="Taxila"
                 className="w-full px-3 py-1.5 rounded-lg border border-slate-300 text-xs bg-white"
               />
             </div>
 
             <div>
-              <label className="block text-[11px] font-semibold text-slate-700 mb-1">Primary Society</label>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                Primary Society
+              </label>
               <input
                 type="text"
                 value={newAgencyForm.primarySociety}
-                onChange={e => setNewAgencyForm({ ...newAgencyForm, primarySociety: e.target.value })}
+                onChange={e =>
+                  setNewAgencyForm({
+                    ...newAgencyForm,
+                    primarySociety: e.target.value
+                  })
+                }
                 placeholder="Faisal Hills"
                 className="w-full px-3 py-1.5 rounded-lg border border-slate-300 text-xs bg-white"
               />
             </div>
 
             <div>
-              <label className="block text-[11px] font-semibold text-slate-700 mb-1">Phone / WhatsApp</label>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                Phone / WhatsApp
+              </label>
               <input
                 type="text"
                 value={newAgencyForm.phone}
-                onChange={e => setNewAgencyForm({ ...newAgencyForm, phone: e.target.value })}
+                onChange={e =>
+                  setNewAgencyForm({
+                    ...newAgencyForm,
+                    phone: e.target.value,
+                    whatsapp: e.target.value.replace(/[^0-9]/g, '')
+                  })
+                }
                 className="w-full px-3 py-1.5 rounded-lg border border-slate-300 text-xs bg-white"
               />
             </div>
 
             <div>
-              <label className="block text-[11px] font-semibold text-slate-700 mb-1">Initial Post Quota Limit</label>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                Initial Post Quota Limit
+              </label>
               <input
                 type="number"
                 min="1"
                 max="500"
                 value={newAgencyForm.postLimit}
-                onChange={e => setNewAgencyForm({ ...newAgencyForm, postLimit: parseInt(e.target.value) || 20 })}
+                onChange={e =>
+                  setNewAgencyForm({
+                    ...newAgencyForm,
+                    postLimit: parseInt(e.target.value) || 25
+                  })
+                }
                 className="w-full px-3 py-1.5 rounded-lg border border-slate-300 text-xs bg-white font-bold"
               />
             </div>
@@ -233,15 +324,15 @@ export const AgencyPostMonitorManager: React.FC<AgencyPostMonitorManagerProps> =
               <button
                 type="button"
                 onClick={() => setIsAddingAgency(false)}
-                className="px-4 py-1.5 rounded-lg text-xs font-semibold text-slate-600 bg-white border border-slate-200"
+                className="px-4 py-1.5 rounded-lg text-xs font-semibold text-slate-600 bg-white border border-slate-200 cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-5 py-1.5 rounded-lg text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-xs"
+                className="px-5 py-1.5 rounded-lg text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-xs cursor-pointer"
               >
-                Save & Authorize Agency
+                Save &amp; Authorize Agency
               </button>
             </div>
           </form>
@@ -264,20 +355,32 @@ export const AgencyPostMonitorManager: React.FC<AgencyPostMonitorManagerProps> =
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filteredAgencies.map((agency) => {
-                const agencyPropertiesCount = properties.filter(p => p.agencyId === agency.id).length;
-                const percentage = Math.min(Math.round((agencyPropertiesCount / agency.postLimit) * 100), 100);
+              {filteredAgencies.map((agency, idx) => {
+                const agencyPropertiesCount = properties.filter(
+                  p => p.agencyId === agency.id
+                ).length;
+                const percentage = Math.min(
+                  Math.round((agencyPropertiesCount / agency.postLimit) * 100),
+                  100
+                );
                 const isNearLimit = percentage >= 85;
-                const isEditing = editingAgencyId === agency.id;
+                const resolvedAvatar = resolvePakistanAgentAvatar(
+                  agency.avatar || agency.logo,
+                  `${agency.id} ${agency.name} ${agency.companyName}`,
+                  idx
+                );
 
                 return (
-                  <tr key={agency.id} className="hover:bg-slate-50/80 transition-colors">
+                  <tr
+                    key={agency.id}
+                    className="hover:bg-slate-50/80 transition-colors"
+                  >
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-3">
                         <img
-                          src={agency.avatar}
+                          src={resolvedAvatar}
                           alt={agency.name}
-                          className="w-9 h-9 rounded-full object-cover border border-slate-200"
+                          className="w-10 h-10 rounded-xl object-cover object-top border border-slate-200"
                         />
                         <div>
                           <div className="font-bold text-slate-900 flex items-center gap-1.5">
@@ -286,14 +389,20 @@ export const AgencyPostMonitorManager: React.FC<AgencyPostMonitorManagerProps> =
                               <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
                             )}
                           </div>
-                          <div className="text-[11px] text-slate-500">{agency.name}</div>
+                          <div className="text-[11px] text-slate-500">
+                            {agency.name}
+                          </div>
                         </div>
                       </div>
                     </td>
 
                     <td className="py-3 px-3">
-                      <div className="font-semibold text-slate-800">{agency.city}</div>
-                      <div className="text-[11px] text-slate-500">{agency.primarySociety}</div>
+                      <div className="font-semibold text-slate-800">
+                        {agency.city}
+                      </div>
+                      <div className="text-[11px] text-slate-500">
+                        {agency.primarySociety}
+                      </div>
                     </td>
 
                     <td className="py-3 px-3">
@@ -307,37 +416,23 @@ export const AgencyPostMonitorManager: React.FC<AgencyPostMonitorManagerProps> =
                       {agencyPropertiesCount}
                     </td>
 
-                    <td className="py-3 px-4 text-center">
-                      {isEditing ? (
-                        <div className="inline-flex items-center gap-1.5">
-                          <input
-                            type="number"
-                            min="1"
-                            max="500"
-                            value={tempLimit}
-                            onChange={e => setTempLimit(parseInt(e.target.value) || 1)}
-                            className="w-16 px-2 py-1 rounded border border-blue-500 text-xs font-bold text-center bg-white"
-                          />
-                          <button
-                            onClick={() => handleSaveLimit(agency.id)}
-                            className="p-1 rounded bg-blue-600 text-white hover:bg-blue-700"
-                            title="Save"
-                          >
-                            <Save className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      ) : (
-                        <span className="font-extrabold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-200">
-                          {agency.postLimit} max
-                        </span>
-                      )}
+                    <td className="py-3 px-4 text-center font-bold text-blue-600">
+                      {agency.postLimit}
                     </td>
 
-                    <td className="py-3 px-4 w-40">
-                      <div className="space-y-1">
-                        <div className="flex justify-between text-[10px] font-semibold text-slate-600">
-                          <span>{agencyPropertiesCount}/{agency.postLimit}</span>
-                          <span className={isNearLimit ? 'text-amber-600' : 'text-slate-500'}>{percentage}%</span>
+                    <td className="py-3 px-4">
+                      <div className="space-y-1 min-w-[110px]">
+                        <div className="flex justify-between text-[10px] font-semibold">
+                          <span>
+                            {agencyPropertiesCount}/{agency.postLimit}
+                          </span>
+                          <span
+                            className={
+                              isNearLimit ? 'text-amber-600' : 'text-slate-500'
+                            }
+                          >
+                            {percentage}%
+                          </span>
                         </div>
                         <div className="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
                           <div
@@ -345,8 +440,8 @@ export const AgencyPostMonitorManager: React.FC<AgencyPostMonitorManagerProps> =
                               percentage >= 100
                                 ? 'bg-rose-500'
                                 : percentage >= 85
-                                ? 'bg-amber-500'
-                                : 'bg-blue-600'
+                                  ? 'bg-amber-500'
+                                  : 'bg-blue-600'
                             }`}
                             style={{ width: `${percentage}%` }}
                           />
@@ -355,22 +450,13 @@ export const AgencyPostMonitorManager: React.FC<AgencyPostMonitorManagerProps> =
                     </td>
 
                     <td className="py-3 px-4 text-right">
-                      {!isEditing ? (
-                        <button
-                          onClick={() => handleStartEdit(agency)}
-                          className="px-2.5 py-1 rounded-lg text-xs font-semibold text-slate-600 hover:text-blue-600 hover:bg-blue-50 transition-colors inline-flex items-center gap-1"
-                        >
-                          <Edit3 className="w-3.5 h-3.5" />
-                          <span>Set Limit</span>
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => setEditingAgencyId(null)}
-                          className="text-xs text-slate-400 hover:text-slate-600 px-2 py-1"
-                        >
-                          Cancel
-                        </button>
-                      )}
+                      <button
+                        onClick={() => setEditingAgency({ ...agency })}
+                        className="px-2.5 py-1.5 rounded-lg text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-600 hover:text-white transition-colors inline-flex items-center gap-1 cursor-pointer"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                        <span>Edit Agency &amp; Photo</span>
+                      </button>
                     </td>
                   </tr>
                 );
@@ -379,6 +465,198 @@ export const AgencyPostMonitorManager: React.FC<AgencyPostMonitorManagerProps> =
           </table>
         </div>
       </div>
+
+      {/* Edit Agency Profile & Photo Modal */}
+      {editingAgency && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-lg overflow-hidden">
+            <div className="bg-slate-900 text-white px-5 py-4 flex items-center justify-between">
+              <h4 className="font-bold text-sm flex items-center gap-2">
+                <Building2 className="w-4 h-4 text-amber-400" />
+                <span>Edit Agency Profile, Photo &amp; Quota</span>
+              </h4>
+              <button
+                onClick={() => setEditingAgency(null)}
+                className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form
+              onSubmit={handleSaveEditedAgency}
+              className="p-5 space-y-4 text-xs"
+            >
+              <div className="flex items-center gap-4 p-3 rounded-xl bg-slate-50 border border-slate-200">
+                <img
+                  src={editingAgency.avatar || editingAgency.logo}
+                  alt={editingAgency.name}
+                  className="w-16 h-16 rounded-2xl object-cover object-top border-2 border-blue-500"
+                />
+                <div className="flex-1 space-y-2">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={e =>
+                      handlePhotoUpload(e.target.files?.[0], dataUrl =>
+                        setEditingAgency(prev =>
+                          prev
+                            ? { ...prev, avatar: dataUrl, logo: dataUrl }
+                            : null
+                        )
+                      )
+                    }
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Camera className="w-3.5 h-3.5" />
+                    <span>Upload Specialist Photo</span>
+                  </button>
+                  <input
+                    type="text"
+                    value={editingAgency.avatar || ''}
+                    onChange={e =>
+                      setEditingAgency({
+                        ...editingAgency,
+                        avatar: e.target.value,
+                        logo: e.target.value
+                      })
+                    }
+                    placeholder="Or paste photo URL..."
+                    className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1 font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">
+                    Specialist / Agent Name
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editingAgency.name}
+                    onChange={e =>
+                      setEditingAgency({
+                        ...editingAgency,
+                        name: e.target.value
+                      })
+                    }
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">
+                    Company Name
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editingAgency.companyName}
+                    onChange={e =>
+                      setEditingAgency({
+                        ...editingAgency,
+                        companyName: e.target.value
+                      })
+                    }
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">
+                    City
+                  </label>
+                  <input
+                    type="text"
+                    value={editingAgency.city}
+                    onChange={e =>
+                      setEditingAgency({
+                        ...editingAgency,
+                        city: e.target.value
+                      })
+                    }
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">
+                    Primary Society
+                  </label>
+                  <input
+                    type="text"
+                    value={editingAgency.primarySociety}
+                    onChange={e =>
+                      setEditingAgency({
+                        ...editingAgency,
+                        primarySociety: e.target.value
+                      })
+                    }
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">
+                    Phone / WhatsApp
+                  </label>
+                  <input
+                    type="text"
+                    value={editingAgency.phone}
+                    onChange={e =>
+                      setEditingAgency({
+                        ...editingAgency,
+                        phone: e.target.value,
+                        whatsapp: e.target.value.replace(/[^0-9]/g, '')
+                      })
+                    }
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-700 font-bold mb-1">
+                    Max Ad Quota Limit
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="1000"
+                    value={editingAgency.postLimit}
+                    onChange={e =>
+                      setEditingAgency({
+                        ...editingAgency,
+                        postLimit: parseInt(e.target.value) || 25
+                      })
+                    }
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900 font-bold"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setEditingAgency(null)}
+                  className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 font-bold cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold flex items-center gap-1.5 shadow-sm cursor-pointer"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  <span>Save Agency Profile</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
