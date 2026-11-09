@@ -26,11 +26,11 @@ import {
   Home,
   Wrench,
   FileText,
-  ExternalLink,
   RefreshCw,
   GripHorizontal,
   Move,
-  RotateCcw
+  RotateCcw,
+  Settings
 } from 'lucide-react';
 import { PropertyCategory, HeroSlide, Property } from '../types';
 import { INITIAL_HERO_SLIDES } from '../data/mockData';
@@ -42,6 +42,8 @@ interface HeroSectionProps {
   onOpen3DTour: (sampleProperty?: any) => void;
   slides?: HeroSlide[];
   properties?: Property[];
+  canManageDeck?: boolean;
+  onOpenBannerAdmin?: () => void;
 }
 
 type TourDeckCategory =
@@ -92,35 +94,52 @@ interface CameraWaypoint {
 }
 
 const MODULAR_CAPSULE_GALLERY = {
-  fallbackCapsule1: 'https://images.unsplash.com/photo-1518780664697-55e3ad937233?auto=format&fit=crop&w=1600&q=85',
-  fallbackCapsule2: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1600&q=85'
+  fallbackCapsule1:
+    'https://images.unsplash.com/photo-1518780664697-55e3ad937233?auto=format&fit=crop&w=1600&q=85',
+  fallbackCapsule2:
+    'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1600&q=85'
 };
 
 const ISLAMABAD_HIGHRISE_PROJECTS_GALLERY = {
-  centaurusTower: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1600&q=85',
-  gigaMallTower: 'https://images.unsplash.com/photo-1582407947304-fd86f028f716?auto=format&fit=crop&w=1600&q=85',
-  ufoneJinnahAvenue: 'https://images.unsplash.com/photo-1577495508048-b635879837f1?auto=format&fit=crop&w=1600&q=85',
-  skyparkOneGulberg: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1600&q=85',
-  stateLifeTower: 'https://images.unsplash.com/photo-1554469384-e58fac16e23a?auto=format&fit=crop&w=1600&q=85',
-  fallbackHighrise1: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1600&q=85',
-  fallbackHighrise2: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1600&q=85'
+  centaurusTower:
+    'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1600&q=85',
+  gigaMallTower:
+    'https://images.unsplash.com/photo-1582407947304-fd86f028f716?auto=format&fit=crop&w=1600&q=85',
+  ufoneJinnahAvenue:
+    'https://images.unsplash.com/photo-1577495508048-b635879837f1?auto=format&fit=crop&w=1600&q=85',
+  skyparkOneGulberg:
+    'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1600&q=85',
+  stateLifeTower:
+    'https://images.unsplash.com/photo-1554469384-e58fac16e23a?auto=format&fit=crop&w=1600&q=85',
+  fallbackHighrise1:
+    'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1600&q=85',
+  fallbackHighrise2:
+    'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1600&q=85'
 };
 
 const CONSTRUCTED_HOUSES_GALLERY = {
-  house1_modernFaisalHillsVilla: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1600&q=85',
-  house2_contemporaryKanalEstate: 'https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=1600&q=85',
-  house3_stoneGlassMansion: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1600&q=85'
+  house1_modernFaisalHillsVilla:
+    'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1600&q=85',
+  house2_contemporaryKanalEstate:
+    'https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=1600&q=85',
+  house3_stoneGlassMansion:
+    'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1600&q=85'
 };
 
 const UPVC_AND_INTERIOR_GALLERY = {
-  upvc1_slidingPatioDoors: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1600&q=85',
-  upvc2_casementTiltTurnWindows: 'https://images.unsplash.com/photo-1600566753376-12c8ab7fb75b?auto=format&fit=crop&w=1600&q=85'
+  upvc1_slidingPatioDoors:
+    'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1600&q=85',
+  upvc2_casementTiltTurnWindows:
+    'https://images.unsplash.com/photo-1600566753376-12c8ab7fb75b?auto=format&fit=crop&w=1600&q=85'
 };
 
 const SHOWROOM_VIDEOS = {
-  architecturalFlyover: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-  capsuleInteriorWalk: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
-  villaDroneOrbit: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4'
+  architecturalFlyover:
+    'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+  capsuleInteriorWalk:
+    'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
+  villaDroneOrbit:
+    'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4'
 };
 
 const INITIAL_REPLACED_BROKEN_LINKS: BrokenImageRecord[] = [
@@ -164,9 +183,6 @@ const INITIAL_REPLACED_BROKEN_LINKS: BrokenImageRecord[] = [
 type AtmosphereGrade = 'crystal_daylight' | 'solar_vivid' | 'showroom_hdr';
 const WAYPOINT_DURATION_MS = 6500;
 
-/**
- * Helper to determine which Portfolio Deck category a HeroSlide belongs to
- */
 function resolveSlideTourCategory(slide: HeroSlide): {
   tourCategory: Exclude<TourDeckCategory, 'all_showroom'>;
   propertyCategory: PropertyCategory;
@@ -247,39 +263,64 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   onContactAgentClick,
   onOpen3DTour,
   slides = [],
-  properties = []
+  properties = [],
+  canManageDeck = false,
+  onOpenBannerAdmin
 }) => {
-  const [tourCategory, setTourCategory] = useState<TourDeckCategory>('all_showroom');
+  const [tourCategory, setTourCategory] =
+    useState<TourDeckCategory>('all_showroom');
   const [waypointIdx, setWaypointIdx] = useState<number>(0);
   const [isPaused, setIsPaused] = useState<boolean>(false);
   const [isVideoTourActive, setIsVideoTourActive] = useState<boolean>(false);
-  const [isCinemaTheaterMode, setIsCinemaTheaterMode] = useState<boolean>(false);
+  const [isCinemaTheaterMode, setIsCinemaTheaterMode] =
+    useState<boolean>(false);
   const [isMuted, setIsMuted] = useState<boolean>(true);
-  const [atmosphere, setAtmosphere] = useState<AtmosphereGrade>('crystal_daylight');
+  const [atmosphere, setAtmosphere] =
+    useState<AtmosphereGrade>('solar_vivid');
 
-  const [showLeftDescription, setShowLeftDescription] = useState<boolean>(false);
+  const [showLeftDescription, setShowLeftDescription] =
+    useState<boolean>(false);
   const [showDirectorDeck, setShowDirectorDeck] = useState<boolean>(true);
   const [showSpecCards, setShowSpecCards] = useState<boolean>(true);
-  const [showConsortiumRibbon, setShowConsortiumRibbon] = useState<boolean>(false);
+  const [showConsortiumRibbon, setShowConsortiumRibbon] =
+    useState<boolean>(false);
   const [showCategoryBar, setShowCategoryBar] = useState<boolean>(true);
-  const [showShowroomTourBar, setShowShowroomTourBar] = useState<boolean>(true);
+  const [showShowroomTourBar, setShowShowroomTourBar] =
+    useState<boolean>(true);
   const [isHudMenuOpen, setIsHudMenuOpen] = useState<boolean>(false);
-  const [showBrokenLinkModal, setShowBrokenLinkModal] = useState<boolean>(false);
+  const [showBrokenLinkModal, setShowBrokenLinkModal] =
+    useState<boolean>(false);
 
   const [brokenLinksLog, setBrokenLinksLog] = useState<BrokenImageRecord[]>(
     INITIAL_REPLACED_BROKEN_LINKS
   );
 
+  const [isMobileViewport, setIsMobileViewport] = useState<boolean>(() =>
+    typeof window !== 'undefined' ? window.innerWidth < 1024 : false
+  );
   const [isDeckFloating, setIsDeckFloating] = useState<boolean>(true);
   const [isDeckMinimized, setIsDeckMinimized] = useState<boolean>(false);
   const [deckResetKey, setDeckResetKey] = useState<number>(0);
   const portfolioDeckDragControls = useDragControls();
   const heroStageRef = useRef<HTMLElement | null>(null);
+  const touchStartXRef = useRef<number | null>(null);
 
   const [videoFailed, setVideoFailed] = useState<boolean>(false);
   const [failedUrls, setFailedUrls] = useState<Record<string, boolean>>({});
-  const [customActiveImageOverride, setCustomActiveImageOverride] = useState<string | null>(null);
+  const [customActiveImageOverride, setCustomActiveImageOverride] = useState<
+    string | null
+  >(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth < 1024;
+      setIsMobileViewport(mobile);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const sanitizeConsortiumText = (text: string) =>
     (text || '')
@@ -289,14 +330,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         'Ri8click Consortium'
       );
 
-  /**
-   * 100% ADMIN-DRIVEN PORTFOLIO DECK WAYPOINTS:
-   * Built directly from active `slides` sorted by `slide.order`.
-   * When an admin deletes "Model Q3 Forest Cabin Pod", hides a slide, or changes
-   * slide sequence in AdminBannerManager, the Portfolio Deck reflects it immediately.
-   */
   const allCombinedWaypoints = useMemo<CameraWaypoint[]>(() => {
-    const sourceSlides = Array.isArray(slides) && slides.length > 0 ? slides : INITIAL_HERO_SLIDES;
+    const sourceSlides =
+      Array.isArray(slides) && slides.length > 0 ? slides : INITIAL_HERO_SLIDES;
     const activeSlides = [...sourceSlides]
       .filter(s => s && s.isActive !== false)
       .sort((a, b) => (a.order ?? 999) - (b.order ?? 999));
@@ -308,7 +344,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           ? slide.galleryImages.filter(Boolean)
           : [slide.imageUrl].filter(Boolean);
 
-      const primaryImg = slideGallery[0] || slide.imageUrl || meta.fallbackImg;
+      const primaryImg =
+        slideGallery[0] || slide.imageUrl || meta.fallbackImg;
       const secondaryImg = slideGallery[1] || primaryImg;
       const cleanTitle = sanitizeConsortiumText(slide.title);
       const shortLabel = cleanTitle.includes('—')
@@ -336,7 +373,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         id: slide.id,
         code: `${meta.codePrefix} ${String(idx + 1).padStart(2, '0')} //`,
         label: shortLabel,
-        subLabel: sanitizeConsortiumText(slide.subtitle || slide.society || 'Ri8click Verified Showcase'),
+        subLabel: sanitizeConsortiumText(
+          slide.subtitle || slide.society || 'Ri8click Verified Showcase'
+        ),
         tourCategory: meta.tourCategory,
         propertyCategory: meta.propertyCategory,
         divisionTag: meta.divisionTag,
@@ -351,7 +390,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         secondaryImageUrl: secondaryImg,
         fallbackUrl: meta.fallbackImg,
         galleryImages: slideGallery.length > 0 ? slideGallery : [primaryImg],
-        videoUrl: meta.videoUrl,
+        videoUrl:
+          (slide.samplePropertyData as any)?.virtualTourVideoUrl ||
+          meta.videoUrl,
         motionOrigin: 'center center',
         panX: panPair,
         panY: ['0%', '-0.8%'],
@@ -359,60 +400,75 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         order: slide.order ?? idx + 1,
         specs: featuresList.slice(0, 4).map((feat, fIdx) => ({
           id: `${slide.id}-spec-${fIdx}`,
-          title: fIdx === 0 ? 'Key Highlight' : fIdx === 1 ? 'Engineering' : fIdx === 2 ? 'Advantage' : 'Verification',
+          title:
+            fIdx === 0
+              ? 'Key Highlight'
+              : fIdx === 1
+                ? 'Engineering'
+                : fIdx === 2
+                  ? 'Advantage'
+                  : 'Verification',
           spec: sanitizeConsortiumText(feat)
         }))
       };
     });
 
-    // Also include newly posted active modular/capsule properties from Admin/Agents if not already in slides
-    const existingTitles = new Set(slideWaypoints.map(w => w.headline.toLowerCase()));
+    const existingTitles = new Set(
+      slideWaypoints.map(w => w.headline.toLowerCase())
+    );
     const customModularProps = (properties || []).filter(
       p =>
         p &&
         p.status !== 'pending' &&
-        (p.category === 'modular' || (p.type && p.type.toLowerCase().includes('capsule'))) &&
+        (p.category === 'modular' ||
+          (p.type && p.type.toLowerCase().includes('capsule'))) &&
         p.images &&
         p.images.length > 0 &&
         !existingTitles.has(p.title.toLowerCase()) &&
         !['prop-mod-1', 'prop-mod-2', 'prop-mod-3'].includes(p.id)
     );
 
-    const propertyWaypoints: CameraWaypoint[] = customModularProps.map((prop, pIdx) => {
-      const primaryImg = prop.images[0] || MODULAR_CAPSULE_GALLERY.fallbackCapsule1;
-      const secondaryImg = prop.images[1] || primaryImg;
-      return {
-        id: `prop-wp-${prop.id}`,
-        code: `NEW POST ${pIdx + 1} //`,
-        label: prop.title.slice(0, 28),
-        subLabel: prop.tagline || `${prop.location.society}, ${prop.location.city}`,
-        tourCategory: 'capsule_containers',
-        propertyCategory: 'modular',
-        divisionTag: 'RI8CLICK CONSORTIUM // LIVE POSTED CAPSULE & MODULAR',
-        headline: prop.title,
-        description: prop.description,
-        valuation: prop.priceFormatted,
-        locationBadge: `${prop.location.society}, ${prop.location.city}`,
-        focalLength: '24MM PRIME',
-        elevation: `${prop.area} ${prop.areaUnit}`,
-        fov: '86° WIDE',
-        imageUrl: primaryImg,
-        secondaryImageUrl: secondaryImg,
-        fallbackUrl: MODULAR_CAPSULE_GALLERY.fallbackCapsule1,
-        galleryImages: prop.images,
-        videoUrl: prop.virtualTourVideoUrl || SHOWROOM_VIDEOS.capsuleInteriorWalk,
-        motionOrigin: 'center center',
-        panX: ['0%', '-1.0%'],
-        panY: ['0%', '-0.8%'],
-        scaleRange: [1.01, 1.05],
-        order: 1000 + pIdx,
-        specs: (prop.features || []).slice(0, 4).map((f, fIdx) => ({
-          id: `${prop.id}-sp-${fIdx}`,
-          title: `Feature ${fIdx + 1}`,
-          spec: f
-        }))
-      };
-    });
+    const propertyWaypoints: CameraWaypoint[] = customModularProps.map(
+      (prop, pIdx) => {
+        const primaryImg =
+          prop.images[0] || MODULAR_CAPSULE_GALLERY.fallbackCapsule1;
+        const secondaryImg = prop.images[1] || primaryImg;
+        return {
+          id: `prop-wp-${prop.id}`,
+          code: `LIVE POST ${pIdx + 1} //`,
+          label: prop.title.slice(0, 28),
+          subLabel:
+            prop.tagline || `${prop.location.society}, ${prop.location.city}`,
+          tourCategory: 'capsule_containers',
+          propertyCategory: 'modular',
+          divisionTag:
+            'RI8CLICK CONSORTIUM // LIVE POSTED CAPSULE & MODULAR',
+          headline: prop.title,
+          description: prop.description,
+          valuation: prop.priceFormatted,
+          locationBadge: `${prop.location.society}, ${prop.location.city}`,
+          focalLength: '24MM PRIME',
+          elevation: `${prop.area} ${prop.areaUnit}`,
+          fov: '86° WIDE',
+          imageUrl: primaryImg,
+          secondaryImageUrl: secondaryImg,
+          fallbackUrl: MODULAR_CAPSULE_GALLERY.fallbackCapsule1,
+          galleryImages: prop.images,
+          videoUrl:
+            prop.virtualTourVideoUrl || SHOWROOM_VIDEOS.capsuleInteriorWalk,
+          motionOrigin: 'center center',
+          panX: ['0%', '-1.0%'],
+          panY: ['0%', '-0.8%'],
+          scaleRange: [1.01, 1.05],
+          order: 1000 + pIdx,
+          specs: (prop.features || []).slice(0, 4).map((f, fIdx) => ({
+            id: `${prop.id}-sp-${fIdx}`,
+            title: `Feature ${fIdx + 1}`,
+            spec: f
+          }))
+        };
+      }
+    );
 
     const combined = [...slideWaypoints, ...propertyWaypoints];
     if (combined.length > 0) {
@@ -429,16 +485,20 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         propertyCategory: 'residential',
         divisionTag: 'RI8CLICK CONSORTIUM // VERIFIED PROPERTIES',
         headline: 'Modern 1-Kanal Designer Villa in Faisal Hills',
-        description: 'Verified luxury residential and commercial inventory across Taxila, Faisal Hills, and Islamabad.',
+        description:
+          'Verified luxury residential and commercial inventory across Taxila, Faisal Hills, and Islamabad.',
         valuation: 'PKR 6.85 Crore',
         locationBadge: 'Faisal Hills, Taxila / Islamabad',
         focalLength: '24MM PRIME',
         elevation: '1 KANAL',
         fov: '88° WIDE',
         imageUrl: CONSTRUCTED_HOUSES_GALLERY.house1_modernFaisalHillsVilla,
-        secondaryImageUrl: CONSTRUCTED_HOUSES_GALLERY.house2_contemporaryKanalEstate,
+        secondaryImageUrl:
+          CONSTRUCTED_HOUSES_GALLERY.house2_contemporaryKanalEstate,
         fallbackUrl: CONSTRUCTED_HOUSES_GALLERY.house3_stoneGlassMansion,
-        galleryImages: [CONSTRUCTED_HOUSES_GALLERY.house1_modernFaisalHillsVilla],
+        galleryImages: [
+          CONSTRUCTED_HOUSES_GALLERY.house1_modernFaisalHillsVilla
+        ],
         videoUrl: SHOWROOM_VIDEOS.villaDroneOrbit,
         motionOrigin: 'center center',
         panX: ['0%', '-1%'],
@@ -446,7 +506,11 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         scaleRange: [1.01, 1.05],
         order: 1,
         specs: [
-          { id: 'fb-1', title: 'Highlight', spec: '100% Verified Ri8click Listing' }
+          {
+            id: 'fb-1',
+            title: 'Highlight',
+            spec: '100% Verified Ri8click Listing'
+          }
         ]
       }
     ];
@@ -456,15 +520,22 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
     if (tourCategory === 'all_showroom') {
       return allCombinedWaypoints;
     }
-    const filtered = allCombinedWaypoints.filter(w => w.tourCategory === tourCategory);
+    const filtered = allCombinedWaypoints.filter(
+      w => w.tourCategory === tourCategory
+    );
     return filtered.length > 0 ? filtered : allCombinedWaypoints;
   }, [allCombinedWaypoints, tourCategory]);
 
-  const safeIdx = waypointIdx < cameraWaypoints.length ? waypointIdx : 0;
-  const activeWaypoint = cameraWaypoints[safeIdx] || allCombinedWaypoints[0];
+  const safeIdx =
+    waypointIdx < cameraWaypoints.length ? waypointIdx : 0;
+  const activeWaypoint =
+    cameraWaypoints[safeIdx] || allCombinedWaypoints[0];
 
   const resolveImageWithFallback = (wp: CameraWaypoint): string => {
-    if (customActiveImageOverride && !failedUrls[customActiveImageOverride]) {
+    if (
+      customActiveImageOverride &&
+      !failedUrls[customActiveImageOverride]
+    ) {
       return customActiveImageOverride;
     }
     if (!failedUrls[wp.imageUrl]) return wp.imageUrl;
@@ -540,7 +611,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 
   const handlePrev = () => {
     setIsVideoTourActive(false);
-    setWaypointIdx(prev => (prev - 1 + cameraWaypoints.length) % cameraWaypoints.length);
+    setWaypointIdx(
+      prev => (prev - 1 + cameraWaypoints.length) % cameraWaypoints.length
+    );
   };
 
   const handleNext = () => {
@@ -552,6 +625,24 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
     setIsDeckFloating(true);
     setIsDeckMinimized(false);
     setDeckResetKey(prev => prev + 1);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartXRef.current = e.touches[0]?.clientX ?? null;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartXRef.current === null) return;
+    const endX = e.changedTouches[0]?.clientX ?? touchStartXRef.current;
+    const deltaX = endX - touchStartXRef.current;
+    if (Math.abs(deltaX) > 65) {
+      if (deltaX < 0) {
+        handleNext();
+      } else {
+        handlePrev();
+      }
+    }
+    touchStartXRef.current = null;
   };
 
   const tourCategories: {
@@ -576,7 +667,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
       shortLabel: 'Capsule Pods',
       filterCategory: 'modular',
       icon: <Box className="w-3.5 h-3.5" />,
-      count: allCombinedWaypoints.filter(w => w.tourCategory === 'capsule_containers').length
+      count: allCombinedWaypoints.filter(
+        w => w.tourCategory === 'capsule_containers'
+      ).length
     },
     {
       id: 'highrise_projects',
@@ -584,7 +677,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
       shortLabel: 'Highrise Projects',
       filterCategory: 'commercial',
       icon: <Building2 className="w-3.5 h-3.5" />,
-      count: allCombinedWaypoints.filter(w => w.tourCategory === 'highrise_projects').length
+      count: allCombinedWaypoints.filter(
+        w => w.tourCategory === 'highrise_projects'
+      ).length
     },
     {
       id: 'properties_plots_villas',
@@ -592,7 +687,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
       shortLabel: 'Plots & Villas',
       filterCategory: 'residential',
       icon: <Home className="w-3.5 h-3.5" />,
-      count: allCombinedWaypoints.filter(w => w.tourCategory === 'properties_plots_villas').length
+      count: allCombinedWaypoints.filter(
+        w => w.tourCategory === 'properties_plots_villas'
+      ).length
     },
     {
       id: 'upvc_construction',
@@ -600,7 +697,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
       shortLabel: 'UPVC & Doors',
       filterCategory: 'projects',
       icon: <Wrench className="w-3.5 h-3.5" />,
-      count: allCombinedWaypoints.filter(w => w.tourCategory === 'upvc_construction').length
+      count: allCombinedWaypoints.filter(
+        w => w.tourCategory === 'upvc_construction'
+      ).length
     }
   ];
 
@@ -665,7 +764,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
     >
       <div>
         <div className="text-xs font-semibold text-white">{label}</div>
-        {description && <div className="text-[10px] text-slate-300">{description}</div>}
+        {description && (
+          <div className="text-[10px] text-slate-300">{description}</div>
+        )}
       </div>
       <div
         className={`w-9 h-5 rounded-full transition-colors p-0.5 flex items-center shrink-0 ${
@@ -677,10 +778,14 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
     </button>
   );
 
+  const canDragDeck = isDeckFloating && !isMobileViewport;
+
   return (
     <section
       ref={heroStageRef}
-      className="relative min-h-[680px] lg:min-h-[790px] flex flex-col justify-between overflow-hidden bg-slate-900 text-white select-none"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      className="relative min-h-[620px] sm:min-h-[680px] lg:min-h-[790px] flex flex-col justify-between overflow-hidden bg-slate-900 text-white select-none"
     >
       {/* 1. FULL-BLEED BACKGROUND STAGE */}
       <div className="absolute inset-0 z-0 overflow-hidden bg-slate-950">
@@ -718,16 +823,27 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               }}
               animate={{
                 opacity: 1,
-                scale: isPaused ? activeWaypoint.scaleRange[0] : activeWaypoint.scaleRange[1],
+                scale: isPaused
+                  ? activeWaypoint.scaleRange[0]
+                  : activeWaypoint.scaleRange[1],
                 x: isPaused ? '0%' : activeWaypoint.panX[1],
                 y: isPaused ? '0%' : activeWaypoint.panY[1]
               }}
               exit={{ opacity: 0 }}
               transition={{
                 opacity: { duration: 0.65, ease: 'easeOut' },
-                scale: { duration: WAYPOINT_DURATION_MS / 1000 + 1.0, ease: 'linear' },
-                x: { duration: WAYPOINT_DURATION_MS / 1000 + 1.0, ease: 'linear' },
-                y: { duration: WAYPOINT_DURATION_MS / 1000 + 1.0, ease: 'linear' }
+                scale: {
+                  duration: WAYPOINT_DURATION_MS / 1000 + 1.0,
+                  ease: 'linear'
+                },
+                x: {
+                  duration: WAYPOINT_DURATION_MS / 1000 + 1.0,
+                  ease: 'linear'
+                },
+                y: {
+                  duration: WAYPOINT_DURATION_MS / 1000 + 1.0,
+                  ease: 'linear'
+                }
               }}
               style={{ transformOrigin: activeWaypoint.motionOrigin }}
               className="absolute inset-0 w-full h-full"
@@ -738,7 +854,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 loading="eager"
                 decoding="async"
                 fetchPriority="high"
-                onError={() => handleImageError(resolvedImageUrl, activeWaypoint.label)}
+                onError={() =>
+                  handleImageError(resolvedImageUrl, activeWaypoint.label)
+                }
                 style={{
                   ...atmosphereStyle,
                   imageRendering: 'high-quality' as any
@@ -749,18 +867,18 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           )}
         </AnimatePresence>
 
-        {/* Subtle Scrim */}
+        {/* Subtle High-Clarity Scrim */}
         <div
           className={`absolute inset-0 transition-all duration-500 ${
             isCinemaTheaterMode || !showLeftDescription
-              ? 'bg-gradient-to-t from-slate-950/60 via-transparent to-slate-950/20'
+              ? 'bg-gradient-to-t from-slate-950/65 via-transparent to-slate-950/25'
               : 'bg-gradient-to-r from-slate-950/80 via-slate-950/40 to-transparent'
           }`}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-slate-950/20" />
       </div>
 
-      {/* 2. OPTIONAL CATEGORY BAR */}
+      {/* 2. TOP CATEGORY BAR */}
       <AnimatePresence>
         {showCategoryBar && !isCinemaTheaterMode && (
           <motion.div
@@ -768,9 +886,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
-            className="relative z-30 border-b border-white/15 bg-slate-950/70 backdrop-blur-md"
+            className="relative z-30 border-b border-white/15 bg-slate-950/75 backdrop-blur-md"
           >
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex items-center justify-between gap-2 overflow-x-auto no-scrollbar">
+            <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2 flex items-center justify-between gap-2 overflow-x-auto no-scrollbar">
               <div className="flex items-center gap-1.5">
                 {tourCategories.map(cat => {
                   const isSelected = tourCategory === cat.id;
@@ -782,7 +900,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                         setTourCategory(cat.id);
                         onSelectCategoryFilter(cat.filterCategory);
                       }}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer border ${
+                      className={`px-2.5 sm:px-3 py-1.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all flex items-center gap-1.5 sm:gap-2 whitespace-nowrap cursor-pointer border ${
                         isSelected
                           ? 'bg-amber-400 text-slate-950 border-amber-300 shadow-sm'
                           : 'bg-white/5 text-white border-white/15 hover:bg-white/15'
@@ -793,7 +911,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                       <span className="xl:hidden">{cat.shortLabel}</span>
                       <span
                         className={`text-[10px] px-1.5 py-0.2 rounded-full font-extrabold ${
-                          isSelected ? 'bg-slate-950 text-amber-300' : 'bg-white/15 text-white'
+                          isSelected
+                            ? 'bg-slate-950 text-amber-300'
+                            : 'bg-white/15 text-white'
                         }`}
                       >
                         {cat.count}
@@ -809,7 +929,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-[11px] font-semibold text-slate-200 flex items-center gap-1 shrink-0 cursor-pointer"
                 title="Hide Category Bar"
               >
-                <span>Hide Bar</span>
+                <span className="hidden sm:inline">Hide Bar</span>
                 <ChevronUp className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -817,7 +937,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         )}
       </AnimatePresence>
 
-      {/* 3. OPTIONAL CAMERA WAYPOINTS BAR */}
+      {/* 3. CAMERA WAYPOINTS BAR */}
       <AnimatePresence>
         {showShowroomTourBar && !isCinemaTheaterMode && (
           <motion.div
@@ -827,11 +947,11 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             transition={{ duration: 0.2 }}
             className="relative z-20 border-b border-white/15 bg-slate-900/70 backdrop-blur-md"
           >
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-1.5 flex items-center justify-between gap-2 overflow-x-auto no-scrollbar">
+            <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-1.5 flex items-center justify-between gap-2 overflow-x-auto no-scrollbar">
               <div className="flex items-center gap-1.5">
                 <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-300 px-2 py-0.5 rounded bg-amber-500/15 border border-amber-400/30 flex items-center gap-1 shrink-0">
                   <Camera className="w-3 h-3" />
-                  <span>Camera Angles ({cameraWaypoints.length})</span>
+                  <span>Angles ({cameraWaypoints.length})</span>
                 </span>
                 {cameraWaypoints.map((wp, idx) => {
                   const isSelected = safeIdx === idx;
@@ -861,7 +981,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 className="px-2 py-0.5 rounded-lg bg-white/10 hover:bg-white/20 text-[10px] font-semibold text-slate-200 flex items-center gap-1 shrink-0 cursor-pointer"
                 title="Hide Camera Waypoints Bar"
               >
-                <span>Hide</span>
+                <span className="hidden sm:inline">Hide</span>
                 <ChevronUp className="w-3 h-3" />
               </button>
             </div>
@@ -869,40 +989,52 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         )}
       </AnimatePresence>
 
-      {/* 4. MAIN FOREGROUND STAGE & MOVEABLE CRYSTAL PORTFOLIO DECK */}
-      <div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-6 min-h-[540px] lg:min-h-[610px] flex flex-col justify-between w-full">
+      {/* 4. MAIN FOREGROUND STAGE & VIVID CRYSTAL TRANSPARENT PORTFOLIO DECK */}
+      <div className="relative z-20 max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-3 sm:pt-4 pb-5 sm:pb-6 min-h-[500px] lg:min-h-[610px] flex flex-col justify-between w-full">
         {/* Top Utility Controls Row */}
         <div className="flex flex-wrap items-center justify-between gap-2 pb-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-950/60 backdrop-blur-xl border border-white/20">
-              <Building2 className="w-3.5 h-3.5 text-amber-400" />
-              <span className="text-[11px] font-extrabold uppercase tracking-wider text-white">
-                Ri8click Consortium — Contemporary Capsule Homes, Highrises &amp; German UPVC
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+            <div className="inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 rounded-full bg-slate-950/65 backdrop-blur-xl border border-white/25">
+              <Building2 className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <span className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-white truncate max-w-[210px] sm:max-w-none">
+                Ri8click Consortium — Capsule Homes, Highrises &amp; UPVC
               </span>
             </div>
 
             <button
               type="button"
               onClick={() => setShowBrokenLinkModal(prev => !prev)}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-950/70 hover:bg-emerald-900/80 backdrop-blur-xl border border-emerald-400/40 text-emerald-200 text-[10.5px] font-bold transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-950/75 hover:bg-emerald-900/85 backdrop-blur-xl border border-emerald-400/45 text-emerald-200 text-[10px] font-bold transition-colors cursor-pointer"
               title="View Verified Media Log"
             >
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Media Verified ({brokenLinksLog.length})</span>
+              <span>Synced ({cameraWaypoints.length})</span>
             </button>
+
+            {canManageDeck && onOpenBannerAdmin && (
+              <button
+                type="button"
+                onClick={onOpenBannerAdmin}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-600/90 hover:bg-blue-500 backdrop-blur-xl border border-blue-300/40 text-white text-[10px] font-extrabold transition-colors cursor-pointer shadow-sm"
+                title="Synchronize & Edit Hero Slides in Admin Hub"
+              >
+                <Settings className="w-3 h-3 text-amber-300" />
+                <span>Manage Deck in Admin Hub</span>
+              </button>
+            )}
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 ml-auto">
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 ml-auto">
             <button
               type="button"
               onClick={() => {
                 setShowLeftDescription(prev => !prev);
                 if (!showDirectorDeck) setShowDirectorDeck(true);
               }}
-              className={`px-3 py-1.5 rounded-xl text-[11px] font-bold flex items-center gap-1.5 border transition-all cursor-pointer backdrop-blur-xl ${
+              className={`px-2.5 sm:px-3 py-1.5 rounded-xl text-[11px] font-bold flex items-center gap-1.5 border transition-all cursor-pointer backdrop-blur-xl ${
                 !showLeftDescription
                   ? 'bg-amber-400 text-slate-950 border-amber-300 shadow-sm'
-                  : 'bg-white/10 text-white border-white/25 hover:bg-white/20'
+                  : 'bg-slate-950/60 text-white border-white/25 hover:bg-slate-900/80'
               }`}
             >
               {showLeftDescription ? (
@@ -913,7 +1045,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               ) : (
                 <>
                   <FileText className="w-3.5 h-3.5" />
-                  <span>Show Full Text</span>
+                  <span>Full Text</span>
                 </>
               )}
             </button>
@@ -921,21 +1053,21 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             <button
               type="button"
               onClick={() => setIsVideoTourActive(prev => !prev)}
-              className={`px-3 py-1.5 rounded-xl text-[11px] font-bold flex items-center gap-1.5 border transition-all cursor-pointer backdrop-blur-xl ${
+              className={`px-2.5 sm:px-3 py-1.5 rounded-xl text-[11px] font-bold flex items-center gap-1.5 border transition-all cursor-pointer backdrop-blur-xl ${
                 isVideoTourActive
                   ? 'bg-amber-400 text-slate-950 border-amber-300'
-                  : 'bg-white/10 text-slate-100 border-white/20 hover:bg-white/20'
+                  : 'bg-slate-950/60 text-white border-white/25 hover:bg-slate-900/80'
               }`}
             >
               <Video className="w-3.5 h-3.5" />
-              <span>{isVideoTourActive ? 'Video: ON' : 'Video Walkthrough'}</span>
+              <span>{isVideoTourActive ? 'Video: ON' : 'Video Tour'}</span>
             </button>
 
             {isVideoTourActive && (
               <button
                 type="button"
                 onClick={() => setIsMuted(prev => !prev)}
-                className="p-1.5 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-xl border border-white/20 text-white transition-colors cursor-pointer"
+                className="p-1.5 rounded-xl bg-slate-950/60 hover:bg-slate-900/80 backdrop-blur-xl border border-white/25 text-white transition-colors cursor-pointer"
                 title={isMuted ? 'Unmute Audio' : 'Mute Audio'}
               >
                 {isMuted ? (
@@ -950,14 +1082,14 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               <button
                 type="button"
                 onClick={() => setIsHudMenuOpen(prev => !prev)}
-                className={`px-3 py-1.5 rounded-xl text-[11px] font-bold border transition-all flex items-center gap-1.5 cursor-pointer backdrop-blur-xl ${
+                className={`px-2.5 sm:px-3 py-1.5 rounded-xl text-[11px] font-bold border transition-all flex items-center gap-1.5 cursor-pointer backdrop-blur-xl ${
                   isHudMenuOpen
                     ? 'bg-amber-400 text-slate-950 border-amber-300'
-                    : 'bg-white/10 border-white/20 text-white hover:bg-white/20'
+                    : 'bg-slate-950/60 border-white/25 text-white hover:bg-slate-900/80'
                 }`}
               >
                 <SlidersHorizontal className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">View Controls</span>
+                <span className="hidden sm:inline">Controls</span>
               </button>
 
               <AnimatePresence>
@@ -967,7 +1099,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 6, scale: 0.96 }}
                     transition={{ duration: 0.15 }}
-                    className="absolute right-0 mt-2 w-72 rounded-2xl bg-slate-900/95 backdrop-blur-2xl border border-white/20 shadow-2xl p-3.5 z-50 space-y-2"
+                    className="absolute right-0 mt-2 w-72 rounded-2xl bg-slate-900/95 backdrop-blur-2xl border border-white/25 shadow-2xl p-3.5 z-50 space-y-2"
                   >
                     <div className="flex items-center justify-between pb-2 border-b border-white/15">
                       <span className="text-[11px] font-extrabold uppercase tracking-wider text-amber-300">
@@ -1019,7 +1151,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                       />
                       <ToggleSwitch
                         label="Portfolio Deck Window"
-                        description="Show right-hand interactive camera deck"
+                        description="Show interactive crystal camera deck"
                         checked={showDirectorDeck}
                         onChange={() => setShowDirectorDeck(prev => !prev)}
                       />
@@ -1056,10 +1188,10 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             <button
               type="button"
               onClick={() => setIsCinemaTheaterMode(prev => !prev)}
-              className={`px-3 py-1.5 rounded-xl text-[11px] font-bold border transition-all flex items-center gap-1.5 cursor-pointer backdrop-blur-xl ${
+              className={`px-2.5 sm:px-3 py-1.5 rounded-xl text-[11px] font-bold border transition-all flex items-center gap-1.5 cursor-pointer backdrop-blur-xl ${
                 isCinemaTheaterMode
                   ? 'bg-amber-400 text-slate-950 border-amber-300 shadow-md'
-                  : 'bg-white/10 border-white/20 text-white hover:bg-white/20'
+                  : 'bg-slate-950/60 border-white/25 text-white hover:bg-slate-900/80'
               }`}
             >
               {isCinemaTheaterMode ? (
@@ -1077,20 +1209,20 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           </div>
         </div>
 
-        {/* BROKEN IMAGE LINK REPLACEMENT INSPECTOR MODAL */}
+        {/* VERIFIED MEDIA LOG MODAL */}
         <AnimatePresence>
           {showBrokenLinkModal && (
             <motion.div
               initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
-              className="mb-3 rounded-2xl bg-slate-950/90 backdrop-blur-2xl border border-emerald-400/30 p-3.5 shadow-2xl"
+              className="mb-3 rounded-2xl bg-slate-950/90 backdrop-blur-2xl border border-emerald-400/35 p-3.5 shadow-2xl"
             >
               <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/15">
                 <div className="flex items-center gap-2">
                   <RefreshCw className="w-4 h-4 text-emerald-400" />
                   <span className="text-xs font-extrabold uppercase tracking-wider text-white">
-                    Media Auto-Healer &amp; Active Verification Log
+                    Admin Hub Live Sync &amp; Media Verification Log
                   </span>
                 </div>
                 <button
@@ -1108,7 +1240,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                     className="p-2 rounded-xl bg-white/5 border border-white/10 text-[11px] flex items-start justify-between gap-2"
                   >
                     <div className="min-w-0">
-                      <div className="font-bold text-emerald-300 truncate">{item.waypointLabel}</div>
+                      <div className="font-bold text-emerald-300 truncate">
+                        {item.waypointLabel}
+                      </div>
                       <div className="text-[10px] text-slate-400 truncate line-through">
                         {item.brokenUrl}
                       </div>
@@ -1126,7 +1260,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           )}
         </AnimatePresence>
 
-        {/* OPTIONAL RI8CLICK CONSORTIUM PILLARS RIBBON */}
+        {/* OPTIONAL CONSORTIUM PILLARS RIBBON */}
         <AnimatePresence>
           {showConsortiumRibbon && !isCinemaTheaterMode && (
             <motion.div
@@ -1136,7 +1270,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               transition={{ duration: 0.25 }}
               className="overflow-hidden mb-3"
             >
-              <div className="rounded-2xl bg-slate-950/65 backdrop-blur-xl border border-white/20 p-2.5">
+              <div className="rounded-2xl bg-slate-950/65 backdrop-blur-xl border border-white/25 p-2.5">
                 <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/10 px-1">
                   <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-300">
                     Ri8click Consortium — Integrated Real Estate, Capsule Smart Homes, Islamabad Highrises &amp; German UPVC
@@ -1162,7 +1296,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                         }}
                         className={`p-2.5 rounded-xl border text-left transition-all flex items-start gap-2.5 cursor-pointer ${
                           isActivePillar
-                            ? 'bg-amber-400/20 border-amber-300 text-white'
+                            ? 'bg-amber-400/25 border-amber-300 text-white'
                             : 'bg-white/5 border-white/10 text-slate-200 hover:bg-white/15'
                         }`}
                       >
@@ -1173,7 +1307,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                           <div className="text-xs font-extrabold text-white truncate">
                             {pillar.title}
                           </div>
-                          <div className="text-[10px] text-slate-300 truncate">{pillar.detail}</div>
+                          <div className="text-[10px] text-slate-200 truncate">
+                            {pillar.detail}
+                          </div>
                         </div>
                       </button>
                     );
@@ -1184,7 +1320,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           )}
         </AnimatePresence>
 
-        {/* CENTER MAIN CONTENT & MOVABLE CRYSTAL TRANSPARENT PORTFOLIO DECK */}
+        {/* CENTER MAIN CONTENT & VIVID CRYSTAL TRANSPARENT PORTFOLIO DECK */}
         <AnimatePresence mode="wait">
           {!isCinemaTheaterMode ? (
             <motion.div
@@ -1193,33 +1329,43 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 8 }}
               transition={{ duration: 0.3 }}
-              className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-end my-auto py-2"
+              className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 items-end my-auto py-2"
             >
               {showLeftDescription ? (
-                <div className={showDirectorDeck ? 'lg:col-span-7' : 'lg:col-span-11'}>
+                <div
+                  className={
+                    showDirectorDeck ? 'lg:col-span-7' : 'lg:col-span-11'
+                  }
+                >
                   <motion.div
                     key={activeWaypoint.id}
                     initial={{ opacity: 0, x: -12 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.35 }}
-                    className="p-5 sm:p-6 rounded-3xl bg-slate-950/55 backdrop-blur-md border border-white/20 shadow-2xl space-y-4"
+                    className="p-4 sm:p-6 rounded-3xl bg-slate-950/55 backdrop-blur-xl border border-white/25 shadow-2xl space-y-3.5 sm:space-y-4"
                   >
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-400 text-slate-950 text-[11px] font-extrabold uppercase tracking-wider shadow-xs">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-400 text-slate-950 text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider shadow-xs">
                         <Sparkles className="w-3 h-3" />
                         <span>{activeWaypoint.divisionTag}</span>
                       </span>
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900/80 border border-white/20 text-white text-xs font-semibold">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900/85 border border-white/25 text-white text-xs font-semibold">
                         <MapPin className="w-3.5 h-3.5 text-amber-400" />
                         <span>{activeWaypoint.locationBadge}</span>
                       </span>
                     </div>
 
-                    <h1 className="text-2xl sm:text-4xl lg:text-[40px] font-black tracking-tight leading-[1.12] text-white font-serif drop-shadow-sm">
+                    <h1
+                      style={{ textShadow: '0 2px 14px rgba(2,6,23,0.9)' }}
+                      className="text-xl sm:text-3xl lg:text-[38px] font-black tracking-tight leading-[1.14] text-white font-serif"
+                    >
                       {activeWaypoint.headline}
                     </h1>
 
-                    <p className="text-sm sm:text-base text-slate-100 leading-relaxed font-normal">
+                    <p
+                      style={{ textShadow: '0 1px 8px rgba(2,6,23,0.85)' }}
+                      className="text-xs sm:text-base text-white/95 leading-relaxed font-medium"
+                    >
                       {activeWaypoint.description}
                     </p>
 
@@ -1228,12 +1374,14 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                         {activeWaypoint.specs.map(item => (
                           <div
                             key={item.id}
-                            className="p-2.5 rounded-xl bg-slate-900/65 border border-white/15 flex items-start gap-2.5"
+                            className="p-2.5 rounded-xl bg-slate-950/65 border border-white/20 flex items-start gap-2.5"
                           >
                             <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                             <div>
-                              <div className="text-xs font-bold text-white">{item.title}</div>
-                              <div className="text-[11px] text-slate-200 leading-snug">
+                              <div className="text-xs font-bold text-amber-300">
+                                {item.title}
+                              </div>
+                              <div className="text-[11px] text-white font-medium leading-snug">
                                 {item.spec}
                               </div>
                             </div>
@@ -1243,7 +1391,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                     )}
 
                     <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
-                      <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-emerald-950/80 border border-emerald-400/40">
+                      <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-emerald-950/85 border border-emerald-400/50 shadow-sm">
                         <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-300">
                           Valuation:
                         </span>
@@ -1252,44 +1400,53 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                         </span>
                       </div>
 
-                      {activeWaypoint.galleryImages && activeWaypoint.galleryImages.length > 1 && (
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-300 mr-1">
-                            Angles:
-                          </span>
-                          {activeWaypoint.galleryImages.map((imgUrl, gIdx) => {
-                            const isImgFailed = failedUrls[imgUrl];
-                            if (isImgFailed) return null;
-                            const isCurrentAngle = resolvedImageUrl === imgUrl;
-                            return (
-                              <button
-                                key={gIdx}
-                                type="button"
-                                onClick={() => {
-                                  setIsVideoTourActive(false);
-                                  setCustomActiveImageOverride(imgUrl);
-                                }}
-                                className={`w-10 h-7 rounded-lg overflow-hidden border-2 transition-all cursor-pointer ${
-                                  isCurrentAngle
-                                    ? 'border-amber-400 scale-105 shadow-md'
-                                    : 'border-white/25 opacity-75 hover:opacity-100'
-                                }`}
-                                title={`Switch to Angle ${gIdx + 1}`}
-                              >
-                                <img
-                                  src={imgUrl}
-                                  alt={`Angle ${gIdx + 1}`}
-                                  onError={() => handleImageError(imgUrl, activeWaypoint.label)}
-                                  className="w-full h-full object-cover"
-                                />
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
+                      {activeWaypoint.galleryImages &&
+                        activeWaypoint.galleryImages.length > 1 && (
+                          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-white mr-1">
+                              Angles:
+                            </span>
+                            {activeWaypoint.galleryImages.map(
+                              (imgUrl, gIdx) => {
+                                const isImgFailed = failedUrls[imgUrl];
+                                if (isImgFailed) return null;
+                                const isCurrentAngle =
+                                  resolvedImageUrl === imgUrl;
+                                return (
+                                  <button
+                                    key={gIdx}
+                                    type="button"
+                                    onClick={() => {
+                                      setIsVideoTourActive(false);
+                                      setCustomActiveImageOverride(imgUrl);
+                                    }}
+                                    className={`w-10 h-7 rounded-lg overflow-hidden border-2 transition-all cursor-pointer shrink-0 ${
+                                      isCurrentAngle
+                                        ? 'border-amber-400 scale-105 shadow-md'
+                                        : 'border-white/30 opacity-80 hover:opacity-100'
+                                    }`}
+                                    title={`Switch to Angle ${gIdx + 1}`}
+                                  >
+                                    <img
+                                      src={imgUrl}
+                                      alt={`Angle ${gIdx + 1}`}
+                                      onError={() =>
+                                        handleImageError(
+                                          imgUrl,
+                                          activeWaypoint.label
+                                        )
+                                      }
+                                      className="w-full h-full object-cover"
+                                    />
+                                  </button>
+                                );
+                              }
+                            )}
+                          </div>
+                        )}
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-2.5 pt-1">
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 pt-1">
                       <button
                         type="button"
                         onClick={() =>
@@ -1303,12 +1460,14 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                               society: activeWaypoint.locationBadge,
                               province: 'Islamabad Capital Territory'
                             },
-                            images: activeWaypoint.galleryImages || [resolvedImageUrl],
+                            images: activeWaypoint.galleryImages || [
+                              resolvedImageUrl
+                            ],
                             virtualTourVideoUrl: activeWaypoint.videoUrl,
                             virtualTourVideoTitle: `${activeWaypoint.headline} - Ri8click Consortium Walkthrough`
                           })
                         }
-                        className="px-4 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs sm:text-sm flex items-center gap-2 shadow-lg transition-all cursor-pointer"
+                        className="px-3.5 sm:px-4 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs sm:text-sm flex items-center gap-2 shadow-lg transition-all cursor-pointer"
                       >
                         <Compass className="w-4 h-4" />
                         <span>Launch 360° Virtual Walkthrough</span>
@@ -1317,7 +1476,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                       <button
                         type="button"
                         onClick={onExploreClick}
-                        className="px-4 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 text-white font-bold text-xs sm:text-sm border border-white/25 transition-all cursor-pointer"
+                        className="px-3.5 sm:px-4 py-2.5 rounded-xl bg-slate-950/70 hover:bg-slate-900 text-white font-bold text-xs sm:text-sm border border-white/30 transition-all cursor-pointer"
                       >
                         Explore Portfolio &amp; Listings
                       </button>
@@ -1325,7 +1484,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                       <button
                         type="button"
                         onClick={onContactAgentClick}
-                        className="px-4 py-2.5 rounded-xl bg-emerald-600/90 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm border border-emerald-400/40 transition-all cursor-pointer"
+                        className="px-3.5 sm:px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm border border-emerald-400/50 transition-all cursor-pointer"
                       >
                         Ri8click Consortium Inquiry
                       </button>
@@ -1333,43 +1492,58 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                   </motion.div>
                 </div>
               ) : (
-                <div className={showDirectorDeck ? 'lg:col-span-7' : 'lg:col-span-12'}>
+                <div
+                  className={
+                    showDirectorDeck ? 'lg:col-span-7' : 'lg:col-span-12'
+                  }
+                >
                   <motion.div
                     key={`compact-${activeWaypoint.id}`}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3 }}
-                    className="inline-flex flex-col gap-2 p-3.5 sm:p-4 rounded-2xl bg-slate-950/45 backdrop-blur-md border border-white/20 shadow-xl max-w-xl"
+                    className="inline-flex flex-col gap-2 p-3.5 sm:p-4 rounded-2xl bg-slate-950/40 backdrop-blur-xl backdrop-saturate-150 border border-white/30 shadow-[0_12px_36px_rgba(2,6,23,0.65)] max-w-xl w-full sm:w-auto"
                   >
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-amber-400 text-slate-950 text-[9.5px] font-black uppercase tracking-wider">
-                        <Camera className="w-3 h-3" />
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black uppercase tracking-wider shadow-xs">
+                        <Sparkles className="w-2.5 h-2.5" />
                         <span>{activeWaypoint.code}</span>
                       </span>
-                      <span className="text-[10.5px] font-extrabold text-emerald-300 bg-slate-950/60 border border-emerald-400/30 px-2 py-0.5 rounded">
+                      <span className="text-[11px] font-black text-emerald-300 bg-slate-950/80 border border-emerald-400/45 px-2.5 py-0.5 rounded-md shadow-xs">
                         {activeWaypoint.valuation}
                       </span>
                     </div>
 
-                    <h1 className="text-base sm:text-xl font-black text-white leading-tight font-serif drop-shadow-xs">
+                    <h1
+                      style={{ textShadow: '0 2px 12px rgba(2,6,23,0.95)' }}
+                      className="text-base sm:text-xl font-black text-white leading-tight font-serif"
+                    >
                       {activeWaypoint.headline}
                     </h1>
 
-                    <p className="text-[11px] text-slate-200 truncate">
+                    <p
+                      style={{ textShadow: '0 1px 8px rgba(2,6,23,0.95)' }}
+                      className="text-xs text-amber-100 font-semibold truncate"
+                    >
                       {activeWaypoint.subLabel}
                     </p>
 
-                    <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-white/15 text-[10.5px] text-slate-200">
-                      <span className="inline-flex items-center gap-1 truncate max-w-[220px] sm:max-w-[260px]">
-                        <MapPin className="w-3 h-3 text-amber-300 shrink-0" />
-                        <span className="truncate">{activeWaypoint.locationBadge}</span>
+                    <div className="flex flex-wrap items-center justify-between gap-2 pt-1.5 border-t border-white/20 text-[11px] text-white font-semibold">
+                      <span className="inline-flex items-center gap-1 truncate max-w-[200px] sm:max-w-[260px]">
+                        <MapPin className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                        <span
+                          style={{ textShadow: '0 1px 6px rgba(2,6,23,0.9)' }}
+                          className="truncate"
+                        >
+                          {activeWaypoint.locationBadge}
+                        </span>
                       </span>
 
                       <div className="flex items-center gap-1.5 shrink-0">
                         <button
                           type="button"
                           onClick={() => setShowLeftDescription(true)}
-                          className="px-2.5 py-1 rounded-lg bg-white/15 hover:bg-white/25 text-white font-bold text-[10px] border border-white/20 cursor-pointer transition-colors"
+                          className="px-2.5 py-1 rounded-lg bg-slate-950/75 hover:bg-slate-900 text-white font-bold text-[10px] border border-white/30 cursor-pointer transition-colors"
                         >
                           Show Text
                         </button>
@@ -1386,12 +1560,14 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                                 society: activeWaypoint.locationBadge,
                                 province: 'Islamabad Capital Territory'
                               },
-                              images: activeWaypoint.galleryImages || [resolvedImageUrl],
+                              images: activeWaypoint.galleryImages || [
+                                resolvedImageUrl
+                              ],
                               virtualTourVideoUrl: activeWaypoint.videoUrl,
                               virtualTourVideoTitle: `${activeWaypoint.headline} - Ri8click Consortium Walkthrough`
                             })
                           }
-                          className="px-2.5 py-1 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-[10px] cursor-pointer transition-colors"
+                          className="px-2.5 py-1 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-[10px] cursor-pointer transition-colors shadow-xs"
                         >
                           360° Tour
                         </button>
@@ -1401,12 +1577,18 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 </div>
               )}
 
-              {/* BLOCK 3: CRYSTAL TRANSPARENT PORTFOLIO DECK */}
+              {/* BLOCK 3: VIVID CRYSTAL TRANSPARENT PORTFOLIO DECK */}
               {showDirectorDeck && (
-                <div className={showLeftDescription ? 'lg:col-span-5' : 'lg:col-span-5 ml-auto'}>
+                <div
+                  className={
+                    showLeftDescription
+                      ? 'lg:col-span-5'
+                      : 'lg:col-span-5 lg:ml-auto w-full'
+                  }
+                >
                   <motion.div
-                    key={`portfolio-deck-${deckResetKey}`}
-                    drag={isDeckFloating}
+                    key={`portfolio-deck-${deckResetKey}-${isMobileViewport}`}
+                    drag={canDragDeck}
                     dragControls={portfolioDeckDragControls}
                     dragListener={false}
                     dragMomentum={false}
@@ -1414,34 +1596,53 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                     dragConstraints={heroStageRef}
                     whileDrag={{
                       scale: 1.02,
-                      boxShadow: '0 25px 60px -12px rgba(0, 0, 0, 0.75)'
+                      boxShadow: '0 25px 60px -12px rgba(2, 6, 23, 0.85)'
                     }}
-                    className="rounded-3xl bg-white/[0.12] backdrop-blur-xl border border-white/30 p-3.5 sm:p-4 shadow-[0_16px_48px_rgba(0,0,0,0.45)] space-y-3"
+                    className="rounded-3xl bg-gradient-to-br from-slate-950/35 via-blue-950/25 to-slate-950/40 backdrop-blur-2xl backdrop-saturate-200 border border-white/35 ring-1 ring-amber-400/25 p-3 sm:p-4 shadow-[0_20px_50px_rgba(2,6,23,0.65)] space-y-2.5 sm:space-y-3"
                   >
+                    {/* Deck Header Bar */}
                     <div
                       onPointerDown={e => {
-                        if (isDeckFloating) {
+                        if (canDragDeck) {
                           portfolioDeckDragControls.start(e);
                         }
                       }}
-                      className={`flex items-center justify-between gap-2 pb-2.5 border-b border-white/20 ${
-                        isDeckFloating ? 'cursor-grab active:cursor-grabbing' : ''
+                      className={`flex items-center justify-between gap-2 pb-2.5 border-b border-white/25 ${
+                        canDragDeck
+                          ? 'cursor-grab active:cursor-grabbing'
+                          : ''
                       }`}
-                      title="Drag this header bar to move the Portfolio Deck anywhere in the window"
+                      title={
+                        canDragDeck
+                          ? 'Drag this header bar to move the Portfolio Deck anywhere in the window'
+                          : 'Portfolio Deck (Mobile Responsive Mode)'
+                      }
                     >
                       <div className="flex items-center gap-2 min-w-0">
-                        <div className="p-1.5 rounded-lg bg-white/15 border border-white/25 text-amber-300 shrink-0">
+                        <div className="p-1.5 rounded-xl bg-amber-400 text-slate-950 shadow-sm shrink-0">
                           <GripHorizontal className="w-4 h-4" />
                         </div>
                         <div className="min-w-0">
-                          <div className="text-xs font-extrabold uppercase tracking-wider text-white flex items-center gap-1.5">
-                            <span className="truncate">Portfolio Deck</span>
-                            <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-400/20 text-amber-300 border border-amber-400/40 font-mono">
-                              {isDeckFloating ? 'Drag Anywhere' : 'Docked'}
+                          <div className="text-xs font-black uppercase tracking-wider text-white flex items-center gap-1.5">
+                            <span
+                              style={{
+                                textShadow: '0 2px 8px rgba(2,6,23,0.95)'
+                              }}
+                              className="truncate"
+                            >
+                              Portfolio Deck
+                            </span>
+                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-400 text-slate-950 font-black font-mono shrink-0">
+                              {canDragDeck ? 'Crystal Drag' : 'Mobile Ready'}
                             </span>
                           </div>
-                          <div className="text-[10px] text-slate-200 truncate">
-                            {cameraWaypoints.length} Active Slides • Admin Controlled Sequence
+                          <div
+                            style={{
+                              textShadow: '0 1px 6px rgba(2,6,23,0.95)'
+                            }}
+                            className="text-[10.5px] font-bold text-amber-200 truncate"
+                          >
+                            {cameraWaypoints.length} Active Slides • Admin Hub Synced
                           </div>
                         </div>
                       </div>
@@ -1450,34 +1651,36 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                         className="flex items-center gap-1 shrink-0"
                         onPointerDown={e => e.stopPropagation()}
                       >
-                        <button
-                          type="button"
-                          onClick={handleResetDeckPosition}
-                          className="p-1.5 rounded-lg bg-white/10 hover:bg-white/25 text-slate-200 hover:text-white border border-white/15 transition-all cursor-pointer"
-                          title="Reset Window Position"
-                        >
-                          <RotateCcw className="w-3.5 h-3.5" />
-                        </button>
+                        {!isMobileViewport && (
+                          <button
+                            type="button"
+                            onClick={handleResetDeckPosition}
+                            className="p-1.5 rounded-lg bg-slate-950/65 hover:bg-slate-900 text-white border border-white/25 transition-all cursor-pointer"
+                            title="Reset Window Position"
+                          >
+                            <RotateCcw className="w-3.5 h-3.5 text-amber-300" />
+                          </button>
+                        )}
 
                         <button
                           type="button"
                           onClick={() => setShowLeftDescription(prev => !prev)}
-                          className={`px-2 py-1 rounded-lg text-[10px] font-bold border transition-all cursor-pointer ${
+                          className={`px-2 py-1 rounded-lg text-[10px] font-extrabold border transition-all cursor-pointer ${
                             !showLeftDescription
                               ? 'bg-amber-400 text-slate-950 border-amber-300'
-                              : 'bg-white/10 text-white border-white/20 hover:bg-white/20'
+                              : 'bg-slate-950/70 text-white border-white/25 hover:bg-slate-900'
                           }`}
                         >
-                          {showLeftDescription ? 'Hide Text' : 'Show Text'}
+                          {showLeftDescription ? 'Hide Text' : 'Text'}
                         </button>
 
                         <button
                           type="button"
                           onClick={() => setIsVideoTourActive(prev => !prev)}
-                          className={`px-2 py-1 rounded-lg text-[10px] font-bold border transition-all cursor-pointer ${
+                          className={`px-2 py-1 rounded-lg text-[10px] font-extrabold border transition-all cursor-pointer ${
                             isVideoTourActive
                               ? 'bg-amber-400 text-slate-950 border-amber-300'
-                              : 'bg-white/10 text-white border-white/20 hover:bg-white/20'
+                              : 'bg-slate-950/70 text-white border-white/25 hover:bg-slate-900'
                           }`}
                         >
                           {isVideoTourActive ? 'Photos' : 'Video'}
@@ -1486,8 +1689,10 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                         <button
                           type="button"
                           onClick={() => setIsDeckMinimized(prev => !prev)}
-                          className="p-1.5 rounded-lg bg-white/10 hover:bg-white/25 text-slate-200 hover:text-white border border-white/15 transition-all cursor-pointer"
-                          title={isDeckMinimized ? 'Expand Deck' : 'Minimize Deck'}
+                          className="p-1.5 rounded-lg bg-slate-950/70 hover:bg-slate-900 text-white border border-white/25 transition-all cursor-pointer"
+                          title={
+                            isDeckMinimized ? 'Expand Deck' : 'Minimize Deck'
+                          }
                         >
                           {isDeckMinimized ? (
                             <ChevronDown className="w-3.5 h-3.5" />
@@ -1499,7 +1704,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                         <button
                           type="button"
                           onClick={() => setShowDirectorDeck(false)}
-                          className="px-2 py-1 rounded-lg bg-white/10 hover:bg-rose-500/30 text-slate-200 hover:text-white border border-white/15 text-[10px] font-semibold cursor-pointer"
+                          className="px-2 py-1 rounded-lg bg-slate-950/70 hover:bg-rose-600 text-white border border-white/25 text-[10px] font-bold cursor-pointer"
                           title="Hide Portfolio Deck"
                         >
                           Hide
@@ -1509,13 +1714,17 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 
                     {!isDeckMinimized && (
                       <>
-                        <div className="grid grid-cols-5 gap-1 p-1 rounded-xl bg-slate-950/50 border border-white/20">
+                        {/* Category Filter Pills inside Crystal Deck */}
+                        <div className="grid grid-cols-5 gap-1 p-1 rounded-xl bg-slate-950/60 border border-white/25">
                           {(
                             [
                               { id: 'all_showroom', label: 'All' },
                               { id: 'capsule_containers', label: 'Capsules' },
                               { id: 'highrise_projects', label: 'Highrise' },
-                              { id: 'properties_plots_villas', label: 'Plots/Villas' },
+                              {
+                                id: 'properties_plots_villas',
+                                label: 'Plots/Villas'
+                              },
                               { id: 'upvc_construction', label: 'UPVC' }
                             ] as { id: TourDeckCategory; label: string }[]
                           ).map(tab => {
@@ -1525,10 +1734,10 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                                 key={tab.id}
                                 type="button"
                                 onClick={() => setTourCategory(tab.id)}
-                                className={`py-1.5 px-1 rounded-lg text-[10px] font-extrabold text-center transition-all truncate cursor-pointer ${
+                                className={`py-1.5 px-1 rounded-lg text-[10px] font-black text-center transition-all truncate cursor-pointer ${
                                   active
-                                    ? 'bg-amber-400 text-slate-950 shadow-xs'
-                                    : 'text-slate-100 hover:text-white hover:bg-white/15'
+                                    ? 'bg-amber-400 text-slate-950 shadow-sm'
+                                    : 'text-white hover:bg-white/15'
                                 }`}
                               >
                                 {tab.label}
@@ -1537,7 +1746,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                           })}
                         </div>
 
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-[250px] overflow-y-auto pr-1">
+                        {/* Vivid Thumbnail Grid with Crystal-Clear High-Contrast Text */}
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-[210px] sm:max-h-[250px] overflow-y-auto pr-1">
                           {cameraWaypoints.map((wp, idx) => {
                             const isSelected = safeIdx === idx;
                             const thumbUrl = resolveImageWithFallback(wp);
@@ -1549,36 +1759,45 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                                   setIsVideoTourActive(false);
                                   setWaypointIdx(idx);
                                 }}
-                                className={`group relative rounded-xl overflow-hidden border text-left transition-all cursor-pointer h-20 ${
+                                className={`group relative rounded-xl overflow-hidden border text-left transition-all cursor-pointer h-20 sm:h-22 ${
                                   isSelected
-                                    ? 'border-amber-300 ring-2 ring-amber-400/50 scale-[1.01]'
-                                    : 'border-white/25 opacity-90 hover:opacity-100 hover:border-white/50'
+                                    ? 'border-amber-400 ring-2 ring-amber-400/70 scale-[1.01] shadow-lg'
+                                    : 'border-white/35 hover:border-amber-300/80'
                                 }`}
                               >
                                 <img
                                   src={thumbUrl}
                                   alt={wp.label}
                                   loading="lazy"
-                                  onError={() => handleImageError(thumbUrl, wp.label)}
-                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                  onError={() =>
+                                    handleImageError(thumbUrl, wp.label)
+                                  }
+                                  className="w-full h-full object-cover brightness-105 saturate-125 group-hover:scale-105 transition-transform duration-300"
                                 />
-                                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-transparent" />
-                                <div className="absolute top-1.5 left-1.5 right-1.5 flex items-center justify-between">
+                                {/* Crisp Bottom Scrim so Text is 100% Readable over Vivid Images */}
+                                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/95 via-slate-950/35 to-transparent" />
+                                <div className="absolute top-1.5 left-1.5 right-1.5 flex items-center justify-between gap-1">
                                   <span
-                                    className={`text-[9px] font-black uppercase px-1.5 py-0.2 rounded ${
+                                    className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded shadow-xs ${
                                       isSelected
                                         ? 'bg-amber-400 text-slate-950'
-                                        : 'bg-slate-950/75 text-slate-100'
+                                        : 'bg-slate-950/85 text-white border border-white/25'
                                     }`}
                                   >
                                     #{idx + 1}
                                   </span>
-                                  {isSelected && (
-                                    <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
-                                  )}
+                                  <span className="text-[8.5px] font-extrabold text-emerald-300 bg-slate-950/85 border border-emerald-400/40 px-1.5 py-0.5 rounded truncate max-w-[75%]">
+                                    {wp.valuation}
+                                  </span>
                                 </div>
                                 <div className="absolute bottom-1.5 left-1.5 right-1.5">
-                                  <div className="text-[10.5px] font-bold text-white truncate drop-shadow-xs">
+                                  <div
+                                    style={{
+                                      textShadow:
+                                        '0 1px 6px rgba(2,6,23,1), 0 0 2px rgba(2,6,23,1)'
+                                    }}
+                                    className="text-[10.5px] font-extrabold text-white truncate leading-tight"
+                                  >
                                     {wp.label}
                                   </div>
                                 </div>
@@ -1587,11 +1806,17 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                           })}
                         </div>
 
-                        <div className="pt-2 border-t border-white/20 flex items-center justify-between gap-2 text-[11px]">
-                          <div className="flex items-center gap-1.5 text-slate-100 truncate">
-                            <Move className="w-3.5 h-3.5 text-amber-300 shrink-0" />
-                            <span className="truncate font-medium">
-                              Capsule Pods, Highrises &amp; UPVC
+                        {/* Deck Footer Bar */}
+                        <div className="pt-2 border-t border-white/25 flex items-center justify-between gap-2 text-[11px]">
+                          <div className="flex items-center gap-1.5 text-white truncate">
+                            <Move className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                            <span
+                              style={{
+                                textShadow: '0 1px 6px rgba(2,6,23,0.95)'
+                              }}
+                              className="truncate font-bold"
+                            >
+                              Capsules, Highrises &amp; UPVC
                             </span>
                           </div>
                           <div className="flex items-center gap-1.5 shrink-0">
@@ -1601,7 +1826,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                                 setTourCategory('capsule_containers');
                                 onSelectCategoryFilter('modular');
                               }}
-                              className="px-2 py-1 rounded-lg bg-amber-400/25 hover:bg-amber-400/35 text-amber-200 border border-amber-300/40 font-bold text-[10px] transition-colors cursor-pointer"
+                              className="px-2.5 py-1 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-[10px] transition-colors cursor-pointer shadow-xs"
                             >
                               Capsules
                             </button>
@@ -1611,7 +1836,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                                 setTourCategory('upvc_construction');
                                 onSelectCategoryFilter('projects');
                               }}
-                              className="px-2 py-1 rounded-lg bg-white/15 hover:bg-white/25 text-white border border-white/25 font-bold text-[10px] transition-colors cursor-pointer"
+                              className="px-2.5 py-1 rounded-lg bg-slate-950/80 hover:bg-slate-900 text-white border border-white/30 font-bold text-[10px] transition-colors cursor-pointer"
                             >
                               UPVC
                             </button>
@@ -1629,16 +1854,18 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 12 }}
-              className="mt-auto pt-48 flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4"
+              className="mt-auto pt-36 sm:pt-48 flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4"
             >
-              <div className="p-4 rounded-2xl bg-slate-950/60 backdrop-blur-xl border border-white/20 max-w-xl">
+              <div className="p-4 rounded-2xl bg-slate-950/60 backdrop-blur-xl border border-white/25 max-w-xl">
                 <div className="text-[10px] font-extrabold uppercase tracking-wider text-amber-300 mb-1">
                   {activeWaypoint.code} — {activeWaypoint.divisionTag}
                 </div>
                 <h2 className="text-xl sm:text-2xl font-black text-white font-serif">
                   {activeWaypoint.headline}
                 </h2>
-                <p className="text-xs text-slate-200 mt-1">{activeWaypoint.subLabel}</p>
+                <p className="text-xs text-slate-100 mt-1">
+                  {activeWaypoint.subLabel}
+                </p>
               </div>
             </motion.div>
           )}
@@ -1657,25 +1884,30 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                     setIsVideoTourActive(false);
                     setWaypointIdx(idx);
                   }}
-                  className="group flex-1 min-w-[42px] max-w-[110px] text-left focus:outline-none cursor-pointer"
+                  className="group flex-1 min-w-[48px] max-w-[110px] text-left focus:outline-none cursor-pointer"
                 >
-                  <div className="flex items-center justify-between text-[10px] font-bold mb-1">
+                  <div className="flex items-center justify-between text-[10px] font-extrabold mb-1">
                     <span
+                      style={{ textShadow: '0 1px 4px rgba(2,6,23,0.9)' }}
                       className={`truncate ${
-                        isCurrent ? 'text-amber-300' : 'text-slate-300 group-hover:text-white'
+                        isCurrent
+                          ? 'text-amber-300'
+                          : 'text-white/85 group-hover:text-white'
                       }`}
                     >
                       {idx + 1}. {wp.label}
                     </span>
                   </div>
-                  <div className="h-1.5 w-full rounded-full bg-white/20 overflow-hidden">
+                  <div className="h-1.5 w-full rounded-full bg-white/25 overflow-hidden">
                     {isCurrent ? (
                       <motion.div
                         key={`progress-${wp.id}-${isPaused}`}
                         initial={{ width: '0%' }}
                         animate={{ width: isPaused ? '45%' : '100%' }}
                         transition={{
-                          duration: isPaused ? 0.2 : WAYPOINT_DURATION_MS / 1000,
+                          duration: isPaused
+                            ? 0.2
+                            : WAYPOINT_DURATION_MS / 1000,
                           ease: 'linear'
                         }}
                         className="h-full bg-amber-400 rounded-full"
@@ -1683,7 +1915,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                     ) : (
                       <div
                         className={`h-full rounded-full ${
-                          idx < safeIdx ? 'w-full bg-white/50' : 'w-0'
+                          idx < safeIdx ? 'w-full bg-white/60' : 'w-0'
                         }`}
                       />
                     )}
@@ -1693,12 +1925,12 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             })}
           </div>
 
-          <div className="flex items-center gap-1.5 shrink-0">
+          <div className="flex flex-wrap items-center justify-center sm:justify-end gap-1.5 shrink-0 w-full sm:w-auto">
             {!showLeftDescription && (
               <button
                 type="button"
                 onClick={() => setShowLeftDescription(true)}
-                className="px-2.5 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 border border-white/25 text-[11px] font-bold text-white cursor-pointer"
+                className="px-2.5 py-1.5 rounded-xl bg-slate-950/70 hover:bg-slate-900 border border-white/30 text-[11px] font-bold text-white cursor-pointer"
               >
                 Show Text
               </button>
@@ -1707,7 +1939,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               <button
                 type="button"
                 onClick={() => setShowDirectorDeck(true)}
-                className="px-2.5 py-1.5 rounded-xl bg-amber-400/20 hover:bg-amber-400/30 border border-amber-400/40 text-[11px] font-bold text-amber-200 cursor-pointer"
+                className="px-2.5 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 border border-amber-300 text-[11px] font-black text-slate-950 cursor-pointer"
               >
                 Show Portfolio Deck
               </button>
@@ -1715,7 +1947,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             <button
               type="button"
               onClick={handlePrev}
-              className="p-2 rounded-xl bg-slate-950/60 hover:bg-white/20 border border-white/20 text-white transition-colors cursor-pointer"
+              className="p-2 rounded-xl bg-slate-950/70 hover:bg-white/20 border border-white/25 text-white transition-colors cursor-pointer"
               title="Previous Angle"
             >
               <ChevronLeft className="w-4 h-4" />
@@ -1740,7 +1972,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             <button
               type="button"
               onClick={handleNext}
-              className="p-2 rounded-xl bg-slate-950/60 hover:bg-white/20 border border-white/20 text-white transition-colors cursor-pointer"
+              className="p-2 rounded-xl bg-slate-950/70 hover:bg-white/20 border border-white/25 text-white transition-colors cursor-pointer"
               title="Next Angle"
             >
               <ChevronRight className="w-4 h-4" />
