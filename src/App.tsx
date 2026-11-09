@@ -55,30 +55,34 @@ import {
 } from './types';
 import { SlidersHorizontal, Sparkles, Plus, RotateCcw } from 'lucide-react';
 
-const DECK_SCHEMA_VERSION = 'ri8click_deck_v4_global';
+const DECK_SCHEMA_VERSION = 'ri8click_deck_v5_global';
+const memoryStorageFallback = new Map<string, string>();
 
 function safeStorageGet(key: string): string | null {
   try {
     if (typeof window !== 'undefined' && window.localStorage) {
-      return window.localStorage.getItem(key);
+      const val = window.localStorage.getItem(key);
+      if (val !== null) return val;
     }
   } catch {
-    // Private / Incognito mode with strict storage blocking
+    // Incognito / Private mode with storage disabled
   }
-  return null;
+  return memoryStorageFallback.get(key) ?? null;
 }
 
 function safeStorageSet(key: string, value: string): void {
+  memoryStorageFallback.set(key, value);
   try {
     if (typeof window !== 'undefined' && window.localStorage) {
       window.localStorage.setItem(key, value);
     }
   } catch {
-    // Private / Incognito mode with strict storage blocking or quota exceeded
+    // Incognito / Private mode or storage quota exceeded — safely kept in memory
   }
 }
 
 function safeStorageRemove(key: string): void {
+  memoryStorageFallback.delete(key);
   try {
     if (typeof window !== 'undefined' && window.localStorage) {
       window.localStorage.removeItem(key);
@@ -118,20 +122,65 @@ function sanitizeAgenciesToPakistanAvatars(
   });
 }
 
+function normalizeClientSlides(slides: HeroSlide[]): HeroSlide[] {
+  if (!Array.isArray(slides) || slides.length === 0) return INITIAL_HERO_SLIDES;
+  return slides
+    .filter(s => s && typeof s === 'object' && s.title)
+    .map((s, idx) => {
+      const gallery =
+        Array.isArray(s.galleryImages) && s.galleryImages.length > 0
+          ? s.galleryImages.filter(Boolean)
+          : s.imageUrl
+          ? [s.imageUrl]
+          : [];
+      const primaryImg = gallery[0] || s.imageUrl || '';
+      const videoUrl =
+        s.videoUrl || s.samplePropertyData?.virtualTourVideoUrl || '';
+      const videoTitle =
+        s.videoTitle ||
+        s.samplePropertyData?.virtualTourVideoTitle ||
+        `${s.title} — 360° Virtual Tour`;
+
+      return {
+        ...s,
+        imageUrl: primaryImg,
+        galleryImages: gallery.length > 0 ? gallery : [primaryImg],
+        videoUrl,
+        videoTitle,
+        isActive: s.isActive !== false,
+        order: typeof s.order === 'number' ? s.order : idx + 1,
+        samplePropertyData: {
+          title: s.samplePropertyData?.title || s.title,
+          category: s.samplePropertyData?.category || 'modular',
+          virtualTourVideoUrl: videoUrl,
+          virtualTourVideoTitle: videoTitle,
+          location: {
+            city:
+              s.samplePropertyData?.location?.city ||
+              String(s.location || 'Taxila').split('/')[0]?.trim() ||
+              'Taxila',
+            society:
+              s.samplePropertyData?.location?.society ||
+              s.society ||
+              'Faisal Hills',
+            province: s.samplePropertyData?.location?.province || 'Punjab'
+          }
+        }
+      };
+    });
+}
+
 function loadInitialSlides(): HeroSlide[] {
   try {
-    const migratedFlag = safeStorageGet(DECK_SCHEMA_VERSION);
     const saved = safeStorageGet('ri8click_hero_slides');
-    if (saved && migratedFlag === 'true') {
+    if (saved) {
       const parsed = JSON.parse(saved);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
+        return normalizeClientSlides(parsed);
       }
     }
-    safeStorageSet(DECK_SCHEMA_VERSION, 'true');
-    safeStorageSet('ri8click_hero_slides', JSON.stringify(INITIAL_HERO_SLIDES));
   } catch {}
-  return INITIAL_HERO_SLIDES;
+  return normalizeClientSlides(INITIAL_HERO_SLIDES);
 }
 
 export function App() {
@@ -223,102 +272,138 @@ export function App() {
 
   const lastRevisionRef = useRef<number>(0);
   const lastUpdatedAtRef = useRef<string>('');
+  const pendingSaveCountRef = useRef<number>(0);
+  const lastLocalSaveTimeRef = useRef<number>(0);
 
-  const applyIncomingServerState = useCallback((remote: any) => {
-    if (!remote || typeof remote !== 'object') return;
+  const applyIncomingServerState = useCallback(
+    (remote: any, forceApply = false) => {
+      if (!remote || typeof remote !== 'object') return;
 
-    if (typeof remote.revision === 'number') {
-      lastRevisionRef.current = remote.revision;
-    }
-    if (typeof remote.updatedAt === 'string') {
-      lastUpdatedAtRef.current = remote.updatedAt;
-    }
+      // Never allow background polling or SSE to overwrite an active or just-completed admin save
+      if (
+        !forceApply &&
+        (pendingSaveCountRef.current > 0 ||
+          Date.now() - lastLocalSaveTimeRef.current < 4000)
+      ) {
+        return;
+      }
 
-    if (Array.isArray(remote.properties) && remote.properties.length > 0) {
-      const clean = sanitizePropertiesToPakistanAvatars(remote.properties);
-      setProperties(clean);
-      safeStorageSet('ri8click_properties_data', JSON.stringify(clean));
-    }
-    if (Array.isArray(remote.agencies) && remote.agencies.length > 0) {
-      const clean = sanitizeAgenciesToPakistanAvatars(remote.agencies);
-      setAgencies(clean);
-      safeStorageSet('ri8click_agencies_data', JSON.stringify(clean));
-    }
-    if (
-      Array.isArray(remote.provinceCityData) &&
-      remote.provinceCityData.length > 0
-    ) {
-      setProvinceCityData(remote.provinceCityData);
-      safeStorageSet(
-        'ri8click_locations_data',
-        JSON.stringify(remote.provinceCityData)
-      );
-    }
-    if (Array.isArray(remote.heroSlides) && remote.heroSlides.length > 0) {
-      setHeroSlides(remote.heroSlides);
-      safeStorageSet(DECK_SCHEMA_VERSION, 'true');
-      safeStorageSet('ri8click_hero_slides', JSON.stringify(remote.heroSlides));
-    }
-    if (
-      Array.isArray(remote.consortiumDivisions) &&
-      remote.consortiumDivisions.length > 0
-    ) {
-      setConsortiumDivisions(remote.consortiumDivisions);
-      safeStorageSet(
-        'ri8click_consortium_divisions',
-        JSON.stringify(remote.consortiumDivisions)
-      );
-    }
-    if (Array.isArray(remote.blogs) && remote.blogs.length > 0) {
-      setBlogs(remote.blogs);
-      safeStorageSet('ri8click_blogs_data', JSON.stringify(remote.blogs));
-    }
-    if (Array.isArray(remote.sitePortions) && remote.sitePortions.length > 0) {
-      setSitePortions(remote.sitePortions);
-      safeStorageSet(
-        'ri8click_site_portions',
-        JSON.stringify(remote.sitePortions)
-      );
-    }
-    if (Array.isArray(remote.userAccounts) && remote.userAccounts.length > 0) {
-      const mergedUsers = mergeUserAccountsWithDefaults(remote.userAccounts);
-      setUserAccounts(mergedUsers);
-      safeStorageSet('ri8click_user_accounts', JSON.stringify(mergedUsers));
+      if (
+        !forceApply &&
+        typeof remote.revision === 'number' &&
+        lastRevisionRef.current > 0 &&
+        remote.revision < lastRevisionRef.current
+      ) {
+        return;
+      }
 
-      setCurrentUser(prev => {
-        if (!prev) return null;
-        const refreshed = mergedUsers.find(
-          u =>
-            u.id === prev.id ||
-            u.username.toLowerCase() === prev.username.toLowerCase()
+      if (typeof remote.revision === 'number') {
+        lastRevisionRef.current = remote.revision;
+      }
+      if (typeof remote.updatedAt === 'string') {
+        lastUpdatedAtRef.current = remote.updatedAt;
+      }
+
+      if (Array.isArray(remote.properties) && remote.properties.length > 0) {
+        const clean = sanitizePropertiesToPakistanAvatars(remote.properties);
+        setProperties(clean);
+        safeStorageSet('ri8click_properties_data', JSON.stringify(clean));
+      }
+      if (Array.isArray(remote.agencies) && remote.agencies.length > 0) {
+        const clean = sanitizeAgenciesToPakistanAvatars(remote.agencies);
+        setAgencies(clean);
+        safeStorageSet('ri8click_agencies_data', JSON.stringify(clean));
+      }
+      if (
+        Array.isArray(remote.provinceCityData) &&
+        remote.provinceCityData.length > 0
+      ) {
+        setProvinceCityData(remote.provinceCityData);
+        safeStorageSet(
+          'ri8click_locations_data',
+          JSON.stringify(remote.provinceCityData)
         );
-        if (refreshed) {
-          safeStorageSet('ri8click_current_user', JSON.stringify(refreshed));
-          return refreshed;
-        }
-        return prev;
-      });
-    }
-    if (
-      Array.isArray(remote.advibeProjects) &&
-      remote.advibeProjects.length > 0
-    ) {
-      setAdvibeProjects(remote.advibeProjects);
-      safeStorageSet(
-        'ri8click_advibe_projects',
-        JSON.stringify(remote.advibeProjects)
-      );
-    }
-    if (Array.isArray(remote.advibeLeads)) {
-      setAdvibeLeads(remote.advibeLeads);
-      safeStorageSet(
-        'ri8click_advibe_leads',
-        JSON.stringify(remote.advibeLeads)
-      );
-    }
-  }, []);
+      }
+      if (Array.isArray(remote.heroSlides) && remote.heroSlides.length > 0) {
+        const normalizedSlides = normalizeClientSlides(remote.heroSlides);
+        setHeroSlides(normalizedSlides);
+        safeStorageSet(DECK_SCHEMA_VERSION, 'true');
+        safeStorageSet(
+          'ri8click_hero_slides',
+          JSON.stringify(normalizedSlides)
+        );
+      }
+      if (
+        Array.isArray(remote.consortiumDivisions) &&
+        remote.consortiumDivisions.length > 0
+      ) {
+        setConsortiumDivisions(remote.consortiumDivisions);
+        safeStorageSet(
+          'ri8click_consortium_divisions',
+          JSON.stringify(remote.consortiumDivisions)
+        );
+      }
+      if (Array.isArray(remote.blogs) && remote.blogs.length > 0) {
+        setBlogs(remote.blogs);
+        safeStorageSet('ri8click_blogs_data', JSON.stringify(remote.blogs));
+      }
+      if (
+        Array.isArray(remote.sitePortions) &&
+        remote.sitePortions.length > 0
+      ) {
+        setSitePortions(remote.sitePortions);
+        safeStorageSet(
+          'ri8click_site_portions',
+          JSON.stringify(remote.sitePortions)
+        );
+      }
+      if (
+        Array.isArray(remote.userAccounts) &&
+        remote.userAccounts.length > 0
+      ) {
+        const mergedUsers = mergeUserAccountsWithDefaults(remote.userAccounts);
+        setUserAccounts(mergedUsers);
+        safeStorageSet('ri8click_user_accounts', JSON.stringify(mergedUsers));
+
+        setCurrentUser(prev => {
+          if (!prev) return null;
+          const refreshed = mergedUsers.find(
+            u =>
+              u.id === prev.id ||
+              u.username.toLowerCase() === prev.username.toLowerCase()
+          );
+          if (refreshed) {
+            safeStorageSet('ri8click_current_user', JSON.stringify(refreshed));
+            return refreshed;
+          }
+          return prev;
+        });
+      }
+      if (
+        Array.isArray(remote.advibeProjects) &&
+        remote.advibeProjects.length > 0
+      ) {
+        setAdvibeProjects(remote.advibeProjects);
+        safeStorageSet(
+          'ri8click_advibe_projects',
+          JSON.stringify(remote.advibeProjects)
+        );
+      }
+      if (Array.isArray(remote.advibeLeads)) {
+        setAdvibeLeads(remote.advibeLeads);
+        safeStorageSet(
+          'ri8click_advibe_leads',
+          JSON.stringify(remote.advibeLeads)
+        );
+      }
+    },
+    []
+  );
 
   const pushStateToServer = useCallback((partialState: Record<string, any>) => {
+    lastLocalSaveTimeRef.current = Date.now();
+    pendingSaveCountRef.current += 1;
+
     if (partialState.properties) {
       safeStorageSet(
         'ri8click_properties_data',
@@ -338,11 +423,10 @@ export function App() {
       );
     }
     if (partialState.heroSlides) {
+      const normalized = normalizeClientSlides(partialState.heroSlides);
+      partialState.heroSlides = normalized;
       safeStorageSet(DECK_SCHEMA_VERSION, 'true');
-      safeStorageSet(
-        'ri8click_hero_slides',
-        JSON.stringify(partialState.heroSlides)
-      );
+      safeStorageSet('ri8click_hero_slides', JSON.stringify(normalized));
     }
     if (partialState.consortiumDivisions) {
       safeStorageSet(
@@ -351,10 +435,7 @@ export function App() {
       );
     }
     if (partialState.blogs) {
-      safeStorageSet(
-        'ri8click_blogs_data',
-        JSON.stringify(partialState.blogs)
-      );
+      safeStorageSet('ri8click_blogs_data', JSON.stringify(partialState.blogs));
     }
     if (partialState.sitePortions) {
       safeStorageSet(
@@ -387,32 +468,62 @@ export function App() {
     })
       .then(res => (res.ok ? res.json() : null))
       .then(data => {
-        if (data?.revision) lastRevisionRef.current = data.revision;
-        if (data?.updatedAt) lastUpdatedAtRef.current = data.updatedAt;
+        lastLocalSaveTimeRef.current = Date.now();
+        if (typeof data?.revision === 'number') {
+          lastRevisionRef.current = data.revision;
+        }
+        if (typeof data?.updatedAt === 'string') {
+          lastUpdatedAtRef.current = data.updatedAt;
+        }
+        if (data?.state?.heroSlides && partialState.heroSlides) {
+          const syncedSlides = normalizeClientSlides(data.state.heroSlides);
+          setHeroSlides(syncedSlides);
+          safeStorageSet('ri8click_hero_slides', JSON.stringify(syncedSlides));
+        }
       })
-      .catch(() => {});
+      .catch(err => {
+        console.error('Failed to sync state to server:', err);
+      })
+      .finally(() => {
+        pendingSaveCountRef.current = Math.max(
+          0,
+          pendingSaveCountRef.current - 1
+        );
+      });
   }, []);
 
   useEffect(() => {
     let isMounted = true;
 
-    const fetchLatestFromServer = async () => {
+    const fetchLatestFromServer = async (isInitialLoad = false) => {
+      if (
+        !isInitialLoad &&
+        (pendingSaveCountRef.current > 0 ||
+          Date.now() - lastLocalSaveTimeRef.current < 4000)
+      ) {
+        return;
+      }
+
       try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000);
         const res = await fetch(`/api/state?_t=${Date.now()}`, {
           cache: 'no-store',
+          signal: controller.signal,
           headers: {
             Pragma: 'no-cache',
             'Cache-Control': 'no-cache'
           }
         });
+        clearTimeout(timeoutId);
         if (!res.ok) return;
         const remote = await res.json();
         if (!isMounted || !remote) return;
-        applyIncomingServerState(remote);
+        applyIncomingServerState(remote, isInitialLoad);
       } catch {}
     };
 
-    fetchLatestFromServer();
+    fetchLatestFromServer(true);
 
     let eventSource: EventSource | null = null;
     try {
@@ -421,19 +532,24 @@ export function App() {
         eventSource.onmessage = event => {
           try {
             const payload = JSON.parse(event.data);
-            if (
-              (payload?.type === 'STATE_UPDATED' ||
-                payload?.type === 'INITIAL_STATE') &&
-              payload.state
-            ) {
-              applyIncomingServerState(payload.state);
+            if (payload?.type === 'STATE_UPDATED' && payload.state) {
+              applyIncomingServerState(payload.state, false);
             }
           } catch {}
+        };
+        eventSource.onerror = () => {
+          // Silently close if browser blocks SSE in strict private mode; polling handles updates
         };
       }
     } catch {}
 
     const pollInterval = setInterval(async () => {
+      if (
+        pendingSaveCountRef.current > 0 ||
+        Date.now() - lastLocalSaveTimeRef.current < 4000
+      ) {
+        return;
+      }
       try {
         const vRes = await fetch(`/api/state/version?_t=${Date.now()}`, {
           cache: 'no-store'
@@ -441,17 +557,21 @@ export function App() {
         if (!vRes.ok) return;
         const vData = await vRes.json();
         if (
-          (vData.revision && vData.revision > lastRevisionRef.current) ||
-          (vData.updatedAt && vData.updatedAt !== lastUpdatedAtRef.current)
+          typeof vData.revision === 'number' &&
+          vData.revision > lastRevisionRef.current
         ) {
-          fetchLatestFromServer();
+          fetchLatestFromServer(false);
         }
       } catch {}
-    }, 3000);
+    }, 5000);
 
     const handleVisibilityOrFocus = () => {
-      if (document.visibilityState === 'visible') {
-        fetchLatestFromServer();
+      if (
+        document.visibilityState === 'visible' &&
+        pendingSaveCountRef.current === 0 &&
+        Date.now() - lastLocalSaveTimeRef.current > 4000
+      ) {
+        fetchLatestFromServer(false);
       }
     };
 
@@ -459,13 +579,19 @@ export function App() {
       if (!e.key || !e.newValue) return;
       try {
         if (e.key === 'ri8click_hero_slides') {
-          setHeroSlides(JSON.parse(e.newValue));
+          setHeroSlides(normalizeClientSlides(JSON.parse(e.newValue)));
         } else if (e.key === 'ri8click_properties_data') {
-          setProperties(sanitizePropertiesToPakistanAvatars(JSON.parse(e.newValue)));
+          setProperties(
+            sanitizePropertiesToPakistanAvatars(JSON.parse(e.newValue))
+          );
         } else if (e.key === 'ri8click_agencies_data') {
-          setAgencies(sanitizeAgenciesToPakistanAvatars(JSON.parse(e.newValue)));
+          setAgencies(
+            sanitizeAgenciesToPakistanAvatars(JSON.parse(e.newValue))
+          );
         } else if (e.key === 'ri8click_user_accounts') {
-          setUserAccounts(mergeUserAccountsWithDefaults(JSON.parse(e.newValue)));
+          setUserAccounts(
+            mergeUserAccountsWithDefaults(JSON.parse(e.newValue))
+          );
         }
       } catch {}
     };
@@ -512,8 +638,47 @@ export function App() {
 
   const handleUpdateHeroSlides = useCallback(
     (nextSlides: HeroSlide[]) => {
-      setHeroSlides(nextSlides);
-      pushStateToServer({ heroSlides: nextSlides });
+      const normalized = normalizeClientSlides(nextSlides);
+      setHeroSlides(normalized);
+      lastLocalSaveTimeRef.current = Date.now();
+      pendingSaveCountRef.current += 1;
+
+      safeStorageSet(DECK_SCHEMA_VERSION, 'true');
+      safeStorageSet('ri8click_hero_slides', JSON.stringify(normalized));
+
+      fetch('/api/hero-slides', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ heroSlides: normalized })
+      })
+        .then(res => (res.ok ? res.json() : null))
+        .then(data => {
+          lastLocalSaveTimeRef.current = Date.now();
+          if (typeof data?.revision === 'number') {
+            lastRevisionRef.current = data.revision;
+          }
+          if (typeof data?.updatedAt === 'string') {
+            lastUpdatedAtRef.current = data.updatedAt;
+          }
+          if (Array.isArray(data?.heroSlides) && data.heroSlides.length > 0) {
+            const cleanServerSlides = normalizeClientSlides(data.heroSlides);
+            setHeroSlides(cleanServerSlides);
+            safeStorageSet(
+              'ri8click_hero_slides',
+              JSON.stringify(cleanServerSlides)
+            );
+          }
+        })
+        .catch(() => {
+          // Fallback to general state endpoint if needed
+          pushStateToServer({ heroSlides: normalized });
+        })
+        .finally(() => {
+          pendingSaveCountRef.current = Math.max(
+            0,
+            pendingSaveCountRef.current - 1
+          );
+        });
     },
     [pushStateToServer]
   );
@@ -552,7 +717,6 @@ export function App() {
       const merged = mergeUserAccountsWithDefaults(nextAccounts);
       setUserAccounts(merged);
 
-      // Sync corresponding agency cards & property agent avatars when user accounts are edited
       const updatedAgencies = agencies.map(ag => {
         const linkedUser = merged.find(u => u.agencyId === ag.id);
         if (!linkedUser) return ag;
@@ -1324,49 +1488,44 @@ export function App() {
         currentRole={userRole}
         currentAgency={currentAgency}
         allAgencies={agencies}
-        agencies={agencies}
         allUsers={userAccounts}
         currentUser={currentUser}
         onSelectRole={role => {
           setUserRole(role);
           if (role === 'admin') {
             const adminAcc =
-              userAccounts.find(a => a.role === 'admin') ||
+              userAccounts.find(u => u.role === 'admin') ||
               initialUserAccounts[0];
             setCurrentUser(adminAcc);
           } else if (role === 'customer') {
-            const visitorAcc =
-              userAccounts.find(a => a.role === 'customer') || null;
-            setCurrentUser(visitorAcc);
+            setCurrentUser(null);
           }
         }}
-        onSelectAgency={id => {
-          setSelectedAgencyId(id);
-          const agencyUser = userAccounts.find(u => u.agencyId === id);
-          if (agencyUser) {
-            setCurrentUser(agencyUser);
+        onSelectAgency={agencyId => {
+          setSelectedAgencyId(agencyId);
+          const matchedUser = userAccounts.find(u => u.agencyId === agencyId);
+          if (matchedUser) {
+            setCurrentUser(matchedUser);
             setUserRole('agency');
           }
         }}
         onOpenAdminHub={() => {
           setIsRoleModalOpen(false);
+          setAdminInitialTab('overview');
           setIsAdminHubOpen(true);
-        }}
-        onOpenPostProperty={() => {
-          setIsRoleModalOpen(false);
-          setIsPostModalOpen(true);
         }}
         onOpenProfileTab={() => {
           setIsRoleModalOpen(false);
           setAdminInitialTab('profile');
           setIsAdminHubOpen(true);
         }}
+        onOpenPostProperty={() => {
+          setIsRoleModalOpen(false);
+          setIsPostModalOpen(true);
+        }}
       />
 
-      <AiChatbot
-        properties={properties}
-        onSelectProperty={prop => setSelectedProperty(prop)}
-      />
+      <AiChatbot properties={properties} agencies={agencies} />
       <FloatingWhatsApp />
       <ScrollToTop />
     </div>
