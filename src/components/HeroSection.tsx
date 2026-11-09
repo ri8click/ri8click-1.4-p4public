@@ -81,6 +81,7 @@ interface CameraWaypoint {
   fallbackUrl: string;
   galleryImages?: string[];
   videoUrl: string;
+  videoTitle?: string;
   motionOrigin: string;
   panX: [string, string];
   panY: [string, string];
@@ -156,27 +157,6 @@ const INITIAL_REPLACED_BROKEN_LINKS: BrokenImageRecord[] = [
     brokenUrl: 'legacy-highrise-asset-2',
     replacedWithUrl: ISLAMABAD_HIGHRISE_PROJECTS_GALLERY.gigaMallTower,
     timestamp: 'Verified High-Resolution Media'
-  },
-  {
-    id: 'rep-3',
-    waypointLabel: 'Ufone, ISE & Saudi Pak Towers',
-    brokenUrl: 'legacy-highrise-asset-3',
-    replacedWithUrl: ISLAMABAD_HIGHRISE_PROJECTS_GALLERY.ufoneJinnahAvenue,
-    timestamp: 'Verified High-Resolution Media'
-  },
-  {
-    id: 'rep-4',
-    waypointLabel: 'One Constitution Ave & Skypark One',
-    brokenUrl: 'legacy-highrise-asset-4',
-    replacedWithUrl: ISLAMABAD_HIGHRISE_PROJECTS_GALLERY.skyparkOneGulberg,
-    timestamp: 'Verified High-Resolution Media'
-  },
-  {
-    id: 'rep-5',
-    waypointLabel: 'State Life & Green Trust Towers',
-    brokenUrl: 'legacy-highrise-asset-5',
-    replacedWithUrl: ISLAMABAD_HIGHRISE_PROJECTS_GALLERY.stateLifeTower,
-    timestamp: 'Verified High-Resolution Media'
   }
 ];
 
@@ -204,7 +184,8 @@ function resolveSlideTourCategory(slide: HeroSlide): {
     return {
       tourCategory: 'capsule_containers',
       propertyCategory: 'modular',
-      divisionTag: 'RI8CLICK CONSORTIUM // CONTAINER & SPACE CAPSULE SMART HOUSES',
+      divisionTag:
+        'RI8CLICK CONSORTIUM // CONTAINER & SPACE CAPSULE SMART HOUSES',
       codePrefix: 'CAPSULE',
       fallbackImg: MODULAR_CAPSULE_GALLERY.fallbackCapsule1,
       videoUrl: SHOWROOM_VIDEOS.capsuleInteriorWalk
@@ -369,6 +350,15 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               'Direct Transfer & Turnkey Delivery'
             ];
 
+      const resolvedSlideVideo =
+        slide.videoUrl ||
+        slide.samplePropertyData?.virtualTourVideoUrl ||
+        meta.videoUrl;
+      const resolvedSlideVideoTitle =
+        slide.videoTitle ||
+        slide.samplePropertyData?.virtualTourVideoTitle ||
+        `${cleanTitle} — 360° Virtual Tour`;
+
       return {
         id: slide.id,
         code: `${meta.codePrefix} ${String(idx + 1).padStart(2, '0')} //`,
@@ -384,15 +374,14 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         valuation: slide.price || 'PKR 85 Lakh',
         locationBadge: `${slide.society || 'Faisal Hills'} • ${slide.location || 'Taxila & Islamabad'}`,
         focalLength: '24MM ARCHITECTURAL',
-        elevation: `${slide.tourRoomsCount || 4} ROOMS / ANGLES`,
+        elevation: `${slide.tourRoomsCount || Math.max(slideGallery.length, 4)} ROOMS / ANGLES`,
         fov: '88° WIDE',
         imageUrl: primaryImg,
         secondaryImageUrl: secondaryImg,
         fallbackUrl: meta.fallbackImg,
         galleryImages: slideGallery.length > 0 ? slideGallery : [primaryImg],
-        videoUrl:
-          (slide.samplePropertyData as any)?.virtualTourVideoUrl ||
-          meta.videoUrl,
+        videoUrl: resolvedSlideVideo,
+        videoTitle: resolvedSlideVideoTitle,
         motionOrigin: 'center center',
         panX: panPair,
         panY: ['0%', '-0.8%'],
@@ -413,66 +402,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
       };
     });
 
-    const existingTitles = new Set(
-      slideWaypoints.map(w => w.headline.toLowerCase())
-    );
-    const customModularProps = (properties || []).filter(
-      p =>
-        p &&
-        p.status !== 'pending' &&
-        (p.category === 'modular' ||
-          (p.type && p.type.toLowerCase().includes('capsule'))) &&
-        p.images &&
-        p.images.length > 0 &&
-        !existingTitles.has(p.title.toLowerCase()) &&
-        !['prop-mod-1', 'prop-mod-2', 'prop-mod-3'].includes(p.id)
-    );
-
-    const propertyWaypoints: CameraWaypoint[] = customModularProps.map(
-      (prop, pIdx) => {
-        const primaryImg =
-          prop.images[0] || MODULAR_CAPSULE_GALLERY.fallbackCapsule1;
-        const secondaryImg = prop.images[1] || primaryImg;
-        return {
-          id: `prop-wp-${prop.id}`,
-          code: `LIVE POST ${pIdx + 1} //`,
-          label: prop.title.slice(0, 28),
-          subLabel:
-            prop.tagline || `${prop.location.society}, ${prop.location.city}`,
-          tourCategory: 'capsule_containers',
-          propertyCategory: 'modular',
-          divisionTag:
-            'RI8CLICK CONSORTIUM // LIVE POSTED CAPSULE & MODULAR',
-          headline: prop.title,
-          description: prop.description,
-          valuation: prop.priceFormatted,
-          locationBadge: `${prop.location.society}, ${prop.location.city}`,
-          focalLength: '24MM PRIME',
-          elevation: `${prop.area} ${prop.areaUnit}`,
-          fov: '86° WIDE',
-          imageUrl: primaryImg,
-          secondaryImageUrl: secondaryImg,
-          fallbackUrl: MODULAR_CAPSULE_GALLERY.fallbackCapsule1,
-          galleryImages: prop.images,
-          videoUrl:
-            prop.virtualTourVideoUrl || SHOWROOM_VIDEOS.capsuleInteriorWalk,
-          motionOrigin: 'center center',
-          panX: ['0%', '-1.0%'],
-          panY: ['0%', '-0.8%'],
-          scaleRange: [1.01, 1.05],
-          order: 1000 + pIdx,
-          specs: (prop.features || []).slice(0, 4).map((f, fIdx) => ({
-            id: `${prop.id}-sp-${fIdx}`,
-            title: `Feature ${fIdx + 1}`,
-            spec: f
-          }))
-        };
-      }
-    );
-
-    const combined = [...slideWaypoints, ...propertyWaypoints];
-    if (combined.length > 0) {
-      return combined;
+    if (slideWaypoints.length > 0) {
+      return slideWaypoints;
     }
 
     return [
@@ -500,6 +431,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           CONSTRUCTED_HOUSES_GALLERY.house1_modernFaisalHillsVilla
         ],
         videoUrl: SHOWROOM_VIDEOS.villaDroneOrbit,
+        videoTitle: 'Faisal Hills Designer Villa 360° Tour',
         motionOrigin: 'center center',
         panX: ['0%', '-1%'],
         panY: ['0%', '-0.8%'],
@@ -575,18 +507,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
     setCustomActiveImageOverride(null);
     setVideoFailed(false);
   }, [safeIdx, tourCategory]);
-
-  useEffect(() => {
-    if (cameraWaypoints.length <= 1) return;
-    const next1 = cameraWaypoints[(safeIdx + 1) % cameraWaypoints.length];
-    const next2 = cameraWaypoints[(safeIdx + 2) % cameraWaypoints.length];
-    [next1, next2].forEach(wp => {
-      if (wp?.imageUrl) {
-        const img = new Image();
-        img.src = wp.imageUrl;
-      }
-    });
-  }, [safeIdx, cameraWaypoints]);
 
   useEffect(() => {
     setWaypointIdx(0);
@@ -792,25 +712,45 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         <AnimatePresence mode="sync">
           {isVideoTourActive && !videoFailed ? (
             <motion.div
-              key={`video-stream-${activeWaypoint.id}`}
+              key={`video-stream-${activeWaypoint.id}-${activeWaypoint.videoUrl}`}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.6 }}
               className="absolute inset-0 w-full h-full"
             >
-              <video
-                ref={videoRef}
-                src={activeWaypoint.videoUrl}
-                poster={resolvedImageUrl}
-                autoPlay
-                loop
-                muted={isMuted}
-                playsInline
-                onError={() => setVideoFailed(true)}
-                style={atmosphereStyle}
-                className="w-full h-full object-cover object-center"
-              />
+              {activeWaypoint.videoUrl.includes('youtube.com') ||
+              activeWaypoint.videoUrl.includes('youtu.be') ? (
+                <iframe
+                  src={
+                    activeWaypoint.videoUrl.includes('watch?v=')
+                      ? activeWaypoint.videoUrl.replace('watch?v=', 'embed/')
+                      : activeWaypoint.videoUrl.includes('youtu.be/')
+                      ? `https://www.youtube.com/embed/${
+                          activeWaypoint.videoUrl
+                            .split('youtu.be/')[1]
+                            ?.split('?')[0]
+                        }?autoplay=1&mute=1`
+                      : activeWaypoint.videoUrl
+                  }
+                  title={activeWaypoint.videoTitle || activeWaypoint.headline}
+                  className="w-full h-full object-cover"
+                  allow="autoplay; fullscreen"
+                />
+              ) : (
+                <video
+                  ref={videoRef}
+                  src={activeWaypoint.videoUrl}
+                  poster={resolvedImageUrl}
+                  autoPlay
+                  loop
+                  muted={isMuted}
+                  playsInline
+                  onError={() => setVideoFailed(true)}
+                  style={atmosphereStyle}
+                  className="w-full h-full object-cover object-center"
+                />
+              )}
             </motion.div>
           ) : (
             <motion.div
@@ -1060,7 +1000,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               }`}
             >
               <Video className="w-3.5 h-3.5" />
-              <span>{isVideoTourActive ? 'Video: ON' : 'Video Tour'}</span>
+              <span>{isVideoTourActive ? '360° Video: ON' : '360° Video Tour'}</span>
             </button>
 
             {isVideoTourActive && (
@@ -1073,7 +1013,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 {isMuted ? (
                   <VolumeX className="w-3.5 h-3.5" />
                 ) : (
-                  <Volume2 className="w-3.5 h-3.5 text-amber-300" />
+                  <Volume2 className="w-3.5 h-3.5 text-amber-400" />
                 )}
               </button>
             )}
@@ -1082,102 +1022,73 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               <button
                 type="button"
                 onClick={() => setIsHudMenuOpen(prev => !prev)}
-                className={`px-2.5 sm:px-3 py-1.5 rounded-xl text-[11px] font-bold border transition-all flex items-center gap-1.5 cursor-pointer backdrop-blur-xl ${
+                className={`px-2.5 sm:px-3 py-1.5 rounded-xl text-[11px] font-bold flex items-center gap-1.5 border transition-all cursor-pointer backdrop-blur-xl ${
                   isHudMenuOpen
                     ? 'bg-amber-400 text-slate-950 border-amber-300'
-                    : 'bg-slate-950/60 border-white/25 text-white hover:bg-slate-900/80'
+                    : 'bg-slate-950/60 text-white border-white/25 hover:bg-slate-900/80'
                 }`}
               >
                 <SlidersHorizontal className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Controls</span>
+                <span className="hidden sm:inline">View Controls</span>
               </button>
 
               <AnimatePresence>
                 {isHudMenuOpen && (
                   <motion.div
-                    initial={{ opacity: 0, y: 6, scale: 0.96 }}
+                    initial={{ opacity: 0, y: 8, scale: 0.96 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 6, scale: 0.96 }}
-                    transition={{ duration: 0.15 }}
-                    className="absolute right-0 mt-2 w-72 rounded-2xl bg-slate-900/95 backdrop-blur-2xl border border-white/25 shadow-2xl p-3.5 z-50 space-y-2"
+                    exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                    className="absolute right-0 mt-2 w-72 rounded-2xl bg-slate-950/90 backdrop-blur-2xl border border-white/25 p-3.5 shadow-2xl z-50 space-y-2"
                   >
-                    <div className="flex items-center justify-between pb-2 border-b border-white/15">
-                      <span className="text-[11px] font-extrabold uppercase tracking-wider text-amber-300">
-                        Banner &amp; Deck Settings
+                    <div className="flex items-center justify-between border-b border-white/15 pb-2">
+                      <span className="text-xs font-extrabold uppercase tracking-wider text-amber-400">
+                        Showroom Display Controls
                       </span>
                       <button
                         type="button"
                         onClick={() => setIsHudMenuOpen(false)}
-                        className="text-[10px] text-slate-300 hover:text-white cursor-pointer"
+                        className="text-xs text-slate-300 hover:text-white cursor-pointer"
                       >
-                        Done
+                        Close
                       </button>
                     </div>
 
-                    <div className="py-1">
-                      <div className="text-[10px] font-bold uppercase tracking-wider text-slate-300 mb-1.5">
-                        Daylight Grade
-                      </div>
-                      <div className="grid grid-cols-3 gap-1.5">
-                        {(
-                          [
-                            { id: 'crystal_daylight', label: 'Natural' },
-                            { id: 'solar_vivid', label: 'Vivid' },
-                            { id: 'showroom_hdr', label: 'Crisp HDR' }
-                          ] as { id: AtmosphereGrade; label: string }[]
-                        ).map(grade => (
-                          <button
-                            key={grade.id}
-                            type="button"
-                            onClick={() => setAtmosphere(grade.id)}
-                            className={`px-2 py-1.5 rounded-lg text-[10px] font-bold text-center border transition-all cursor-pointer ${
-                              atmosphere === grade.id
-                                ? 'bg-amber-400 text-slate-950 border-amber-300 font-black'
-                                : 'bg-white/10 text-slate-200 border-white/15 hover:bg-white/20'
-                            }`}
-                          >
-                            {grade.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="border-t border-white/15 pt-1.5 space-y-1">
+                    <div className="space-y-1">
                       <ToggleSwitch
-                        label="Full Left-Side Narrative"
-                        description="Switch between full narrative and minimal banner heading"
+                        label="Left Description Panel"
+                        description="Show full headline & specs on left"
                         checked={showLeftDescription}
                         onChange={() => setShowLeftDescription(prev => !prev)}
                       />
                       <ToggleSwitch
-                        label="Portfolio Deck Window"
-                        description="Show interactive crystal camera deck"
+                        label="Crystal Portfolio Deck"
+                        description="Show interactive slide deck on right"
                         checked={showDirectorDeck}
                         onChange={() => setShowDirectorDeck(prev => !prev)}
                       />
                       <ToggleSwitch
-                        label="Spec Cards"
-                        description="Show 4 architectural specification badges"
+                        label="Feature Spec Badges"
+                        description="Show engineering highlight badges"
                         checked={showSpecCards}
                         onChange={() => setShowSpecCards(prev => !prev)}
                       />
                       <ToggleSwitch
-                        label="Consortium Pillars Ribbon"
-                        description="Show 4-division quick selector ribbon"
-                        checked={showConsortiumRibbon}
-                        onChange={() => setShowConsortiumRibbon(prev => !prev)}
-                      />
-                      <ToggleSwitch
                         label="Top Category Bar"
-                        description="Show top portfolio category bar"
+                        description="Show division filter bar at top"
                         checked={showCategoryBar}
                         onChange={() => setShowCategoryBar(prev => !prev)}
                       />
                       <ToggleSwitch
                         label="Camera Waypoints Bar"
-                        description="Show numbered camera angle strip"
+                        description="Show quick angle selector bar"
                         checked={showShowroomTourBar}
                         onChange={() => setShowShowroomTourBar(prev => !prev)}
+                      />
+                      <ToggleSwitch
+                        label="Consortium 4-Pillar Ribbon"
+                        description="Show bottom division summary cards"
+                        checked={showConsortiumRibbon}
+                        onChange={() => setShowConsortiumRibbon(prev => !prev)}
                       />
                     </div>
                   </motion.div>
@@ -1188,71 +1099,68 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             <button
               type="button"
               onClick={() => setIsCinemaTheaterMode(prev => !prev)}
-              className={`px-2.5 sm:px-3 py-1.5 rounded-xl text-[11px] font-bold border transition-all flex items-center gap-1.5 cursor-pointer backdrop-blur-xl ${
+              className={`px-2.5 sm:px-3 py-1.5 rounded-xl text-[11px] font-bold flex items-center gap-1.5 border transition-all cursor-pointer backdrop-blur-xl ${
                 isCinemaTheaterMode
-                  ? 'bg-amber-400 text-slate-950 border-amber-300 shadow-md'
-                  : 'bg-slate-950/60 border-white/25 text-white hover:bg-slate-900/80'
+                  ? 'bg-amber-400 text-slate-950 border-amber-300'
+                  : 'bg-slate-950/60 text-white border-white/25 hover:bg-slate-900/80'
               }`}
+              title="Toggle Pure Fullscreen Image View"
             >
               {isCinemaTheaterMode ? (
                 <>
                   <Minimize2 className="w-3.5 h-3.5" />
-                  <span>Standard View</span>
+                  <span>Exit Pure View</span>
                 </>
               ) : (
                 <>
                   <Maximize2 className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Clean View</span>
+                  <span className="hidden sm:inline">Pure View</span>
                 </>
               )}
             </button>
           </div>
         </div>
 
-        {/* VERIFIED MEDIA LOG MODAL */}
+        {/* Verified Media Log Modal */}
         <AnimatePresence>
           {showBrokenLinkModal && (
             <motion.div
               initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
-              className="mb-3 rounded-2xl bg-slate-950/90 backdrop-blur-2xl border border-emerald-400/35 p-3.5 shadow-2xl"
+              className="mb-4 rounded-2xl bg-slate-950/90 backdrop-blur-2xl border border-emerald-400/45 p-4 text-xs shadow-2xl space-y-2.5"
             >
-              <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/15">
-                <div className="flex items-center gap-2">
-                  <RefreshCw className="w-4 h-4 text-emerald-400" />
-                  <span className="text-xs font-extrabold uppercase tracking-wider text-white">
-                    Admin Hub Live Sync &amp; Media Verification Log
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 font-extrabold text-emerald-300">
+                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                  <span>
+                    Global Hero Banner &amp; 360° Media Sync Status (
+                    {cameraWaypoints.length} Active Slides)
                   </span>
                 </div>
                 <button
                   type="button"
                   onClick={() => setShowBrokenLinkModal(false)}
-                  className="text-xs text-slate-300 hover:text-white px-2 py-0.5 rounded bg-white/10 cursor-pointer"
+                  className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white font-bold cursor-pointer"
                 >
                   Close
                 </button>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-40 overflow-y-auto pr-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-40 overflow-y-auto">
                 {brokenLinksLog.map(item => (
                   <div
                     key={item.id}
-                    className="p-2 rounded-xl bg-white/5 border border-white/10 text-[11px] flex items-start justify-between gap-2"
+                    className="p-2 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between gap-2"
                   >
-                    <div className="min-w-0">
-                      <div className="font-bold text-emerald-300 truncate">
+                    <div className="truncate">
+                      <div className="font-bold text-white truncate">
                         {item.waypointLabel}
                       </div>
-                      <div className="text-[10px] text-slate-400 truncate line-through">
-                        {item.brokenUrl}
-                      </div>
-                      <div className="text-[10px] text-slate-200 truncate">
-                        Active: {item.replacedWithUrl}
+                      <div className="text-[10px] text-emerald-300">
+                        {item.timestamp}
                       </div>
                     </div>
-                    <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[9px] font-bold shrink-0">
-                      LIVE
-                    </span>
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
                   </div>
                 ))}
               </div>
@@ -1260,129 +1168,53 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           )}
         </AnimatePresence>
 
-        {/* OPTIONAL CONSORTIUM PILLARS RIBBON */}
-        <AnimatePresence>
-          {showConsortiumRibbon && !isCinemaTheaterMode && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.25 }}
-              className="overflow-hidden mb-3"
-            >
-              <div className="rounded-2xl bg-slate-950/65 backdrop-blur-xl border border-white/25 p-2.5">
-                <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/10 px-1">
-                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-300">
-                    Ri8click Consortium — Integrated Real Estate, Capsule Smart Homes, Islamabad Highrises &amp; German UPVC
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setShowConsortiumRibbon(false)}
-                    className="text-[10px] text-slate-300 hover:text-white cursor-pointer"
-                  >
-                    Hide Pillars
-                  </button>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
-                  {consortiumPillars.map(pillar => {
-                    const isActivePillar = tourCategory === pillar.id;
-                    return (
-                      <button
-                        key={pillar.id}
-                        type="button"
-                        onClick={() => {
-                          setTourCategory(pillar.id);
-                          onSelectCategoryFilter(pillar.category);
-                        }}
-                        className={`p-2.5 rounded-xl border text-left transition-all flex items-start gap-2.5 cursor-pointer ${
-                          isActivePillar
-                            ? 'bg-amber-400/25 border-amber-300 text-white'
-                            : 'bg-white/5 border-white/10 text-slate-200 hover:bg-white/15'
-                        }`}
-                      >
-                        <div className="p-2 rounded-lg bg-slate-900/80 border border-white/10 shrink-0">
-                          {pillar.icon}
-                        </div>
-                        <div className="min-w-0">
-                          <div className="text-xs font-extrabold text-white truncate">
-                            {pillar.title}
-                          </div>
-                          <div className="text-[10px] text-slate-200 truncate">
-                            {pillar.detail}
-                          </div>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* CENTER MAIN CONTENT & VIVID CRYSTAL TRANSPARENT PORTFOLIO DECK */}
-        <AnimatePresence mode="wait">
-          {!isCinemaTheaterMode ? (
-            <motion.div
-              key="foreground-content"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 8 }}
-              transition={{ duration: 0.3 }}
-              className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 items-end my-auto py-2"
-            >
-              {showLeftDescription ? (
-                <div
-                  className={
-                    showDirectorDeck ? 'lg:col-span-7' : 'lg:col-span-11'
-                  }
-                >
+        {/* Center / Main Stage Content */}
+        {!isCinemaTheaterMode && (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-end my-auto py-2">
+            {/* Left Full Description Panel (Optional Toggle) */}
+            <div className="lg:col-span-7 space-y-4">
+              <AnimatePresence mode="wait">
+                {showLeftDescription ? (
                   <motion.div
-                    key={activeWaypoint.id}
-                    initial={{ opacity: 0, x: -12 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.35 }}
-                    className="p-4 sm:p-6 rounded-3xl bg-slate-950/55 backdrop-blur-xl border border-white/25 shadow-2xl space-y-3.5 sm:space-y-4"
+                    key={`desc-full-${activeWaypoint.id}`}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -12 }}
+                    transition={{ duration: 0.3 }}
+                    className="p-5 sm:p-6 rounded-3xl bg-slate-950/60 backdrop-blur-xl border border-white/25 shadow-2xl space-y-4"
                   >
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-400 text-slate-950 text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider shadow-xs">
-                        <Sparkles className="w-3 h-3" />
-                        <span>{activeWaypoint.divisionTag}</span>
+                      <span className="px-2.5 py-1 rounded-md bg-amber-400 text-slate-950 text-[10px] font-black uppercase tracking-wider">
+                        {activeWaypoint.code} {activeWaypoint.label}
                       </span>
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900/85 border border-white/25 text-white text-xs font-semibold">
+                      <span className="px-3 py-1 rounded-full bg-white/10 border border-white/20 text-xs font-bold text-amber-200 flex items-center gap-1.5">
                         <MapPin className="w-3.5 h-3.5 text-amber-400" />
                         <span>{activeWaypoint.locationBadge}</span>
                       </span>
                     </div>
 
-                    <h1
-                      style={{ textShadow: '0 2px 14px rgba(2,6,23,0.9)' }}
-                      className="text-xl sm:text-3xl lg:text-[38px] font-black tracking-tight leading-[1.14] text-white font-serif"
-                    >
+                    <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight leading-tight">
                       {activeWaypoint.headline}
                     </h1>
 
-                    <p
-                      style={{ textShadow: '0 1px 8px rgba(2,6,23,0.85)' }}
-                      className="text-xs sm:text-base text-white/95 leading-relaxed font-medium"
-                    >
+                    <p className="text-xs sm:text-sm text-slate-200 leading-relaxed">
                       {activeWaypoint.description}
                     </p>
 
-                    {showSpecCards && (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
-                        {activeWaypoint.specs.map(item => (
+                    {showSpecCards && activeWaypoint.specs.length > 0 && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                        {activeWaypoint.specs.map(sp => (
                           <div
-                            key={item.id}
-                            className="p-2.5 rounded-xl bg-slate-950/65 border border-white/20 flex items-start gap-2.5"
+                            key={sp.id}
+                            className="px-3 py-2 rounded-xl bg-white/10 border border-white/15 flex items-center gap-2"
                           >
-                            <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-                            <div>
-                              <div className="text-xs font-bold text-amber-300">
-                                {item.title}
+                            <CheckCircle2 className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                            <div className="min-w-0">
+                              <div className="text-[10px] uppercase font-bold text-amber-300">
+                                {sp.title}
                               </div>
-                              <div className="text-[11px] text-white font-medium leading-snug">
-                                {item.spec}
+                              <div className="text-xs font-bold text-white truncate">
+                                {sp.spec}
                               </div>
                             </div>
                           </div>
@@ -1390,595 +1222,369 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                       </div>
                     )}
 
-                    <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
-                      <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-emerald-950/85 border border-emerald-400/50 shadow-sm">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-300">
-                          Valuation:
+                    <div className="flex flex-wrap items-center gap-3 pt-2">
+                      <div className="px-4 py-2 rounded-2xl bg-emerald-950/80 border border-emerald-400/50">
+                        <span className="text-[10px] font-bold uppercase text-emerald-300 block">
+                          Direct Valuation
                         </span>
-                        <span className="text-xs sm:text-sm font-black text-white">
+                        <span className="text-base sm:text-lg font-black text-white">
                           {activeWaypoint.valuation}
                         </span>
                       </div>
 
-                      {activeWaypoint.galleryImages &&
-                        activeWaypoint.galleryImages.length > 1 && (
-                          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-white mr-1">
-                              Angles:
-                            </span>
-                            {activeWaypoint.galleryImages.map(
-                              (imgUrl, gIdx) => {
-                                const isImgFailed = failedUrls[imgUrl];
-                                if (isImgFailed) return null;
-                                const isCurrentAngle =
-                                  resolvedImageUrl === imgUrl;
-                                return (
-                                  <button
-                                    key={gIdx}
-                                    type="button"
-                                    onClick={() => {
-                                      setIsVideoTourActive(false);
-                                      setCustomActiveImageOverride(imgUrl);
-                                    }}
-                                    className={`w-10 h-7 rounded-lg overflow-hidden border-2 transition-all cursor-pointer shrink-0 ${
-                                      isCurrentAngle
-                                        ? 'border-amber-400 scale-105 shadow-md'
-                                        : 'border-white/30 opacity-80 hover:opacity-100'
-                                    }`}
-                                    title={`Switch to Angle ${gIdx + 1}`}
-                                  >
-                                    <img
-                                      src={imgUrl}
-                                      alt={`Angle ${gIdx + 1}`}
-                                      onError={() =>
-                                        handleImageError(
-                                          imgUrl,
-                                          activeWaypoint.label
-                                        )
-                                      }
-                                      className="w-full h-full object-cover"
-                                    />
-                                  </button>
-                                );
-                              }
-                            )}
-                          </div>
-                        )}
-                    </div>
+                      <button
+                        type="button"
+                        onClick={onExploreClick}
+                        className="px-5 py-3 rounded-2xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs uppercase tracking-wider transition-all shadow-lg cursor-pointer"
+                      >
+                        Explore Inventory
+                      </button>
 
-                    <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 pt-1">
                       <button
                         type="button"
                         onClick={() =>
                           onOpen3DTour({
                             id: activeWaypoint.id,
                             title: activeWaypoint.headline,
-                            category: activeWaypoint.propertyCategory,
+                            tagline: activeWaypoint.subLabel,
+                            description: activeWaypoint.description,
                             priceFormatted: activeWaypoint.valuation,
-                            location: {
-                              city: 'Islamabad / Taxila',
-                              society: activeWaypoint.locationBadge,
-                              province: 'Islamabad Capital Territory'
-                            },
-                            images: activeWaypoint.galleryImages || [
-                              resolvedImageUrl
-                            ],
+                            category: activeWaypoint.propertyCategory,
+                            images:
+                              activeWaypoint.galleryImages &&
+                              activeWaypoint.galleryImages.length > 0
+                                ? activeWaypoint.galleryImages
+                                : [
+                                    activeWaypoint.imageUrl,
+                                    activeWaypoint.secondaryImageUrl
+                                  ],
                             virtualTourVideoUrl: activeWaypoint.videoUrl,
-                            virtualTourVideoTitle: `${activeWaypoint.headline} - Ri8click Consortium Walkthrough`
+                            virtualTourVideoTitle:
+                              activeWaypoint.videoTitle ||
+                              `${activeWaypoint.headline} — 360° Virtual Tour`,
+                            hasVirtualTour: Boolean(activeWaypoint.videoUrl),
+                            location: {
+                              city: 'Taxila & Islamabad',
+                              society: activeWaypoint.locationBadge,
+                              province: 'Punjab'
+                            }
                           })
                         }
-                        className="px-3.5 sm:px-4 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs sm:text-sm flex items-center gap-2 shadow-lg transition-all cursor-pointer"
+                        className="px-4 py-3 rounded-2xl bg-white/15 hover:bg-white/25 border border-white/30 text-white font-bold text-xs flex items-center gap-2 transition-all cursor-pointer"
                       >
-                        <Compass className="w-4 h-4" />
-                        <span>Launch 360° Virtual Walkthrough</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={onExploreClick}
-                        className="px-3.5 sm:px-4 py-2.5 rounded-xl bg-slate-950/70 hover:bg-slate-900 text-white font-bold text-xs sm:text-sm border border-white/30 transition-all cursor-pointer"
-                      >
-                        Explore Portfolio &amp; Listings
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={onContactAgentClick}
-                        className="px-3.5 sm:px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm border border-emerald-400/50 transition-all cursor-pointer"
-                      >
-                        Ri8click Consortium Inquiry
+                        <Compass className="w-4 h-4 text-amber-300" />
+                        <span>Launch 360° Tour</span>
                       </button>
                     </div>
                   </motion.div>
-                </div>
-              ) : (
-                <div
-                  className={
-                    showDirectorDeck ? 'lg:col-span-7' : 'lg:col-span-12'
-                  }
-                >
+                ) : (
                   <motion.div
-                    key={`compact-${activeWaypoint.id}`}
+                    key={`desc-compact-${activeWaypoint.id}`}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="inline-flex flex-col gap-2 p-3.5 sm:p-4 rounded-2xl bg-slate-950/40 backdrop-blur-xl backdrop-saturate-150 border border-white/30 shadow-[0_12px_36px_rgba(2,6,23,0.65)] max-w-xl w-full sm:w-auto"
+                    exit={{ opacity: 0, y: -10 }}
+                    className="inline-flex flex-col gap-2 p-3.5 sm:p-4 rounded-2xl bg-slate-950/55 backdrop-blur-xl border border-white/25 max-w-xl"
                   >
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black uppercase tracking-wider shadow-xs">
-                        <Sparkles className="w-2.5 h-2.5" />
-                        <span>{activeWaypoint.code}</span>
+                      <span className="px-2 py-0.5 rounded bg-amber-400 text-slate-950 text-[10px] font-black uppercase">
+                        {activeWaypoint.code}
                       </span>
-                      <span className="text-[11px] font-black text-emerald-300 bg-slate-950/80 border border-emerald-400/45 px-2.5 py-0.5 rounded-md shadow-xs">
+                      <span className="text-xs font-extrabold text-amber-300">
+                        {activeWaypoint.locationBadge}
+                      </span>
+                      <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/25 border border-emerald-400/50 text-emerald-200 text-xs font-black">
+                        {activeWaypoint.valuation}
+                      </span>
+                    </div>
+                    <h2 className="text-base sm:text-xl font-black text-white leading-snug">
+                      {activeWaypoint.headline}
+                    </h2>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* Right Vivid Crystal Transparent Portfolio Deck */}
+            {showDirectorDeck && (
+              <div className="lg:col-span-5 flex justify-end w-full">
+                <motion.div
+                  key={`crystal-deck-${deckResetKey}`}
+                  drag={canDragDeck}
+                  dragControls={portfolioDeckDragControls}
+                  dragListener={false}
+                  dragMomentum={false}
+                  className="w-full max-w-md rounded-3xl bg-white/[0.10] backdrop-blur-xl border border-white/35 shadow-[0_20px_60px_rgba(0,0,0,0.55)] overflow-hidden text-white"
+                >
+                  {/* Crystal Deck Header */}
+                  <div
+                    onPointerDown={e => {
+                      if (canDragDeck) {
+                        portfolioDeckDragControls.start(e);
+                      }
+                    }}
+                    className={`px-4 py-2.5 bg-slate-950/45 border-b border-white/20 flex items-center justify-between gap-2 ${
+                      canDragDeck ? 'cursor-grab active:cursor-grabbing' : ''
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <GripHorizontal className="w-4 h-4 text-amber-300 shrink-0" />
+                      <span className="text-[11px] font-black uppercase tracking-wider text-white truncate">
+                        Portfolio Deck ({safeIdx + 1}/{cameraWaypoints.length})
+                      </span>
+                      <span className="px-2 py-0.5 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black">
                         {activeWaypoint.valuation}
                       </span>
                     </div>
 
-                    <h1
-                      style={{ textShadow: '0 2px 12px rgba(2,6,23,0.95)' }}
-                      className="text-base sm:text-xl font-black text-white leading-tight font-serif"
-                    >
-                      {activeWaypoint.headline}
-                    </h1>
-
-                    <p
-                      style={{ textShadow: '0 1px 8px rgba(2,6,23,0.95)' }}
-                      className="text-xs text-amber-100 font-semibold truncate"
-                    >
-                      {activeWaypoint.subLabel}
-                    </p>
-
-                    <div className="flex flex-wrap items-center justify-between gap-2 pt-1.5 border-t border-white/20 text-[11px] text-white font-semibold">
-                      <span className="inline-flex items-center gap-1 truncate max-w-[200px] sm:max-w-[260px]">
-                        <MapPin className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                        <span
-                          style={{ textShadow: '0 1px 6px rgba(2,6,23,0.9)' }}
-                          className="truncate"
-                        >
-                          {activeWaypoint.locationBadge}
-                        </span>
-                      </span>
-
-                      <div className="flex items-center gap-1.5 shrink-0">
+                    <div className="flex items-center gap-1 shrink-0">
+                      {!isMobileViewport && (
                         <button
                           type="button"
-                          onClick={() => setShowLeftDescription(true)}
-                          className="px-2.5 py-1 rounded-lg bg-slate-950/75 hover:bg-slate-900 text-white font-bold text-[10px] border border-white/30 cursor-pointer transition-colors"
+                          onClick={handleResetDeckPosition}
+                          className="p-1 rounded-lg bg-white/10 hover:bg-white/25 text-white cursor-pointer"
+                          title="Reset Deck Position"
                         >
-                          Show Text
+                          <RotateCcw className="w-3.5 h-3.5" />
                         </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setIsDeckMinimized(prev => !prev)}
+                        className="p-1 rounded-lg bg-white/10 hover:bg-white/25 text-white cursor-pointer"
+                        title={
+                          isDeckMinimized ? 'Expand Deck' : 'Minimize Deck'
+                        }
+                      >
+                        {isDeckMinimized ? (
+                          <ChevronDown className="w-3.5 h-3.5" />
+                        ) : (
+                          <ChevronUp className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  {!isDeckMinimized && (
+                    <div className="p-4 space-y-3.5">
+                      {/* Active Slide Summary inside Deck */}
+                      <div className="space-y-1">
+                        <div className="text-[10px] font-extrabold uppercase tracking-wider text-amber-300">
+                          {activeWaypoint.subLabel}
+                        </div>
+                        <h3 className="text-sm sm:text-base font-black text-white leading-snug line-clamp-2">
+                          {activeWaypoint.headline}
+                        </h3>
+                      </div>
+
+                      {/* Multi-Angle Thumbnails inside Crystal Deck */}
+                      {activeWaypoint.galleryImages &&
+                        activeWaypoint.galleryImages.length > 1 && (
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-between text-[10px] font-bold text-slate-200">
+                              <span>
+                                Slide Angles (
+                                {activeWaypoint.galleryImages.length} Photos)
+                              </span>
+                              <span>Click to Switch Angle</span>
+                            </div>
+                            <div className="grid grid-cols-4 gap-1.5">
+                              {activeWaypoint.galleryImages
+                                .slice(0, 4)
+                                .map((gImg, gIdx) => {
+                                  const isCurrentAngle =
+                                    resolvedImageUrl === gImg;
+                                  return (
+                                    <button
+                                      key={`${gImg}-${gIdx}`}
+                                      type="button"
+                                      onClick={() => {
+                                        setIsVideoTourActive(false);
+                                        setCustomActiveImageOverride(gImg);
+                                      }}
+                                      className={`relative h-12 rounded-xl overflow-hidden border-2 transition-all cursor-pointer ${
+                                        isCurrentAngle
+                                          ? 'border-amber-400 scale-[1.03]'
+                                          : 'border-white/25 opacity-80 hover:opacity-100'
+                                      }`}
+                                    >
+                                      <img
+                                        src={gImg}
+                                        alt={`Angle ${gIdx + 1}`}
+                                        className="w-full h-full object-cover"
+                                      />
+                                      <span className="absolute bottom-0.5 right-1 text-[9px] font-black px-1 rounded bg-slate-950/80 text-white">
+                                        #{gIdx + 1}
+                                      </span>
+                                    </button>
+                                  );
+                                })}
+                            </div>
+                          </div>
+                        )}
+
+                      {/* Quick Waypoint Grid Selector */}
+                      <div className="grid grid-cols-2 gap-1.5 max-h-36 overflow-y-auto pr-0.5">
+                        {cameraWaypoints.map((wp, idx) => {
+                          const active = idx === safeIdx;
+                          return (
+                            <button
+                              key={wp.id}
+                              type="button"
+                              onClick={() => {
+                                setIsVideoTourActive(false);
+                                setWaypointIdx(idx);
+                              }}
+                              className={`p-1.5 rounded-xl border text-left flex items-center gap-2 transition-all cursor-pointer ${
+                                active
+                                  ? 'bg-amber-400 text-slate-950 border-amber-300 font-black shadow-sm'
+                                  : 'bg-slate-950/45 text-white border-white/20 hover:bg-slate-950/70'
+                              }`}
+                            >
+                              <img
+                                src={wp.imageUrl}
+                                alt={wp.label}
+                                onError={e => {
+                                  (e.target as HTMLImageElement).src =
+                                    wp.fallbackUrl;
+                                }}
+                                className="w-9 h-9 rounded-lg object-cover shrink-0 border border-white/20"
+                              />
+                              <div className="min-w-0 flex-1">
+                                <div className="text-[10.5px] font-extrabold truncate">
+                                  {idx + 1}. {wp.label}
+                                </div>
+                                <div
+                                  className={`text-[9.5px] font-bold truncate ${
+                                    active
+                                      ? 'text-slate-900'
+                                      : 'text-amber-300'
+                                  }`}
+                                >
+                                  {wp.valuation}
+                                </div>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* Playback & 360 Tour Controls */}
+                      <div className="pt-2 border-t border-white/20 flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={handlePrev}
+                            className="p-2 rounded-xl bg-slate-950/60 hover:bg-amber-400 text-white hover:text-slate-950 border border-white/25 transition-colors cursor-pointer"
+                            title="Previous Slide"
+                          >
+                            <ChevronLeft className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setIsPaused(prev => !prev)}
+                            className="px-3 py-2 rounded-xl bg-slate-950/60 hover:bg-white/20 text-white border border-white/25 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                          >
+                            {isPaused ? (
+                              <>
+                                <Play className="w-3.5 h-3.5 text-amber-400" />
+                                <span>Play</span>
+                              </>
+                            ) : (
+                              <>
+                                <Pause className="w-3.5 h-3.5 text-amber-400" />
+                                <span>Pause</span>
+                              </>
+                            )}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleNext}
+                            className="p-2 rounded-xl bg-slate-950/60 hover:bg-amber-400 text-white hover:text-slate-950 border border-white/25 transition-colors cursor-pointer"
+                            title="Next Slide"
+                          >
+                            <ChevronRight className="w-4 h-4" />
+                          </button>
+                        </div>
+
                         <button
                           type="button"
                           onClick={() =>
                             onOpen3DTour({
                               id: activeWaypoint.id,
                               title: activeWaypoint.headline,
-                              category: activeWaypoint.propertyCategory,
+                              tagline: activeWaypoint.subLabel,
+                              description: activeWaypoint.description,
                               priceFormatted: activeWaypoint.valuation,
-                              location: {
-                                city: 'Islamabad / Taxila',
-                                society: activeWaypoint.locationBadge,
-                                province: 'Islamabad Capital Territory'
-                              },
-                              images: activeWaypoint.galleryImages || [
-                                resolvedImageUrl
-                              ],
+                              category: activeWaypoint.propertyCategory,
+                              images:
+                                activeWaypoint.galleryImages &&
+                                activeWaypoint.galleryImages.length > 0
+                                  ? activeWaypoint.galleryImages
+                                  : [
+                                      activeWaypoint.imageUrl,
+                                      activeWaypoint.secondaryImageUrl
+                                    ],
                               virtualTourVideoUrl: activeWaypoint.videoUrl,
-                              virtualTourVideoTitle: `${activeWaypoint.headline} - Ri8click Consortium Walkthrough`
+                              virtualTourVideoTitle:
+                                activeWaypoint.videoTitle ||
+                                `${activeWaypoint.headline} — 360° Virtual Tour`,
+                              hasVirtualTour: Boolean(activeWaypoint.videoUrl),
+                              location: {
+                                city: 'Taxila & Islamabad',
+                                society: activeWaypoint.locationBadge,
+                                province: 'Punjab'
+                              }
                             })
                           }
-                          className="px-2.5 py-1 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-[10px] cursor-pointer transition-colors shadow-xs"
+                          className="px-3.5 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-black flex items-center gap-1.5 shadow-md cursor-pointer"
                         >
-                          360° Tour
+                          <Compass className="w-3.5 h-3.5" />
+                          <span>Launch 360° Tour</span>
                         </button>
                       </div>
                     </div>
-                  </motion.div>
-                </div>
-              )}
+                  )}
+                </motion.div>
+              </div>
+            )}
+          </div>
+        )}
 
-              {/* BLOCK 3: VIVID CRYSTAL TRANSPARENT PORTFOLIO DECK */}
-              {showDirectorDeck && (
-                <div
-                  className={
-                    showLeftDescription
-                      ? 'lg:col-span-5'
-                      : 'lg:col-span-5 lg:ml-auto w-full'
-                  }
-                >
-                  <motion.div
-                    key={`portfolio-deck-${deckResetKey}-${isMobileViewport}`}
-                    drag={canDragDeck}
-                    dragControls={portfolioDeckDragControls}
-                    dragListener={false}
-                    dragMomentum={false}
-                    dragElastic={0.08}
-                    dragConstraints={heroStageRef}
-                    whileDrag={{
-                      scale: 1.02,
-                      boxShadow: '0 25px 60px -12px rgba(2, 6, 23, 0.85)'
-                    }}
-                    className="rounded-3xl bg-gradient-to-br from-slate-950/35 via-blue-950/25 to-slate-950/40 backdrop-blur-2xl backdrop-saturate-200 border border-white/35 ring-1 ring-amber-400/25 p-3 sm:p-4 shadow-[0_20px_50px_rgba(2,6,23,0.65)] space-y-2.5 sm:space-y-3"
-                  >
-                    {/* Deck Header Bar */}
-                    <div
-                      onPointerDown={e => {
-                        if (canDragDeck) {
-                          portfolioDeckDragControls.start(e);
-                        }
-                      }}
-                      className={`flex items-center justify-between gap-2 pb-2.5 border-b border-white/25 ${
-                        canDragDeck
-                          ? 'cursor-grab active:cursor-grabbing'
-                          : ''
-                      }`}
-                      title={
-                        canDragDeck
-                          ? 'Drag this header bar to move the Portfolio Deck anywhere in the window'
-                          : 'Portfolio Deck (Mobile Responsive Mode)'
-                      }
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <div className="p-1.5 rounded-xl bg-amber-400 text-slate-950 shadow-sm shrink-0">
-                          <GripHorizontal className="w-4 h-4" />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="text-xs font-black uppercase tracking-wider text-white flex items-center gap-1.5">
-                            <span
-                              style={{
-                                textShadow: '0 2px 8px rgba(2,6,23,0.95)'
-                              }}
-                              className="truncate"
-                            >
-                              Portfolio Deck
-                            </span>
-                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-400 text-slate-950 font-black font-mono shrink-0">
-                              {canDragDeck ? 'Crystal Drag' : 'Mobile Ready'}
-                            </span>
-                          </div>
-                          <div
-                            style={{
-                              textShadow: '0 1px 6px rgba(2,6,23,0.95)'
-                            }}
-                            className="text-[10.5px] font-bold text-amber-200 truncate"
-                          >
-                            {cameraWaypoints.length} Active Slides • Admin Hub Synced
-                          </div>
-                        </div>
-                      </div>
-
-                      <div
-                        className="flex items-center gap-1 shrink-0"
-                        onPointerDown={e => e.stopPropagation()}
-                      >
-                        {!isMobileViewport && (
-                          <button
-                            type="button"
-                            onClick={handleResetDeckPosition}
-                            className="p-1.5 rounded-lg bg-slate-950/65 hover:bg-slate-900 text-white border border-white/25 transition-all cursor-pointer"
-                            title="Reset Window Position"
-                          >
-                            <RotateCcw className="w-3.5 h-3.5 text-amber-300" />
-                          </button>
-                        )}
-
-                        <button
-                          type="button"
-                          onClick={() => setShowLeftDescription(prev => !prev)}
-                          className={`px-2 py-1 rounded-lg text-[10px] font-extrabold border transition-all cursor-pointer ${
-                            !showLeftDescription
-                              ? 'bg-amber-400 text-slate-950 border-amber-300'
-                              : 'bg-slate-950/70 text-white border-white/25 hover:bg-slate-900'
-                          }`}
-                        >
-                          {showLeftDescription ? 'Hide Text' : 'Text'}
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => setIsVideoTourActive(prev => !prev)}
-                          className={`px-2 py-1 rounded-lg text-[10px] font-extrabold border transition-all cursor-pointer ${
-                            isVideoTourActive
-                              ? 'bg-amber-400 text-slate-950 border-amber-300'
-                              : 'bg-slate-950/70 text-white border-white/25 hover:bg-slate-900'
-                          }`}
-                        >
-                          {isVideoTourActive ? 'Photos' : 'Video'}
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => setIsDeckMinimized(prev => !prev)}
-                          className="p-1.5 rounded-lg bg-slate-950/70 hover:bg-slate-900 text-white border border-white/25 transition-all cursor-pointer"
-                          title={
-                            isDeckMinimized ? 'Expand Deck' : 'Minimize Deck'
-                          }
-                        >
-                          {isDeckMinimized ? (
-                            <ChevronDown className="w-3.5 h-3.5" />
-                          ) : (
-                            <ChevronUp className="w-3.5 h-3.5" />
-                          )}
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => setShowDirectorDeck(false)}
-                          className="px-2 py-1 rounded-lg bg-slate-950/70 hover:bg-rose-600 text-white border border-white/25 text-[10px] font-bold cursor-pointer"
-                          title="Hide Portfolio Deck"
-                        >
-                          Hide
-                        </button>
-                      </div>
-                    </div>
-
-                    {!isDeckMinimized && (
-                      <>
-                        {/* Category Filter Pills inside Crystal Deck */}
-                        <div className="grid grid-cols-5 gap-1 p-1 rounded-xl bg-slate-950/60 border border-white/25">
-                          {(
-                            [
-                              { id: 'all_showroom', label: 'All' },
-                              { id: 'capsule_containers', label: 'Capsules' },
-                              { id: 'highrise_projects', label: 'Highrise' },
-                              {
-                                id: 'properties_plots_villas',
-                                label: 'Plots/Villas'
-                              },
-                              { id: 'upvc_construction', label: 'UPVC' }
-                            ] as { id: TourDeckCategory; label: string }[]
-                          ).map(tab => {
-                            const active = tourCategory === tab.id;
-                            return (
-                              <button
-                                key={tab.id}
-                                type="button"
-                                onClick={() => setTourCategory(tab.id)}
-                                className={`py-1.5 px-1 rounded-lg text-[10px] font-black text-center transition-all truncate cursor-pointer ${
-                                  active
-                                    ? 'bg-amber-400 text-slate-950 shadow-sm'
-                                    : 'text-white hover:bg-white/15'
-                                }`}
-                              >
-                                {tab.label}
-                              </button>
-                            );
-                          })}
-                        </div>
-
-                        {/* Vivid Thumbnail Grid with Crystal-Clear High-Contrast Text */}
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-[210px] sm:max-h-[250px] overflow-y-auto pr-1">
-                          {cameraWaypoints.map((wp, idx) => {
-                            const isSelected = safeIdx === idx;
-                            const thumbUrl = resolveImageWithFallback(wp);
-                            return (
-                              <button
-                                key={wp.id}
-                                type="button"
-                                onClick={() => {
-                                  setIsVideoTourActive(false);
-                                  setWaypointIdx(idx);
-                                }}
-                                className={`group relative rounded-xl overflow-hidden border text-left transition-all cursor-pointer h-20 sm:h-22 ${
-                                  isSelected
-                                    ? 'border-amber-400 ring-2 ring-amber-400/70 scale-[1.01] shadow-lg'
-                                    : 'border-white/35 hover:border-amber-300/80'
-                                }`}
-                              >
-                                <img
-                                  src={thumbUrl}
-                                  alt={wp.label}
-                                  loading="lazy"
-                                  onError={() =>
-                                    handleImageError(thumbUrl, wp.label)
-                                  }
-                                  className="w-full h-full object-cover brightness-105 saturate-125 group-hover:scale-105 transition-transform duration-300"
-                                />
-                                {/* Crisp Bottom Scrim so Text is 100% Readable over Vivid Images */}
-                                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/95 via-slate-950/35 to-transparent" />
-                                <div className="absolute top-1.5 left-1.5 right-1.5 flex items-center justify-between gap-1">
-                                  <span
-                                    className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded shadow-xs ${
-                                      isSelected
-                                        ? 'bg-amber-400 text-slate-950'
-                                        : 'bg-slate-950/85 text-white border border-white/25'
-                                    }`}
-                                  >
-                                    #{idx + 1}
-                                  </span>
-                                  <span className="text-[8.5px] font-extrabold text-emerald-300 bg-slate-950/85 border border-emerald-400/40 px-1.5 py-0.5 rounded truncate max-w-[75%]">
-                                    {wp.valuation}
-                                  </span>
-                                </div>
-                                <div className="absolute bottom-1.5 left-1.5 right-1.5">
-                                  <div
-                                    style={{
-                                      textShadow:
-                                        '0 1px 6px rgba(2,6,23,1), 0 0 2px rgba(2,6,23,1)'
-                                    }}
-                                    className="text-[10.5px] font-extrabold text-white truncate leading-tight"
-                                  >
-                                    {wp.label}
-                                  </div>
-                                </div>
-                              </button>
-                            );
-                          })}
-                        </div>
-
-                        {/* Deck Footer Bar */}
-                        <div className="pt-2 border-t border-white/25 flex items-center justify-between gap-2 text-[11px]">
-                          <div className="flex items-center gap-1.5 text-white truncate">
-                            <Move className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                            <span
-                              style={{
-                                textShadow: '0 1px 6px rgba(2,6,23,0.95)'
-                              }}
-                              className="truncate font-bold"
-                            >
-                              Capsules, Highrises &amp; UPVC
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setTourCategory('capsule_containers');
-                                onSelectCategoryFilter('modular');
-                              }}
-                              className="px-2.5 py-1 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-[10px] transition-colors cursor-pointer shadow-xs"
-                            >
-                              Capsules
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setTourCategory('upvc_construction');
-                                onSelectCategoryFilter('projects');
-                              }}
-                              className="px-2.5 py-1 rounded-lg bg-slate-950/80 hover:bg-slate-900 text-white border border-white/30 font-bold text-[10px] transition-colors cursor-pointer"
-                            >
-                              UPVC
-                            </button>
-                          </div>
-                        </div>
-                      </>
-                    )}
-                  </motion.div>
-                </div>
-              )}
-            </motion.div>
-          ) : (
+        {/* Bottom Consortium 4-Pillar Ribbon (Optional) */}
+        <AnimatePresence>
+          {showConsortiumRibbon && !isCinemaTheaterMode && (
             <motion.div
-              key="clean-view"
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 12 }}
-              className="mt-auto pt-36 sm:pt-48 flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4"
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 pt-3"
             >
-              <div className="p-4 rounded-2xl bg-slate-950/60 backdrop-blur-xl border border-white/25 max-w-xl">
-                <div className="text-[10px] font-extrabold uppercase tracking-wider text-amber-300 mb-1">
-                  {activeWaypoint.code} — {activeWaypoint.divisionTag}
-                </div>
-                <h2 className="text-xl sm:text-2xl font-black text-white font-serif">
-                  {activeWaypoint.headline}
-                </h2>
-                <p className="text-xs text-slate-100 mt-1">
-                  {activeWaypoint.subLabel}
-                </p>
-              </div>
+              {consortiumPillars.map(pillar => (
+                <button
+                  key={pillar.id}
+                  type="button"
+                  onClick={() => {
+                    setTourCategory(pillar.id);
+                    onSelectCategoryFilter(pillar.category);
+                  }}
+                  className="p-3 rounded-2xl bg-slate-950/65 hover:bg-slate-900/85 backdrop-blur-xl border border-white/20 text-left flex items-start gap-3 transition-all cursor-pointer"
+                >
+                  <div className="p-2 rounded-xl bg-white/10 border border-white/15 shrink-0">
+                    {pillar.icon}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-xs font-extrabold text-white truncate">
+                      {pillar.title}
+                    </div>
+                    <div className="text-[10.5px] text-slate-300 truncate mt-0.5">
+                      {pillar.detail}
+                    </div>
+                  </div>
+                </button>
+              ))}
             </motion.div>
           )}
         </AnimatePresence>
-
-        {/* 5. BOTTOM TIMELINE & PLAYBACK CONTROLS */}
-        <div className="pt-3 mt-2 border-t border-white/20 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="w-full sm:w-auto flex-1 flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
-            {cameraWaypoints.map((wp, idx) => {
-              const isCurrent = safeIdx === idx;
-              return (
-                <button
-                  key={wp.id}
-                  type="button"
-                  onClick={() => {
-                    setIsVideoTourActive(false);
-                    setWaypointIdx(idx);
-                  }}
-                  className="group flex-1 min-w-[48px] max-w-[110px] text-left focus:outline-none cursor-pointer"
-                >
-                  <div className="flex items-center justify-between text-[10px] font-extrabold mb-1">
-                    <span
-                      style={{ textShadow: '0 1px 4px rgba(2,6,23,0.9)' }}
-                      className={`truncate ${
-                        isCurrent
-                          ? 'text-amber-300'
-                          : 'text-white/85 group-hover:text-white'
-                      }`}
-                    >
-                      {idx + 1}. {wp.label}
-                    </span>
-                  </div>
-                  <div className="h-1.5 w-full rounded-full bg-white/25 overflow-hidden">
-                    {isCurrent ? (
-                      <motion.div
-                        key={`progress-${wp.id}-${isPaused}`}
-                        initial={{ width: '0%' }}
-                        animate={{ width: isPaused ? '45%' : '100%' }}
-                        transition={{
-                          duration: isPaused
-                            ? 0.2
-                            : WAYPOINT_DURATION_MS / 1000,
-                          ease: 'linear'
-                        }}
-                        className="h-full bg-amber-400 rounded-full"
-                      />
-                    ) : (
-                      <div
-                        className={`h-full rounded-full ${
-                          idx < safeIdx ? 'w-full bg-white/60' : 'w-0'
-                        }`}
-                      />
-                    )}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="flex flex-wrap items-center justify-center sm:justify-end gap-1.5 shrink-0 w-full sm:w-auto">
-            {!showLeftDescription && (
-              <button
-                type="button"
-                onClick={() => setShowLeftDescription(true)}
-                className="px-2.5 py-1.5 rounded-xl bg-slate-950/70 hover:bg-slate-900 border border-white/30 text-[11px] font-bold text-white cursor-pointer"
-              >
-                Show Text
-              </button>
-            )}
-            {!showDirectorDeck && (
-              <button
-                type="button"
-                onClick={() => setShowDirectorDeck(true)}
-                className="px-2.5 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 border border-amber-300 text-[11px] font-black text-slate-950 cursor-pointer"
-              >
-                Show Portfolio Deck
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={handlePrev}
-              className="p-2 rounded-xl bg-slate-950/70 hover:bg-white/20 border border-white/25 text-white transition-colors cursor-pointer"
-              title="Previous Angle"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsPaused(prev => !prev)}
-              className="px-3 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm"
-            >
-              {isPaused ? (
-                <>
-                  <Play className="w-3.5 h-3.5 fill-current" />
-                  <span>Resume</span>
-                </>
-              ) : (
-                <>
-                  <Pause className="w-3.5 h-3.5 fill-current" />
-                  <span>Pause</span>
-                </>
-              )}
-            </button>
-            <button
-              type="button"
-              onClick={handleNext}
-              className="p-2 rounded-xl bg-slate-950/70 hover:bg-white/20 border border-white/25 text-white transition-colors cursor-pointer"
-              title="Next Angle"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
       </div>
     </section>
   );
