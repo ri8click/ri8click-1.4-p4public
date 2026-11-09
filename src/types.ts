@@ -80,6 +80,9 @@ export interface AgencyAccount {
   name: string;
   companyName?: string;
   ownerName?: string;
+  role?: string;
+  status?: string;
+  memberSince?: string;
   logo: string;
   avatar?: string;
   phone: string;
@@ -144,6 +147,7 @@ export interface HeroSlide {
   imageUrl: string;
   galleryImages?: string[];
   videoUrl?: string;
+  videoTitle?: string;
   tourRoomsCount: number;
   isActive: boolean;
   order: number;
@@ -151,6 +155,8 @@ export interface HeroSlide {
   samplePropertyData?: {
     title: string;
     category: 'residential' | 'commercial' | 'modular' | 'projects';
+    virtualTourVideoUrl?: string;
+    virtualTourVideoTitle?: string;
     location: {
       city: string;
       society: string;
@@ -169,7 +175,8 @@ export interface BlogPost {
     | 'Investment Guides'
     | 'Modular & Prefab Tech'
     | 'Construction & UPVC'
-    | 'Legal & Tax';
+    | 'Legal & Tax'
+    | string;
   excerpt: string;
   content: string;
   coverImage: string;
