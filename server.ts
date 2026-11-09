@@ -23,7 +23,10 @@ dotenv.config({ path: ".envRE" });
 dotenv.config();
 
 const DATA_DIR = path.resolve(process.cwd(), "data");
+const UPLOADS_DIR = path.join(DATA_DIR, "uploads");
+const PUBLIC_UPLOADS_DIR = path.resolve(process.cwd(), "public", "uploads");
 const STATE_FILE = path.join(DATA_DIR, "portal-state.json");
+const BACKUP_STATE_FILE = path.join(DATA_DIR, "portal-state.backup.json");
 
 interface GlobalPortalState {
   properties: any[];
@@ -40,9 +43,11 @@ interface GlobalPortalState {
   revision: number;
 }
 
-function ensureDataDir() {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
+function ensureDirectories() {
+  for (const dir of [DATA_DIR, UPLOADS_DIR, PUBLIC_UPLOADS_DIR]) {
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
   }
 }
 
@@ -84,12 +89,75 @@ function mergeAccountsWithDefaultPasswords(savedAccounts?: any[]): any[] {
   return merged;
 }
 
+function normalizeHeroSlides(slides: any[], fallback: any[]): any[] {
+  if (!Array.isArray(slides) || slides.length === 0) {
+    return fallback;
+  }
+  return slides
+    .filter((s) => s && typeof s === "object" && s.title)
+    .map((s, idx) => {
+      const gallery =
+        Array.isArray(s.galleryImages) && s.galleryImages.length > 0
+          ? s.galleryImages.filter(Boolean)
+          : s.imageUrl
+          ? [s.imageUrl]
+          : [];
+      const primaryImage = gallery[0] || s.imageUrl || "";
+      const videoUrl =
+        s.videoUrl || s.samplePropertyData?.virtualTourVideoUrl || "";
+      const videoTitle =
+        s.videoTitle ||
+        s.samplePropertyData?.virtualTourVideoTitle ||
+        `${s.title} — 360° Virtual Tour`;
+
+      return {
+        ...s,
+        id: s.id || `slide-${ idx + 1 }-${ Date.now() }`,
+        imageUrl: primaryImage,
+        galleryImages: gallery.length > 0 ? gallery : [primaryImage],
+        videoUrl,
+        videoTitle,
+        isActive: s.isActive !== false,
+        order: typeof s.order === "number" ? s.order : idx + 1,
+        tourRoomsCount:
+          typeof s.tourRoomsCount === "number"
+            ? s.tourRoomsCount
+            : Math.max(gallery.length, 4),
+        features:
+          Array.isArray(s.features) && s.features.length > 0
+            ? s.features
+            : [
+                "100% Verified Ri8click Consortium Inventory",
+                "German UPVC Thermal & Acoustic Glazing",
+                "Direct Transfer & Turnkey Delivery",
+              ],
+        samplePropertyData: {
+          title: s.samplePropertyData?.title || s.title,
+          category: s.samplePropertyData?.category || "modular",
+          virtualTourVideoUrl: videoUrl,
+          virtualTourVideoTitle: videoTitle,
+          location: {
+            city:
+              s.samplePropertyData?.location?.city ||
+              String(s.location || "Taxila").split("/")[0]?.trim() ||
+              "Taxila",
+            society:
+              s.samplePropertyData?.location?.society ||
+              s.society ||
+              "Faisal Hills",
+            province: s.samplePropertyData?.location?.province || "Punjab",
+          },
+        },
+      };
+    });
+}
+
 function buildDefaultState(): GlobalPortalState {
   return {
     properties: INITIAL_PROPERTIES,
     agencies: INITIAL_AGENCIES,
     provinceCityData: INITIAL_PROVINCE_CITIES,
-    heroSlides: INITIAL_HERO_SLIDES,
+    heroSlides: normalizeHeroSlides(INITIAL_HERO_SLIDES, INITIAL_HERO_SLIDES),
     blogs: INITIAL_BLOGS,
     sitePortions: INITIAL_SITE_PORTIONS,
     consortiumDivisions: CONSORTIUM_DIVISIONS,
@@ -101,65 +169,78 @@ function buildDefaultState(): GlobalPortalState {
   };
 }
 
-function loadGlobalState(): GlobalPortalState {
-  const defaults = buildDefaultState();
+function parseStateFile(filePath: string): any | null {
   try {
-    ensureDataDir();
-    if (fs.existsSync(STATE_FILE)) {
-      const raw = fs.readFileSync(STATE_FILE, "utf-8");
-      const parsed = JSON.parse(raw);
-      if (parsed && typeof parsed === "object") {
-        const hydrated: GlobalPortalState = {
-          properties:
-            Array.isArray(parsed.properties) && parsed.properties.length > 0
-              ? parsed.properties
-              : defaults.properties,
-          agencies:
-            Array.isArray(parsed.agencies) && parsed.agencies.length > 0
-              ? parsed.agencies
-              : defaults.agencies,
-          provinceCityData:
-            Array.isArray(parsed.provinceCityData) &&
-            parsed.provinceCityData.length > 0
-              ? parsed.provinceCityData
-              : defaults.provinceCityData,
-          heroSlides:
-            Array.isArray(parsed.heroSlides) && parsed.heroSlides.length > 0
-              ? parsed.heroSlides
-              : defaults.heroSlides,
-          blogs:
-            Array.isArray(parsed.blogs) && parsed.blogs.length > 0
-              ? parsed.blogs
-              : defaults.blogs,
-          sitePortions:
-            Array.isArray(parsed.sitePortions) && parsed.sitePortions.length > 0
-              ? parsed.sitePortions
-              : defaults.sitePortions,
-          consortiumDivisions:
-            Array.isArray(parsed.consortiumDivisions) &&
-            parsed.consortiumDivisions.length > 0
-              ? parsed.consortiumDivisions
-              : defaults.consortiumDivisions,
-          userAccounts: mergeAccountsWithDefaultPasswords(parsed.userAccounts),
-          advibeProjects:
-            Array.isArray(parsed.advibeProjects) &&
-            parsed.advibeProjects.length > 0
-              ? parsed.advibeProjects
-              : defaults.advibeProjects,
-          advibeLeads: Array.isArray(parsed.advibeLeads)
-            ? parsed.advibeLeads
-            : defaults.advibeLeads,
-          updatedAt: parsed.updatedAt || defaults.updatedAt,
-          revision:
-            typeof parsed.revision === "number" && parsed.revision > 0
-              ? parsed.revision
-              : 1,
-        };
-        return hydrated;
+    if (fs.existsSync(filePath)) {
+      const raw = fs.readFileSync(filePath, "utf-8");
+      if (raw && raw.trim().length > 2) {
+        return JSON.parse(raw);
       }
     }
   } catch (err) {
-    console.error("Failed to read portal-state.json:", err);
+    console.error(`Error reading state file ${filePath}:`, err);
+  }
+  return null;
+}
+
+function loadGlobalState(): GlobalPortalState {
+  const defaults = buildDefaultState();
+  try {
+    ensureDirectories();
+    const parsed =
+      parseStateFile(STATE_FILE) || parseStateFile(BACKUP_STATE_FILE);
+
+    if (parsed && typeof parsed === "object") {
+      const hydrated: GlobalPortalState = {
+        properties:
+          Array.isArray(parsed.properties) && parsed.properties.length > 0
+            ? parsed.properties
+            : defaults.properties,
+        agencies:
+          Array.isArray(parsed.agencies) && parsed.agencies.length > 0
+            ? parsed.agencies
+            : defaults.agencies,
+        provinceCityData:
+          Array.isArray(parsed.provinceCityData) &&
+          parsed.provinceCityData.length > 0
+            ? parsed.provinceCityData
+            : defaults.provinceCityData,
+        heroSlides: normalizeHeroSlides(
+          parsed.heroSlides,
+          defaults.heroSlides
+        ),
+        blogs:
+          Array.isArray(parsed.blogs) && parsed.blogs.length > 0
+            ? parsed.blogs
+            : defaults.blogs,
+        sitePortions:
+          Array.isArray(parsed.sitePortions) && parsed.sitePortions.length > 0
+            ? parsed.sitePortions
+            : defaults.sitePortions,
+        consortiumDivisions:
+          Array.isArray(parsed.consortiumDivisions) &&
+          parsed.consortiumDivisions.length > 0
+            ? parsed.consortiumDivisions
+            : defaults.consortiumDivisions,
+        userAccounts: mergeAccountsWithDefaultPasswords(parsed.userAccounts),
+        advibeProjects:
+          Array.isArray(parsed.advibeProjects) &&
+          parsed.advibeProjects.length > 0
+            ? parsed.advibeProjects
+            : defaults.advibeProjects,
+        advibeLeads: Array.isArray(parsed.advibeLeads)
+          ? parsed.advibeLeads
+          : defaults.advibeLeads,
+        updatedAt: parsed.updatedAt || defaults.updatedAt,
+        revision:
+          typeof parsed.revision === "number" && parsed.revision > 0
+            ? parsed.revision
+            : 1,
+      };
+      return hydrated;
+    }
+  } catch (err) {
+    console.error("Failed to hydrate portal-state.json:", err);
   }
   saveGlobalState(defaults);
   return defaults;
@@ -167,15 +248,51 @@ function loadGlobalState(): GlobalPortalState {
 
 function saveGlobalState(state: GlobalPortalState) {
   try {
-    ensureDataDir();
+    ensureDirectories();
     state.updatedAt = new Date().toISOString();
     state.revision =
       (typeof state.revision === "number" ? state.revision : 0) + 1;
+    const serialized = JSON.stringify(state, null, 2);
     const tempFile = `${STATE_FILE}.tmp`;
-    fs.writeFileSync(tempFile, JSON.stringify(state, null, 2), "utf-8");
+    fs.writeFileSync(tempFile, serialized, "utf-8");
     fs.renameSync(tempFile, STATE_FILE);
+    fs.writeFileSync(BACKUP_STATE_FILE, serialized, "utf-8");
   } catch (err) {
     console.error("Failed to save portal-state.json:", err);
+  }
+}
+
+function persistDataUriToDiskIfNeeded(val: string): string {
+  if (typeof val !== "string") return val;
+  const trimmed = val.trim();
+  const match = trimmed.match(
+    /^data:(image\/[a-zA-Z0-9.+-]+|video\/[a-zA-Z0-9.+-]+);base64,(.+)$/
+  );
+  if (!match) return val;
+
+  // Convert Base64 media larger than 80KB into a permanent static file on disk
+  // so portal-state.json remains fast and light for Incognito & mobile browsers.
+  if (trimmed.length < 80000) return val;
+
+  try {
+    ensureDirectories();
+    const mimeType = match[1];
+    const base64Data = match[2];
+    let ext = mimeType.split("/")[1] || "bin";
+    if (ext === "jpeg") ext = "jpg";
+    if (ext === "quicktime") ext = "mov";
+    const fileName = `media-${Date.now()}-${Math.random()
+      .toString(36)
+      .slice(2, 8)}.${ext}`;
+    const buffer = Buffer.from(base64Data, "base64");
+
+    fs.writeFileSync(path.join(UPLOADS_DIR, fileName), buffer);
+    fs.writeFileSync(path.join(PUBLIC_UPLOADS_DIR, fileName), buffer);
+
+    return `/uploads/${fileName}`;
+  } catch (err) {
+    console.error("Failed to offload DataURI media to disk:", err);
+    return val;
   }
 }
 
@@ -198,6 +315,9 @@ function sanitizeIncomingPayload(input: any): any {
     if (/^(javascript|vbscript|data:text\/html):/i.test(trimmed)) {
       return "";
     }
+    if (trimmed.startsWith("data:image/") || trimmed.startsWith("data:video/")) {
+      return persistDataUriToDiskIfNeeded(trimmed);
+    }
   }
   return input;
 }
@@ -207,12 +327,19 @@ function sanitizeStateForClient(state: GlobalPortalState): GlobalPortalState {
   if (Array.isArray(copy.userAccounts)) {
     copy.userAccounts = mergeAccountsWithDefaultPasswords(copy.userAccounts);
   }
+  if (Array.isArray(copy.heroSlides)) {
+    copy.heroSlides = normalizeHeroSlides(
+      copy.heroSlides,
+      INITIAL_HERO_SLIDES
+    );
+  }
   return copy;
 }
 
 const globalPortalState: GlobalPortalState = loadGlobalState();
 
 async function startServer() {
+  ensureDirectories();
   const app = express();
   const PORT = Number(process.env.PORT) || 3000;
 
@@ -232,14 +359,32 @@ async function startServer() {
     next();
   });
 
-  app.use(express.json({ limit: "50mb" }));
-  app.use(express.urlencoded({ extended: true, limit: "50mb" }));
+  // Serve uploaded images & 360 tour videos from both data/uploads and public/uploads
+  app.use(
+    "/uploads",
+    express.static(UPLOADS_DIR, {
+      maxAge: "365d",
+      immutable: true,
+    })
+  );
+  app.use(
+    "/uploads",
+    express.static(PUBLIC_UPLOADS_DIR, {
+      maxAge: "365d",
+      immutable: true,
+    })
+  );
+
+  app.use(express.json({ limit: "150mb" }));
+  app.use(express.urlencoded({ extended: true, limit: "150mb" }));
 
   const sseClients = new Set<express.Response>();
 
   function broadcastStateUpdate() {
     const safePayload = JSON.stringify({
       type: "STATE_UPDATED",
+      updatedAt: globalPortalState.updatedAt,
+      revision: globalPortalState.revision,
       state: sanitizeStateForClient(globalPortalState),
     });
     for (const client of sseClients) {
@@ -275,8 +420,9 @@ async function startServer() {
 
     res.write(
       `data: ${JSON.stringify({
-        type: "INITIAL_STATE",
-        state: sanitizeStateForClient(globalPortalState),
+        type: "CONNECTED",
+        updatedAt: globalPortalState.updatedAt,
+        revision: globalPortalState.revision || 1,
       })}\n\n`
     );
 
@@ -284,6 +430,47 @@ async function startServer() {
     req.on("close", () => {
       sseClients.delete(res);
     });
+  });
+
+  // Dedicated endpoint for uploading images & 360° project tour videos
+  app.post("/api/media/upload", (req, res) => {
+    try {
+      const { dataUrl, fileName } = req.body || {};
+      if (!dataUrl || typeof dataUrl !== "string") {
+        return res.status(400).json({ error: "Valid dataUrl is required" });
+      }
+      const match = dataUrl.match(
+        /^data:(image\/[a-zA-Z0-9.+-]+|video\/[a-zA-Z0-9.+-]+);base64,(.+)$/
+      );
+      if (!match) {
+        return res.status(400).json({ error: "Unsupported media format" });
+      }
+
+      ensureDirectories();
+      const mimeType = match[1];
+      const base64Data = match[2];
+      let ext = mimeType.split("/")[1] || "bin";
+      if (ext === "jpeg") ext = "jpg";
+      if (ext === "quicktime") ext = "mov";
+
+      const safeBaseName = String(fileName || "project-media")
+        .replace(/\.[^/.]+$/, "")
+        .replace(/[^a-zA-Z0-9_-]/g, "-")
+        .slice(0, 40);
+      const finalName = `${safeBaseName}-${Date.now()}.${ext}`;
+      const buffer = Buffer.from(base64Data, "base64");
+
+      fs.writeFileSync(path.join(UPLOADS_DIR, finalName), buffer);
+      fs.writeFileSync(path.join(PUBLIC_UPLOADS_DIR, finalName), buffer);
+
+      const url = `/uploads/${finalName}`;
+      return res.json({ status: "ok", url, fileName: finalName, mimeType });
+    } catch (err: any) {
+      console.error("Media upload error:", err);
+      return res
+        .status(500)
+        .json({ error: "Failed to save uploaded media file" });
+    }
   });
 
   app.get("/api/state/version", (_req, res) => {
@@ -295,6 +482,44 @@ async function startServer() {
 
   app.get("/api/state", (_req, res) => {
     res.json(sanitizeStateForClient(globalPortalState));
+  });
+
+  // Dedicated endpoint for Hero Banner & Portfolio Deck permanent global updates
+  app.get("/api/hero-slides", (_req, res) => {
+    res.json({
+      status: "ok",
+      revision: globalPortalState.revision,
+      updatedAt: globalPortalState.updatedAt,
+      heroSlides: normalizeHeroSlides(
+        globalPortalState.heroSlides,
+        INITIAL_HERO_SLIDES
+      ),
+    });
+  });
+
+  app.put("/api/hero-slides", (req, res) => {
+    const incomingSlides = sanitizeIncomingPayload(
+      req.body?.heroSlides || req.body
+    );
+    if (!Array.isArray(incomingSlides) || incomingSlides.length === 0) {
+      return res
+        .status(400)
+        .json({ error: "At least 1 valid hero slide is required." });
+    }
+
+    globalPortalState.heroSlides = normalizeHeroSlides(
+      incomingSlides,
+      globalPortalState.heroSlides
+    );
+    saveGlobalState(globalPortalState);
+    broadcastStateUpdate();
+
+    return res.json({
+      status: "ok",
+      updatedAt: globalPortalState.updatedAt,
+      revision: globalPortalState.revision,
+      heroSlides: globalPortalState.heroSlides,
+    });
   });
 
   app.put("/api/state", (req, res) => {
@@ -352,10 +577,22 @@ async function startServer() {
 
           globalPortalState.userAccounts =
             mergeAccountsWithDefaultPasswords(updatedAccounts);
-        } else {
+          changed = true;
+        } else if (key === "heroSlides") {
+          if (updates.heroSlides.length > 0) {
+            globalPortalState.heroSlides = normalizeHeroSlides(
+              updates.heroSlides,
+              globalPortalState.heroSlides
+            );
+            changed = true;
+          }
+        } else if (
+          updates[key].length > 0 ||
+          key === "advibeLeads"
+        ) {
           (globalPortalState as any)[key] = updates[key];
+          changed = true;
         }
-        changed = true;
       }
     }
 
@@ -463,6 +700,9 @@ async function startServer() {
       status: "ok",
       updatedAt: globalPortalState.updatedAt,
       revision: globalPortalState.revision || 1,
+      heroSlidesCount: Array.isArray(globalPortalState.heroSlides)
+        ? globalPortalState.heroSlides.length
+        : 0,
       geminiConfigured:
         !!process.env.GEMINI_API_KEY &&
         process.env.GEMINI_API_KEY !== "your_actual_gemini_api_key_here",
