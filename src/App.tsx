@@ -55,7 +55,38 @@ import {
 } from './types';
 import { SlidersHorizontal, Sparkles, Plus, RotateCcw } from 'lucide-react';
 
-const DECK_SCHEMA_VERSION = 'ri8click_deck_v3_clean';
+const DECK_SCHEMA_VERSION = 'ri8click_deck_v4_global';
+
+function safeStorageGet(key: string): string | null {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      return window.localStorage.getItem(key);
+    }
+  } catch {
+    // Private / Incognito mode with strict storage blocking
+  }
+  return null;
+}
+
+function safeStorageSet(key: string, value: string): void {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.setItem(key, value);
+    }
+  } catch {
+    // Private / Incognito mode with strict storage blocking or quota exceeded
+  }
+}
+
+function safeStorageRemove(key: string): void {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.removeItem(key);
+    }
+  } catch {
+    // Ignore in restricted private mode
+  }
+}
 
 function sanitizePropertiesToPakistanAvatars(props: Property[]): Property[] {
   if (!Array.isArray(props) || props.length === 0) return INITIAL_PROPERTIES;
@@ -89,19 +120,16 @@ function sanitizeAgenciesToPakistanAvatars(
 
 function loadInitialSlides(): HeroSlide[] {
   try {
-    const migratedFlag = localStorage.getItem(DECK_SCHEMA_VERSION);
-    const saved = localStorage.getItem('ri8click_hero_slides');
+    const migratedFlag = safeStorageGet(DECK_SCHEMA_VERSION);
+    const saved = safeStorageGet('ri8click_hero_slides');
     if (saved && migratedFlag === 'true') {
       const parsed = JSON.parse(saved);
       if (Array.isArray(parsed) && parsed.length > 0) {
         return parsed;
       }
     }
-    localStorage.setItem(DECK_SCHEMA_VERSION, 'true');
-    localStorage.setItem(
-      'ri8click_hero_slides',
-      JSON.stringify(INITIAL_HERO_SLIDES)
-    );
+    safeStorageSet(DECK_SCHEMA_VERSION, 'true');
+    safeStorageSet('ri8click_hero_slides', JSON.stringify(INITIAL_HERO_SLIDES));
   } catch {}
   return INITIAL_HERO_SLIDES;
 }
@@ -109,7 +137,7 @@ function loadInitialSlides(): HeroSlide[] {
 export function App() {
   const [properties, setProperties] = useState<Property[]>(() => {
     try {
-      const saved = localStorage.getItem('ri8click_properties_data');
+      const saved = safeStorageGet('ri8click_properties_data');
       if (saved) return sanitizePropertiesToPakistanAvatars(JSON.parse(saved));
     } catch {}
     return sanitizePropertiesToPakistanAvatars(INITIAL_PROPERTIES);
@@ -117,7 +145,7 @@ export function App() {
 
   const [agencies, setAgencies] = useState<AgencyAccount[]>(() => {
     try {
-      const saved = localStorage.getItem('ri8click_agencies_data');
+      const saved = safeStorageGet('ri8click_agencies_data');
       if (saved) return sanitizeAgenciesToPakistanAvatars(JSON.parse(saved));
     } catch {}
     return sanitizeAgenciesToPakistanAvatars(INITIAL_AGENCIES);
@@ -126,7 +154,7 @@ export function App() {
   const [provinceCityData, setProvinceCityData] = useState<ProvinceCityData[]>(
     () => {
       try {
-        const saved = localStorage.getItem('ri8click_locations_data');
+        const saved = safeStorageGet('ri8click_locations_data');
         if (saved) return JSON.parse(saved);
       } catch {}
       return INITIAL_PROVINCE_CITIES;
@@ -139,7 +167,7 @@ export function App() {
     ConsortiumDivision[]
   >(() => {
     try {
-      const saved = localStorage.getItem('ri8click_consortium_divisions');
+      const saved = safeStorageGet('ri8click_consortium_divisions');
       if (saved) return JSON.parse(saved);
     } catch {}
     return CONSORTIUM_DIVISIONS;
@@ -147,7 +175,7 @@ export function App() {
 
   const [blogs, setBlogs] = useState<BlogPost[]>(() => {
     try {
-      const saved = localStorage.getItem('ri8click_blogs_data');
+      const saved = safeStorageGet('ri8click_blogs_data');
       if (saved) return JSON.parse(saved);
     } catch {}
     return INITIAL_BLOGS;
@@ -155,7 +183,7 @@ export function App() {
 
   const [sitePortions, setSitePortions] = useState<SiteSectionPortion[]>(() => {
     try {
-      const saved = localStorage.getItem('ri8click_site_portions');
+      const saved = safeStorageGet('ri8click_site_portions');
       if (saved) return JSON.parse(saved);
     } catch {}
     return INITIAL_SITE_PORTIONS;
@@ -163,7 +191,7 @@ export function App() {
 
   const [userAccounts, setUserAccounts] = useState<UserAccount[]>(() => {
     try {
-      const saved = localStorage.getItem('ri8click_user_accounts');
+      const saved = safeStorageGet('ri8click_user_accounts');
       if (saved) return mergeUserAccountsWithDefaults(JSON.parse(saved));
     } catch {}
     return initialUserAccounts;
@@ -171,7 +199,7 @@ export function App() {
 
   const [advibeProjects, setAdvibeProjects] = useState<AdVibeProject[]>(() => {
     try {
-      const saved = localStorage.getItem('ri8click_advibe_projects');
+      const saved = safeStorageGet('ri8click_advibe_projects');
       if (saved) return JSON.parse(saved);
     } catch {}
     return initialAdvibeProjects;
@@ -179,7 +207,7 @@ export function App() {
 
   const [advibeLeads, setAdvibeLeads] = useState<AdVibeLead[]>(() => {
     try {
-      const saved = localStorage.getItem('ri8click_advibe_leads');
+      const saved = safeStorageGet('ri8click_advibe_leads');
       if (saved) return JSON.parse(saved);
     } catch {}
     return initialAdvibeLeads;
@@ -187,7 +215,7 @@ export function App() {
 
   const [currentUser, setCurrentUser] = useState<UserAccount | null>(() => {
     try {
-      const saved = localStorage.getItem('ri8click_current_user');
+      const saved = safeStorageGet('ri8click_current_user');
       if (saved) return JSON.parse(saved);
     } catch {}
     return null;
@@ -209,47 +237,45 @@ export function App() {
     if (Array.isArray(remote.properties) && remote.properties.length > 0) {
       const clean = sanitizePropertiesToPakistanAvatars(remote.properties);
       setProperties(clean);
-      localStorage.setItem('ri8click_properties_data', JSON.stringify(clean));
+      safeStorageSet('ri8click_properties_data', JSON.stringify(clean));
     }
     if (Array.isArray(remote.agencies) && remote.agencies.length > 0) {
       const clean = sanitizeAgenciesToPakistanAvatars(remote.agencies);
       setAgencies(clean);
-      localStorage.setItem('ri8click_agencies_data', JSON.stringify(clean));
+      safeStorageSet('ri8click_agencies_data', JSON.stringify(clean));
     }
     if (
       Array.isArray(remote.provinceCityData) &&
       remote.provinceCityData.length > 0
     ) {
       setProvinceCityData(remote.provinceCityData);
-      localStorage.setItem(
+      safeStorageSet(
         'ri8click_locations_data',
         JSON.stringify(remote.provinceCityData)
       );
     }
     if (Array.isArray(remote.heroSlides) && remote.heroSlides.length > 0) {
       setHeroSlides(remote.heroSlides);
-      localStorage.setItem(
-        'ri8click_hero_slides',
-        JSON.stringify(remote.heroSlides)
-      );
+      safeStorageSet(DECK_SCHEMA_VERSION, 'true');
+      safeStorageSet('ri8click_hero_slides', JSON.stringify(remote.heroSlides));
     }
     if (
       Array.isArray(remote.consortiumDivisions) &&
       remote.consortiumDivisions.length > 0
     ) {
       setConsortiumDivisions(remote.consortiumDivisions);
-      localStorage.setItem(
+      safeStorageSet(
         'ri8click_consortium_divisions',
         JSON.stringify(remote.consortiumDivisions)
       );
     }
     if (Array.isArray(remote.blogs) && remote.blogs.length > 0) {
       setBlogs(remote.blogs);
-      localStorage.setItem('ri8click_blogs_data', JSON.stringify(remote.blogs));
+      safeStorageSet('ri8click_blogs_data', JSON.stringify(remote.blogs));
     }
     if (Array.isArray(remote.sitePortions) && remote.sitePortions.length > 0) {
       setSitePortions(remote.sitePortions);
-      localStorage.setItem(
+      safeStorageSet(
         'ri8click_site_portions',
         JSON.stringify(remote.sitePortions)
       );
@@ -257,24 +283,35 @@ export function App() {
     if (Array.isArray(remote.userAccounts) && remote.userAccounts.length > 0) {
       const mergedUsers = mergeUserAccountsWithDefaults(remote.userAccounts);
       setUserAccounts(mergedUsers);
-      localStorage.setItem(
-        'ri8click_user_accounts',
-        JSON.stringify(mergedUsers)
-      );
+      safeStorageSet('ri8click_user_accounts', JSON.stringify(mergedUsers));
+
+      setCurrentUser(prev => {
+        if (!prev) return null;
+        const refreshed = mergedUsers.find(
+          u =>
+            u.id === prev.id ||
+            u.username.toLowerCase() === prev.username.toLowerCase()
+        );
+        if (refreshed) {
+          safeStorageSet('ri8click_current_user', JSON.stringify(refreshed));
+          return refreshed;
+        }
+        return prev;
+      });
     }
     if (
       Array.isArray(remote.advibeProjects) &&
       remote.advibeProjects.length > 0
     ) {
       setAdvibeProjects(remote.advibeProjects);
-      localStorage.setItem(
+      safeStorageSet(
         'ri8click_advibe_projects',
         JSON.stringify(remote.advibeProjects)
       );
     }
     if (Array.isArray(remote.advibeLeads)) {
       setAdvibeLeads(remote.advibeLeads);
-      localStorage.setItem(
+      safeStorageSet(
         'ri8click_advibe_leads',
         JSON.stringify(remote.advibeLeads)
       );
@@ -283,43 +320,44 @@ export function App() {
 
   const pushStateToServer = useCallback((partialState: Record<string, any>) => {
     if (partialState.properties) {
-      localStorage.setItem(
+      safeStorageSet(
         'ri8click_properties_data',
         JSON.stringify(partialState.properties)
       );
     }
     if (partialState.agencies) {
-      localStorage.setItem(
+      safeStorageSet(
         'ri8click_agencies_data',
         JSON.stringify(partialState.agencies)
       );
     }
     if (partialState.provinceCityData) {
-      localStorage.setItem(
+      safeStorageSet(
         'ri8click_locations_data',
         JSON.stringify(partialState.provinceCityData)
       );
     }
     if (partialState.heroSlides) {
-      localStorage.setItem(
+      safeStorageSet(DECK_SCHEMA_VERSION, 'true');
+      safeStorageSet(
         'ri8click_hero_slides',
         JSON.stringify(partialState.heroSlides)
       );
     }
     if (partialState.consortiumDivisions) {
-      localStorage.setItem(
+      safeStorageSet(
         'ri8click_consortium_divisions',
         JSON.stringify(partialState.consortiumDivisions)
       );
     }
     if (partialState.blogs) {
-      localStorage.setItem(
+      safeStorageSet(
         'ri8click_blogs_data',
         JSON.stringify(partialState.blogs)
       );
     }
     if (partialState.sitePortions) {
-      localStorage.setItem(
+      safeStorageSet(
         'ri8click_site_portions',
         JSON.stringify(partialState.sitePortions)
       );
@@ -327,16 +365,16 @@ export function App() {
     if (partialState.userAccounts) {
       const merged = mergeUserAccountsWithDefaults(partialState.userAccounts);
       partialState.userAccounts = merged;
-      localStorage.setItem('ri8click_user_accounts', JSON.stringify(merged));
+      safeStorageSet('ri8click_user_accounts', JSON.stringify(merged));
     }
     if (partialState.advibeProjects) {
-      localStorage.setItem(
+      safeStorageSet(
         'ri8click_advibe_projects',
         JSON.stringify(partialState.advibeProjects)
       );
     }
     if (partialState.advibeLeads) {
-      localStorage.setItem(
+      safeStorageSet(
         'ri8click_advibe_leads',
         JSON.stringify(partialState.advibeLeads)
       );
@@ -358,54 +396,41 @@ export function App() {
   useEffect(() => {
     let isMounted = true;
 
-    const fetchLatestFromServer = async (seedIfEmpty = false) => {
+    const fetchLatestFromServer = async () => {
       try {
         const res = await fetch(`/api/state?_t=${Date.now()}`, {
-          cache: 'no-store'
+          cache: 'no-store',
+          headers: {
+            Pragma: 'no-cache',
+            'Cache-Control': 'no-cache'
+          }
         });
         if (!res.ok) return;
         const remote = await res.json();
-        if (!isMounted) return;
-
-        const hasRemoteData =
-          Array.isArray(remote?.properties) && remote.properties.length > 0;
-
-        if (hasRemoteData) {
-          applyIncomingServerState(remote);
-        } else if (seedIfEmpty) {
-          pushStateToServer({
-            properties,
-            agencies,
-            provinceCityData,
-            heroSlides,
-            consortiumDivisions,
-            blogs,
-            sitePortions,
-            userAccounts,
-            advibeProjects,
-            advibeLeads
-          });
-        }
+        if (!isMounted || !remote) return;
+        applyIncomingServerState(remote);
       } catch {}
     };
 
-    fetchLatestFromServer(true);
+    fetchLatestFromServer();
 
     let eventSource: EventSource | null = null;
     try {
-      eventSource = new EventSource('/api/state/stream');
-      eventSource.onmessage = event => {
-        try {
-          const payload = JSON.parse(event.data);
-          if (
-            (payload?.type === 'STATE_UPDATED' ||
-              payload?.type === 'INITIAL_STATE') &&
-            payload.state
-          ) {
-            applyIncomingServerState(payload.state);
-          }
-        } catch {}
-      };
+      if (typeof EventSource !== 'undefined') {
+        eventSource = new EventSource('/api/state/stream');
+        eventSource.onmessage = event => {
+          try {
+            const payload = JSON.parse(event.data);
+            if (
+              (payload?.type === 'STATE_UPDATED' ||
+                payload?.type === 'INITIAL_STATE') &&
+              payload.state
+            ) {
+              applyIncomingServerState(payload.state);
+            }
+          } catch {}
+        };
+      }
     } catch {}
 
     const pollInterval = setInterval(async () => {
@@ -419,17 +444,45 @@ export function App() {
           (vData.revision && vData.revision > lastRevisionRef.current) ||
           (vData.updatedAt && vData.updatedAt !== lastUpdatedAtRef.current)
         ) {
-          fetchLatestFromServer(false);
+          fetchLatestFromServer();
         }
       } catch {}
-    }, 4000);
+    }, 3000);
+
+    const handleVisibilityOrFocus = () => {
+      if (document.visibilityState === 'visible') {
+        fetchLatestFromServer();
+      }
+    };
+
+    const handleCrossTabStorage = (e: StorageEvent) => {
+      if (!e.key || !e.newValue) return;
+      try {
+        if (e.key === 'ri8click_hero_slides') {
+          setHeroSlides(JSON.parse(e.newValue));
+        } else if (e.key === 'ri8click_properties_data') {
+          setProperties(sanitizePropertiesToPakistanAvatars(JSON.parse(e.newValue)));
+        } else if (e.key === 'ri8click_agencies_data') {
+          setAgencies(sanitizeAgenciesToPakistanAvatars(JSON.parse(e.newValue)));
+        } else if (e.key === 'ri8click_user_accounts') {
+          setUserAccounts(mergeUserAccountsWithDefaults(JSON.parse(e.newValue)));
+        }
+      } catch {}
+    };
+
+    window.addEventListener('focus', handleVisibilityOrFocus);
+    document.addEventListener('visibilitychange', handleVisibilityOrFocus);
+    window.addEventListener('storage', handleCrossTabStorage);
 
     return () => {
       isMounted = false;
       if (eventSource) eventSource.close();
       clearInterval(pollInterval);
+      window.removeEventListener('focus', handleVisibilityOrFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityOrFocus);
+      window.removeEventListener('storage', handleCrossTabStorage);
     };
-  }, [applyIncomingServerState, pushStateToServer]);
+  }, [applyIncomingServerState]);
 
   const handleUpdateProperties = useCallback(
     (nextProps: Property[]) => {
@@ -498,21 +551,89 @@ export function App() {
     (nextAccounts: UserAccount[]) => {
       const merged = mergeUserAccountsWithDefaults(nextAccounts);
       setUserAccounts(merged);
-      pushStateToServer({ userAccounts: merged });
+
+      // Sync corresponding agency cards & property agent avatars when user accounts are edited
+      const updatedAgencies = agencies.map(ag => {
+        const linkedUser = merged.find(u => u.agencyId === ag.id);
+        if (!linkedUser) return ag;
+        return {
+          ...ag,
+          name: linkedUser.name || ag.name,
+          companyName: linkedUser.companyName || ag.companyName,
+          email: linkedUser.email || ag.email,
+          phone: linkedUser.phone || ag.phone,
+          whatsapp: (linkedUser.whatsapp || ag.whatsapp).replace(/[^0-9]/g, ''),
+          avatar: linkedUser.avatar || ag.avatar,
+          logo: linkedUser.avatar || ag.logo,
+          verified: linkedUser.isCertifiedAgent ?? ag.verified
+        };
+      });
+
+      const cleanAgencies = sanitizeAgenciesToPakistanAvatars(updatedAgencies);
+      setAgencies(cleanAgencies);
+
+      pushStateToServer({
+        userAccounts: merged,
+        agencies: cleanAgencies
+      });
     },
-    [pushStateToServer]
+    [agencies, pushStateToServer]
   );
 
   const handleUpdateCurrentUser = useCallback(
     (updatedUser: UserAccount) => {
       setCurrentUser(updatedUser);
+      setUserRole(updatedUser.role);
       const nextAccounts = mergeUserAccountsWithDefaults(
         userAccounts.map(u => (u.id === updatedUser.id ? updatedUser : u))
       );
       setUserAccounts(nextAccounts);
-      pushStateToServer({ userAccounts: nextAccounts });
+
+      const updatedAgencies = agencies.map(ag => {
+        if (ag.id !== updatedUser.agencyId) return ag;
+        return {
+          ...ag,
+          name: updatedUser.name || ag.name,
+          companyName: updatedUser.companyName || ag.companyName,
+          email: updatedUser.email || ag.email,
+          phone: updatedUser.phone || ag.phone,
+          whatsapp: (updatedUser.whatsapp || ag.whatsapp).replace(/[^0-9]/g, ''),
+          avatar: updatedUser.avatar || ag.avatar,
+          logo: updatedUser.avatar || ag.logo,
+          verified: updatedUser.isCertifiedAgent ?? ag.verified
+        };
+      });
+
+      const updatedProperties = properties.map(p => {
+        if (updatedUser.agencyId && p.agencyId === updatedUser.agencyId) {
+          return {
+            ...p,
+            agentName: updatedUser.name || p.agentName,
+            agentCompany: updatedUser.companyName || p.agentCompany,
+            agentPhone: updatedUser.phone || p.agentPhone,
+            agentWhatsApp: (updatedUser.whatsapp || p.agentWhatsApp).replace(
+              /[^0-9]/g,
+              ''
+            ),
+            agentAvatar: updatedUser.avatar || p.agentAvatar
+          };
+        }
+        return p;
+      });
+
+      const cleanAgencies = sanitizeAgenciesToPakistanAvatars(updatedAgencies);
+      const cleanProps = sanitizePropertiesToPakistanAvatars(updatedProperties);
+
+      setAgencies(cleanAgencies);
+      setProperties(cleanProps);
+
+      pushStateToServer({
+        userAccounts: nextAccounts,
+        agencies: cleanAgencies,
+        properties: cleanProps
+      });
     },
-    [userAccounts, pushStateToServer]
+    [userAccounts, agencies, properties, pushStateToServer]
   );
 
   const handleUpdateAdvibeProjects = useCallback(
@@ -532,16 +653,11 @@ export function App() {
   );
 
   useEffect(() => {
-    try {
-      if (currentUser) {
-        localStorage.setItem(
-          'ri8click_current_user',
-          JSON.stringify(currentUser)
-        );
-      } else {
-        localStorage.removeItem('ri8click_current_user');
-      }
-    } catch {}
+    if (currentUser) {
+      safeStorageSet('ri8click_current_user', JSON.stringify(currentUser));
+    } else {
+      safeStorageRemove('ri8click_current_user');
+    }
   }, [currentUser]);
 
   const [activeTab, setActiveTab] = useState<string>('properties');
@@ -865,6 +981,11 @@ export function App() {
             <HeroSection
               slides={heroSlides}
               properties={properties}
+              canManageDeck={userRole === 'admin' || userRole === 'agency'}
+              onOpenBannerAdmin={() => {
+                setAdminInitialTab('banners');
+                setIsAdminHubOpen(true);
+              }}
               onSelectCategoryFilter={cat => {
                 setFilters((prev: any) => ({ ...prev, category: cat }));
               }}
@@ -1204,6 +1325,8 @@ export function App() {
         currentAgency={currentAgency}
         allAgencies={agencies}
         agencies={agencies}
+        allUsers={userAccounts}
+        currentUser={currentUser}
         onSelectRole={role => {
           setUserRole(role);
           if (role === 'admin') {
@@ -1211,9 +1334,20 @@ export function App() {
               userAccounts.find(a => a.role === 'admin') ||
               initialUserAccounts[0];
             setCurrentUser(adminAcc);
+          } else if (role === 'customer') {
+            const visitorAcc =
+              userAccounts.find(a => a.role === 'customer') || null;
+            setCurrentUser(visitorAcc);
           }
         }}
-        onSelectAgency={id => setSelectedAgencyId(id)}
+        onSelectAgency={id => {
+          setSelectedAgencyId(id);
+          const agencyUser = userAccounts.find(u => u.agencyId === id);
+          if (agencyUser) {
+            setCurrentUser(agencyUser);
+            setUserRole('agency');
+          }
+        }}
         onOpenAdminHub={() => {
           setIsRoleModalOpen(false);
           setIsAdminHubOpen(true);
@@ -1221,6 +1355,11 @@ export function App() {
         onOpenPostProperty={() => {
           setIsRoleModalOpen(false);
           setIsPostModalOpen(true);
+        }}
+        onOpenProfileTab={() => {
+          setIsRoleModalOpen(false);
+          setAdminInitialTab('profile');
+          setIsAdminHubOpen(true);
         }}
       />
 
