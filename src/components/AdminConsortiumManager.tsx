@@ -36,6 +36,23 @@ const QUICK_INTERNAL_TARGETS = [
   { label: 'News & Blogs Section (#news-blogs-section)', value: '#news-blogs-section' }
 ];
 
+async function uploadConsortiumImage(dataUrl: string, fileName: string): Promise<string> {
+  try {
+    const res = await fetch('/api/media/upload', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ dataUrl, fileName })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data?.url) return data.url;
+    }
+  } catch {
+    // Fallback to DataURL
+  }
+  return dataUrl;
+}
+
 export const AdminConsortiumManager: React.FC<AdminConsortiumManagerProps> = ({
   divisions,
   onUpdateDivisions,
@@ -44,6 +61,7 @@ export const AdminConsortiumManager: React.FC<AdminConsortiumManagerProps> = ({
   const [editingDivision, setEditingDivision] = useState<ConsortiumDivision | null>(null);
   const [newCapabilityText, setNewCapabilityText] = useState<string>('');
   const [feedback, setFeedback] = useState<string>('');
+  const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const showNotification = (msg: string) => {
@@ -53,10 +71,11 @@ export const AdminConsortiumManager: React.FC<AdminConsortiumManagerProps> = ({
 
   const handleUploadDivisionImage = (file?: File) => {
     if (!file || !editingDivision) return;
+    setIsUploading(true);
     const reader = new FileReader();
     reader.onload = e => {
       const img = new Image();
-      img.onload = () => {
+      img.onload = async () => {
         const canvas = document.createElement('canvas');
         const MAX_W = 1400;
         let w = img.width;
@@ -68,12 +87,16 @@ export const AdminConsortiumManager: React.FC<AdminConsortiumManagerProps> = ({
         canvas.width = w;
         canvas.height = h;
         canvas.getContext('2d')?.drawImage(img, 0, 0, w, h);
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-        setEditingDivision({ ...editingDivision, image: dataUrl });
-        showNotification('Uploaded local image for Consortium Division!');
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.86);
+        const permanentUrl = await uploadConsortiumImage(dataUrl, file.name);
+        setEditingDivision(prev => (prev ? { ...prev, image: permanentUrl } : null));
+        setIsUploading(false);
+        showNotification('Uploaded image for Consortium Division!');
       };
+      img.onerror = () => setIsUploading(false);
       img.src = e.target?.result as string;
     };
+    reader.onerror = () => setIsUploading(false);
     reader.readAsDataURL(file);
   };
 
@@ -86,7 +109,7 @@ export const AdminConsortiumManager: React.FC<AdminConsortiumManagerProps> = ({
     onUpdateDivisions(updated);
     setEditingDivision(null);
     showNotification(
-      `Consortium division "${editingDivision.title}" and image redirect link updated globally!`
+      `Consortium division "${editingDivision.title}" and image hyperlink updated globally!`
     );
   };
 
@@ -111,15 +134,15 @@ export const AdminConsortiumManager: React.FC<AdminConsortiumManagerProps> = ({
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-100 text-blue-800">
-              Consortium Structure &amp; Image Link CMS
+              Consortium Block &amp; Image Hyperlink CMS
             </span>
           </div>
           <h3 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
             <ShieldCheck className="w-5 h-5 text-blue-600" />
-            <span>ri8click Consortium Divisions, Images &amp; Redirect Links Manager</span>
+            <span>ri8click Consortium Divisions, Images &amp; Redirect Hyperlinks</span>
           </h3>
           <p className="text-xs text-slate-500 max-w-2xl mt-0.5">
-            Update division images (via local PC upload or URL), set clickable image redirect links to specific website portions/features or external URLs, and manage division capabilities.
+            Attach a hyperlink on any Consortium Block image to redirect visitors to a specific portion of the website or any external URL.
           </p>
         </div>
 
@@ -167,7 +190,7 @@ export const AdminConsortiumManager: React.FC<AdminConsortiumManagerProps> = ({
                 className="absolute top-3 right-3 px-3 py-1.5 rounded-xl bg-white text-slate-900 text-xs font-bold shadow-md flex items-center gap-1.5 cursor-pointer"
               >
                 <Edit3 className="w-3.5 h-3.5 text-blue-600" />
-                <span>Edit Image &amp; Link</span>
+                <span>Edit Image &amp; Hyperlink</span>
               </button>
               <div className="absolute bottom-3 left-4 right-4 text-white">
                 <div className="flex items-center gap-2">
@@ -184,11 +207,10 @@ export const AdminConsortiumManager: React.FC<AdminConsortiumManagerProps> = ({
 
             <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
               <div className="space-y-3">
-                {/* Active Image Redirect Link Badge */}
                 <div className="p-2.5 rounded-xl bg-blue-50/80 border border-blue-200 flex items-center justify-between gap-2 text-xs">
                   <div className="flex items-center gap-1.5 min-w-0 text-blue-900">
                     <Link2 className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                    <span className="font-bold shrink-0">Image Redirect Link:</span>
+                    <span className="font-bold shrink-0">Image Hyperlink:</span>
                     <code className="font-mono text-[11px] text-blue-700 truncate">
                       {div.linkUrl || 'Not configured (click Edit to set)'}
                     </code>
@@ -225,7 +247,7 @@ export const AdminConsortiumManager: React.FC<AdminConsortiumManagerProps> = ({
                   className="px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold cursor-pointer flex items-center gap-1"
                 >
                   <ExternalLink className="w-3.5 h-3.5" />
-                  <span>Set Image Link / Details</span>
+                  <span>Set Image Hyperlink</span>
                 </button>
               </div>
             </div>
@@ -241,7 +263,7 @@ export const AdminConsortiumManager: React.FC<AdminConsortiumManagerProps> = ({
           >
             <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
               <h3 className="text-sm font-bold">
-                Edit Consortium Block &amp; Image Link: {editingDivision.title}
+                Edit Consortium Block &amp; Image Hyperlink: {editingDivision.title}
               </h3>
               <button
                 onClick={() => setEditingDivision(null)}
@@ -252,7 +274,6 @@ export const AdminConsortiumManager: React.FC<AdminConsortiumManagerProps> = ({
             </div>
 
             <form onSubmit={handleSaveEdit} className="p-6 overflow-y-auto space-y-4 text-xs">
-              {/* Division Cover Image */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <label className="font-bold text-slate-800 flex items-center gap-1.5">
@@ -268,11 +289,12 @@ export const AdminConsortiumManager: React.FC<AdminConsortiumManagerProps> = ({
                   />
                   <button
                     type="button"
+                    disabled={isUploading}
                     onClick={() => fileInputRef.current?.click()}
                     className="px-3 py-1.5 rounded-xl bg-blue-600 text-white font-bold flex items-center gap-1.5 cursor-pointer"
                   >
                     <Upload className="w-3.5 h-3.5" />
-                    <span>Upload from Computer</span>
+                    <span>{isUploading ? 'Uploading...' : 'Upload from Computer'}</span>
                   </button>
                 </div>
 
@@ -295,19 +317,16 @@ export const AdminConsortiumManager: React.FC<AdminConsortiumManagerProps> = ({
                 </div>
               </div>
 
-              {/* Image Click Redirect Link Configuration */}
               <div className="p-4 rounded-2xl bg-blue-50/70 border border-blue-200 space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="font-extrabold text-blue-950 flex items-center gap-1.5">
-                    <Link2 className="w-4 h-4 text-blue-600" />
-                    <span>Image Click Redirect Link (Website Portion / Feature or External URL)</span>
-                  </label>
-                </div>
+                <label className="font-extrabold text-blue-950 flex items-center gap-1.5">
+                  <Link2 className="w-4 h-4 text-blue-600" />
+                  <span>Image Hyperlink Redirect (Website Portion or External URL)</span>
+                </label>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                   <div className="sm:col-span-2">
                     <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                      Target URL or Website Section Anchor
+                      Hyperlink URL or Website Section Anchor
                     </label>
                     <input
                       type="text"
@@ -325,7 +344,7 @@ export const AdminConsortiumManager: React.FC<AdminConsortiumManagerProps> = ({
 
                   <div>
                     <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                      Open Behavior
+                      Redirect Target
                     </label>
                     <select
                       value={editingDivision.linkTarget || '_self'}
@@ -345,7 +364,7 @@ export const AdminConsortiumManager: React.FC<AdminConsortiumManagerProps> = ({
 
                 <div>
                   <label className="block text-[11px] font-bold text-slate-600 mb-1">
-                    Or Quick-Select Website Portion / Feature:
+                    Or Quick-Select Website Portion:
                   </label>
                   <select
                     value={
