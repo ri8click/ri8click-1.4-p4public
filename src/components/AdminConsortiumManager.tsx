@@ -10,13 +10,14 @@ import {
   Edit3,
   CheckCircle2,
   RotateCcw,
-  Plus,
   Trash2,
   Save,
   X,
   ShieldCheck,
   Check,
-  Upload
+  Upload,
+  Link2,
+  ExternalLink
 } from 'lucide-react';
 import { CONSORTIUM_DIVISIONS } from '../data/mockData';
 
@@ -25,6 +26,15 @@ interface AdminConsortiumManagerProps {
   onUpdateDivisions: (divisions: ConsortiumDivision[]) => void;
   isSuperAdmin?: boolean;
 }
+
+const QUICK_INTERNAL_TARGETS = [
+  { label: 'Properties Grid Section (#properties-grid-section)', value: '#properties-grid-section' },
+  { label: 'Commercial Plazas Section (#commercial-section)', value: '#commercial-section' },
+  { label: 'Capsule & Modular Homes (#modular-section)', value: '#modular-section' },
+  { label: 'AdVibe Megaprojects Showcase (tab:advibe)', value: 'tab:advibe' },
+  { label: 'Certified Agencies Section (#agents-section)', value: '#agents-section' },
+  { label: 'News & Blogs Section (#news-blogs-section)', value: '#news-blogs-section' }
+];
 
 export const AdminConsortiumManager: React.FC<AdminConsortiumManagerProps> = ({
   divisions,
@@ -76,7 +86,7 @@ export const AdminConsortiumManager: React.FC<AdminConsortiumManagerProps> = ({
     onUpdateDivisions(updated);
     setEditingDivision(null);
     showNotification(
-      `Consortium division "${editingDivision.title}" updated and synced globally!`
+      `Consortium division "${editingDivision.title}" and image redirect link updated globally!`
     );
   };
 
@@ -101,15 +111,15 @@ export const AdminConsortiumManager: React.FC<AdminConsortiumManagerProps> = ({
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-100 text-blue-800">
-              Consortium Structure CMS
+              Consortium Structure &amp; Image Link CMS
             </span>
           </div>
           <h3 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
             <ShieldCheck className="w-5 h-5 text-blue-600" />
-            <span>ri8click Consortium Divisions &amp; Block Images Manager</span>
+            <span>ri8click Consortium Divisions, Images &amp; Redirect Links Manager</span>
           </h3>
           <p className="text-xs text-slate-500 max-w-2xl mt-0.5">
-            Update images (via local computer upload or URL), titles, descriptions, and capabilities for all Consortium divisions.
+            Update division images (via local PC upload or URL), set clickable image redirect links to specific website portions/features or external URLs, and manage division capabilities.
           </p>
         </div>
 
@@ -157,7 +167,7 @@ export const AdminConsortiumManager: React.FC<AdminConsortiumManagerProps> = ({
                 className="absolute top-3 right-3 px-3 py-1.5 rounded-xl bg-white text-slate-900 text-xs font-bold shadow-md flex items-center gap-1.5 cursor-pointer"
               >
                 <Edit3 className="w-3.5 h-3.5 text-blue-600" />
-                <span>Edit Image &amp; Text</span>
+                <span>Edit Image &amp; Link</span>
               </button>
               <div className="absolute bottom-3 left-4 right-4 text-white">
                 <div className="flex items-center gap-2">
@@ -174,6 +184,22 @@ export const AdminConsortiumManager: React.FC<AdminConsortiumManagerProps> = ({
 
             <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
               <div className="space-y-3">
+                {/* Active Image Redirect Link Badge */}
+                <div className="p-2.5 rounded-xl bg-blue-50/80 border border-blue-200 flex items-center justify-between gap-2 text-xs">
+                  <div className="flex items-center gap-1.5 min-w-0 text-blue-900">
+                    <Link2 className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                    <span className="font-bold shrink-0">Image Redirect Link:</span>
+                    <code className="font-mono text-[11px] text-blue-700 truncate">
+                      {div.linkUrl || 'Not configured (click Edit to set)'}
+                    </code>
+                  </div>
+                  {div.linkUrl && (
+                    <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-white text-blue-700 border border-blue-200 shrink-0">
+                      {div.linkTarget === '_blank' ? 'New Tab' : 'Same Tab'}
+                    </span>
+                  )}
+                </div>
+
                 <p className="text-xs text-slate-600 leading-relaxed">
                   {div.description}
                 </p>
@@ -196,9 +222,10 @@ export const AdminConsortiumManager: React.FC<AdminConsortiumManagerProps> = ({
                 </span>
                 <button
                   onClick={() => setEditingDivision({ ...div })}
-                  className="px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold cursor-pointer"
+                  className="px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold cursor-pointer flex items-center gap-1"
                 >
-                  Change Image / Details
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  <span>Set Image Link / Details</span>
                 </button>
               </div>
             </div>
@@ -209,22 +236,23 @@ export const AdminConsortiumManager: React.FC<AdminConsortiumManagerProps> = ({
       {editingDivision && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs">
           <div
-            className="w-full max-w-2xl bg-white rounded-3xl border border-slate-200 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+            className="w-full max-w-2xl bg-white rounded-3xl border border-slate-200 shadow-2xl overflow-hidden flex flex-col max-h-[92vh]"
             onClick={e => e.stopPropagation()}
           >
             <div className="bg-slate-900 text-white px-6 py-4 flex items-center justify-between">
               <h3 className="text-sm font-bold">
-                Edit Consortium Block: {editingDivision.title}
+                Edit Consortium Block &amp; Image Link: {editingDivision.title}
               </h3>
               <button
                 onClick={() => setEditingDivision(null)}
-                className="p-1 rounded-lg text-slate-400 hover:text-white"
+                className="p-1 rounded-lg text-slate-400 hover:text-white cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             <form onSubmit={handleSaveEdit} className="p-6 overflow-y-auto space-y-4 text-xs">
+              {/* Division Cover Image */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <label className="font-bold text-slate-800 flex items-center gap-1.5">
@@ -254,6 +282,7 @@ export const AdminConsortiumManager: React.FC<AdminConsortiumManagerProps> = ({
                   onChange={e =>
                     setEditingDivision({ ...editingDivision, image: e.target.value })
                   }
+                  placeholder="Paste image URL or upload from computer..."
                   className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900"
                 />
 
@@ -263,6 +292,85 @@ export const AdminConsortiumManager: React.FC<AdminConsortiumManagerProps> = ({
                     alt="Preview"
                     className="w-full h-full object-cover"
                   />
+                </div>
+              </div>
+
+              {/* Image Click Redirect Link Configuration */}
+              <div className="p-4 rounded-2xl bg-blue-50/70 border border-blue-200 space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="font-extrabold text-blue-950 flex items-center gap-1.5">
+                    <Link2 className="w-4 h-4 text-blue-600" />
+                    <span>Image Click Redirect Link (Website Portion / Feature or External URL)</span>
+                  </label>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  <div className="sm:col-span-2">
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      Target URL or Website Section Anchor
+                    </label>
+                    <input
+                      type="text"
+                      value={editingDivision.linkUrl || ''}
+                      onChange={e =>
+                        setEditingDivision({
+                          ...editingDivision,
+                          linkUrl: e.target.value
+                        })
+                      }
+                      placeholder="e.g. #modular-section, tab:advibe, or https://..."
+                      className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-900 font-mono"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                      Open Behavior
+                    </label>
+                    <select
+                      value={editingDivision.linkTarget || '_self'}
+                      onChange={e =>
+                        setEditingDivision({
+                          ...editingDivision,
+                          linkTarget: e.target.value as '_self' | '_blank'
+                        })
+                      }
+                      className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-900 font-bold"
+                    >
+                      <option value="_self">Same Window / Scroll</option>
+                      <option value="_blank">Open in New Tab</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                    Or Quick-Select Website Portion / Feature:
+                  </label>
+                  <select
+                    value={
+                      QUICK_INTERNAL_TARGETS.some(t => t.value === editingDivision.linkUrl)
+                        ? editingDivision.linkUrl
+                        : ''
+                    }
+                    onChange={e => {
+                      if (e.target.value) {
+                        setEditingDivision({
+                          ...editingDivision,
+                          linkUrl: e.target.value,
+                          linkTarget: '_self'
+                        });
+                      }
+                    }}
+                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-800"
+                  >
+                    <option value="">-- Choose a Website Section / Feature --</option>
+                    {QUICK_INTERNAL_TARGETS.map(t => (
+                      <option key={t.value} value={t.value}>
+                        {t.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
@@ -332,7 +440,7 @@ export const AdminConsortiumManager: React.FC<AdminConsortiumManagerProps> = ({
                       });
                       setNewCapabilityText('');
                     }}
-                    className="px-3.5 py-2 rounded-xl bg-blue-600 text-white font-bold"
+                    className="px-3.5 py-2 rounded-xl bg-blue-600 text-white font-bold cursor-pointer"
                   >
                     + Add
                   </button>
@@ -354,7 +462,7 @@ export const AdminConsortiumManager: React.FC<AdminConsortiumManagerProps> = ({
                             )
                           })
                         }
-                        className="text-rose-600"
+                        className="text-rose-600 cursor-pointer"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -367,13 +475,13 @@ export const AdminConsortiumManager: React.FC<AdminConsortiumManagerProps> = ({
                 <button
                   type="button"
                   onClick={() => setEditingDivision(null)}
-                  className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-bold"
+                  className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-bold cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-blue-600 text-white font-bold flex items-center gap-1.5"
+                  className="px-5 py-2 rounded-xl bg-blue-600 text-white font-bold flex items-center gap-1.5 cursor-pointer"
                 >
                   <Save className="w-4 h-4" />
                   <span>Save Changes</span>
