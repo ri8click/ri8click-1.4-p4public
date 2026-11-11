@@ -1,5 +1,4 @@
-// FILE: src/components/advibe/Advibe3DVirtualTour.tsx
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Play,
   Pause,
@@ -10,7 +9,6 @@ import {
   ZoomIn,
   ZoomOut,
   Layers,
-  Check,
   X,
   MapPin
 } from 'lucide-react';
@@ -90,14 +88,36 @@ export const Advibe3DVirtualTour: React.FC<Advibe3DVirtualTourProps> = ({
   onClose,
   className = ''
 }) => {
-  const scenes: TourScene[] =
-    project.virtualTour?.scenes && project.virtualTour.scenes.length > 0
-      ? project.virtualTour.scenes
-      : DEFAULT_PROJECT_SCENES;
+  const scenes = useMemo<TourScene[]>(() => {
+    if (
+      Array.isArray(project.virtualTour?.scenes) &&
+      project.virtualTour.scenes.length > 0
+    ) {
+      return project.virtualTour.scenes;
+    }
+    if (project.virtualTour?.url && project.virtualTour.provider !== 'video') {
+      return [
+        {
+          id: 'scene-primary',
+          name: project.virtualTour.title || `${project.title} — Main 360° View`,
+          category: '360° Panorama',
+          imageUrl: project.virtualTour.url,
+          nightImageUrl:
+            project.gallery?.[1]?.url || DEFAULT_PROJECT_SCENES[0].nightImageUrl,
+          description: project.tagline,
+          hotspots: DEFAULT_PROJECT_SCENES[0].hotspots
+        },
+        ...DEFAULT_PROJECT_SCENES
+      ];
+    }
+    return DEFAULT_PROJECT_SCENES;
+  }, [project]);
 
   const [activeSceneIdx, setActiveSceneIdx] = useState(0);
   const initialAutoRun =
-    project.virtualTour?.autoRun !== undefined ? project.virtualTour.autoRun : true;
+    project.virtualTour?.autoRun !== undefined
+      ? project.virtualTour.autoRun
+      : true;
   const [isAutoRunning, setIsAutoRunning] = useState<boolean>(initialAutoRun);
   const [rotationSpeed, setRotationSpeed] = useState<number>(
     project.virtualTour?.rotationSpeed || 1.0
@@ -106,13 +126,19 @@ export const Advibe3DVirtualTour: React.FC<Advibe3DVirtualTourProps> = ({
   const [panOffset, setPanOffset] = useState<number>(0);
   const [zoomLevel, setZoomLevel] = useState<number>(1.0);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
-  const [showMarkers, setShowMarkers] = useState<boolean>(false);
+  const [showMarkers, setShowMarkers] = useState<boolean>(true);
   const [selectedHotspot, setSelectedHotspot] = useState<any | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const isDraggingRef = useRef<boolean>(false);
   const startXRef = useRef<number>(0);
   const currentOffsetRef = useRef<number>(0);
+
+  useEffect(() => {
+    if (activeSceneIdx >= scenes.length) {
+      setActiveSceneIdx(0);
+    }
+  }, [scenes.length, activeSceneIdx]);
 
   const activeScene = scenes[activeSceneIdx] || scenes[0];
 
@@ -147,7 +173,8 @@ export const Advibe3DVirtualTour: React.FC<Advibe3DVirtualTourProps> = ({
     if (!isDraggingRef.current) return;
     const deltaX = e.clientX - startXRef.current;
     const sensitivity = 0.08 / zoomLevel;
-    const nextOffset = (currentOffsetRef.current - deltaX * sensitivity + 1000) % 100;
+    const nextOffset =
+      (currentOffsetRef.current - deltaX * sensitivity + 1000) % 100;
     setPanOffset(nextOffset);
   };
 
@@ -184,7 +211,7 @@ export const Advibe3DVirtualTour: React.FC<Advibe3DVirtualTourProps> = ({
       onPointerCancel={handlePointerUp}
       style={{ cursor: isDraggingRef.current ? 'grabbing' : 'grab' }}
     >
-      {/* Clean 360° Panorama Viewport — No Glowing Circles or Symbols */}
+      {/* 360° Panorama Viewport */}
       <div
         className="absolute inset-0 w-full h-full overflow-hidden transition-transform duration-200"
         style={{
@@ -219,7 +246,7 @@ export const Advibe3DVirtualTour: React.FC<Advibe3DVirtualTourProps> = ({
           />
         </div>
 
-        {/* Optional Clean Info Labels (Hidden by Default for Clean Professional Look) */}
+        {/* Info Labels */}
         {showMarkers &&
           activeScene.hotspots &&
           activeScene.hotspots.map(spot => {
@@ -234,7 +261,7 @@ export const Advibe3DVirtualTour: React.FC<Advibe3DVirtualTourProps> = ({
                   setSelectedHotspot(spot);
                 }}
               >
-                <div className="px-2.5 py-1 rounded-lg bg-white/95 text-slate-900 border border-slate-300 shadow-md text-[11px] font-bold flex items-center gap-1">
+                <div className="px-2.5 py-1 rounded-lg bg-white/95 text-slate-900 border border-slate-300 shadow-md text-[11px] font-bold flex items-center gap-1 hover:bg-blue-600 hover:text-white transition-colors">
                   <MapPin className="w-3 h-3 text-blue-600" />
                   <span>{spot.title}</span>
                 </div>
@@ -243,11 +270,11 @@ export const Advibe3DVirtualTour: React.FC<Advibe3DVirtualTourProps> = ({
           })}
       </div>
 
-      {/* Top Clean Header Bar */}
+      {/* Top Header Bar */}
       <div className="absolute top-0 inset-x-0 z-30 p-3 sm:p-4 flex items-center justify-between gap-2 pointer-events-none bg-gradient-to-b from-slate-950/70 to-transparent">
-        <div className="bg-white/95 text-slate-900 px-3.5 py-1.5 rounded-xl border border-slate-200 shadow-sm pointer-events-auto">
+        <div className="bg-white/95 text-slate-900 px-3.5 py-1.5 rounded-xl border border-slate-200 shadow-sm pointer-events-auto text-left">
           <div className="text-[10px] text-blue-600 uppercase font-extrabold">
-            360° Architectural View
+            360° Architectural View ({activeSceneIdx + 1} / {scenes.length})
           </div>
           <h3 className="text-xs sm:text-sm font-bold truncate max-w-[200px] sm:max-w-xs">
             {activeScene.name}
@@ -306,14 +333,16 @@ export const Advibe3DVirtualTour: React.FC<Advibe3DVirtualTourProps> = ({
       {/* Selected Label Detail Card */}
       {selectedHotspot && (
         <div
-          className="absolute inset-x-4 bottom-20 z-40 max-w-md mx-auto bg-white text-slate-900 border border-slate-200 rounded-2xl p-4 shadow-xl pointer-events-auto"
+          className="absolute inset-x-4 bottom-20 z-40 max-w-md mx-auto bg-white text-slate-900 border border-slate-200 rounded-2xl p-4 shadow-xl pointer-events-auto text-left"
           onClick={e => e.stopPropagation()}
         >
           <div className="flex items-start justify-between gap-2 pb-2 border-b border-slate-100">
-            <h4 className="text-sm font-bold text-slate-900">{selectedHotspot.title}</h4>
+            <h4 className="text-sm font-bold text-slate-900">
+              {selectedHotspot.title}
+            </h4>
             <button
               onClick={() => setSelectedHotspot(null)}
-              className="p-1 rounded-lg text-slate-400 hover:text-slate-700"
+              className="p-1 rounded-lg text-slate-400 hover:text-slate-700 cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
@@ -324,7 +353,7 @@ export const Advibe3DVirtualTour: React.FC<Advibe3DVirtualTourProps> = ({
           <div className="mt-3 flex justify-end">
             <button
               onClick={() => setSelectedHotspot(null)}
-              className="px-3 py-1 rounded-lg bg-blue-600 text-white text-xs font-bold"
+              className="px-3 py-1 rounded-lg bg-blue-600 text-white text-xs font-bold cursor-pointer"
             >
               Close
             </button>
@@ -332,7 +361,7 @@ export const Advibe3DVirtualTour: React.FC<Advibe3DVirtualTourProps> = ({
         </div>
       )}
 
-      {/* Bottom Clean Control Dock */}
+      {/* Bottom Control Dock */}
       <div className="absolute bottom-0 inset-x-0 z-30 p-3 sm:p-4 flex flex-wrap items-center justify-between gap-2 pointer-events-none bg-gradient-to-t from-slate-950/80 to-transparent">
         <div className="flex items-center gap-1.5 overflow-x-auto max-w-full pointer-events-auto bg-white/95 p-1 rounded-xl border border-slate-200 shadow-md">
           {scenes.map((scene, idx) => (
