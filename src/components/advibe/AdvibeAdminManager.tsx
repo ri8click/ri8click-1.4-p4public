@@ -24,7 +24,8 @@ import {
   Film,
   X,
   Save,
-  Sparkles
+  Sparkles,
+  Award
 } from 'lucide-react';
 import Advibe3DVirtualTour from './Advibe3DVirtualTour';
 import {
@@ -70,8 +71,29 @@ const SECTION_TYPE_OPTIONS: { type: AdVibeSectionType; label: string }[] = [
   { type: 'pricing', label: 'Payment Plans & Investment Tiers' },
   { type: 'developer', label: 'Master Developer Profile' },
   { type: 'cta', label: 'Call to Action Banner' },
-  { type: 'enquiry', label: 'VIP Inquiry & Site Visit Form' }
+  { type: 'enquiry', label: 'VIP Inquiry & Site Visit Form' },
+  { type: 'disclaimer', label: 'Legal Disclaimers & NOC Notes' }
 ];
+
+async function uploadMediaDataUrlToServer(
+  dataUrl: string,
+  fileName: string
+): Promise<string> {
+  try {
+    const res = await fetch('/api/media/upload', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ dataUrl, fileName })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data?.url) return data.url;
+    }
+  } catch (err) {
+    console.error('Upload fallback to inline DataURL:', err);
+  }
+  return dataUrl;
+}
 
 export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
   projects,
@@ -91,15 +113,25 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
   const [activeTab, setActiveTab] = useState<'projects' | 'leads' | 'permissions'>('projects');
   const [editingProject, setEditingProject] = useState<AdVibeProject | null>(null);
   const [editorSubTab, setEditorSubTab] = useState<
-    'basics' | 'media' | 'sections' | 'tour3d' | 'hotspots' | 'units' | 'pricing'
+    | 'basics'
+    | 'media'
+    | 'sections'
+    | 'highlights_amenities'
+    | 'tour3d'
+    | 'hotspots'
+    | 'units'
+    | 'pricing'
   >('basics');
   const [searchQuery, setSearchQuery] = useState('');
   const [newFeatureText, setNewFeatureText] = useState('');
   const [newGalleryUrl, setNewGalleryUrl] = useState('');
   const [newGalleryCaption, setNewGalleryCaption] = useState('');
+  const [newGalleryCategory, setNewGalleryCategory] = useState('Exterior');
   const [newVideoUrl, setNewVideoUrl] = useState('');
   const [newVideoTitle, setNewVideoTitle] = useState('');
+  const [newVideoCategory, setNewVideoCategory] = useState('Project Tour');
   const [uploadStatusMsg, setUploadStatusMsg] = useState<string | null>(null);
+  const [isUploadingMedia, setIsUploadingMedia] = useState(false);
 
   // Page Sections CRUD state
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
@@ -108,13 +140,23 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
   const [newSectionSubtitle, setNewSectionSubtitle] = useState('');
   const [newSectionBadge, setNewSectionBadge] = useState('');
 
+  // Highlights, Amenities & Location Points CRUD state
+  const [newHlTitle, setNewHlTitle] = useState('');
+  const [newHlValue, setNewHlValue] = useState('');
+  const [newHlDesc, setNewHlDesc] = useState('');
+  const [newAmName, setNewAmName] = useState('');
+  const [newAmCat, setNewAmCat] = useState('Wellness & Sports');
+  const [newAmDesc, setNewAmDesc] = useState('');
+  const [newLocName, setNewLocName] = useState('');
+  const [newLocDist, setNewLocDist] = useState('2.5 km');
+  const [newLocTime, setNewLocTime] = useState('4 mins');
+
   // 360 Virtual Tour Scene CRUD state
   const [newSceneName, setNewSceneName] = useState('');
   const [newSceneCategory, setNewSceneCategory] = useState('Exterior & Boulevard');
   const [newSceneImageUrl, setNewSceneImageUrl] = useState('');
   const [newSceneNightUrl, setNewSceneNightUrl] = useState('');
   const [newSceneDesc, setNewSceneDesc] = useState('');
-  const [editingSceneId, setEditingSceneId] = useState<string | null>(null);
 
   // Master Plan Hotspot CRUD state
   const [newHotspotTitle, setNewHotspotTitle] = useState('');
@@ -124,6 +166,14 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
   const [newHotspotY, setNewHotspotY] = useState(50);
   const [newHotspotDesc, setNewHotspotDesc] = useState('');
   const [newHotspotLinkedProp, setNewHotspotLinkedProp] = useState('');
+
+  // Pricing Plan CRUD state
+  const [newTierUnit, setNewTierUnit] = useState('');
+  const [newTierSize, setNewTierSize] = useState('');
+  const [newTierTotal, setNewTierTotal] = useState('');
+  const [newTierDown, setNewTierDown] = useState('');
+  const [newTierMonthly, setNewTierMonthly] = useState('');
+  const [newTierPossession, setNewTierPossession] = useState('Immediate Allocation');
 
   // Linked Units search state
   const [unitSearchQuery, setUnitSearchQuery] = useState('');
@@ -136,7 +186,6 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
   const sceneDayFileRef = useRef<HTMLInputElement>(null);
   const sceneNightFileRef = useRef<HTMLInputElement>(null);
   const masterPlanFileRef = useRef<HTMLInputElement>(null);
-  const satelliteMapFileRef = useRef<HTMLInputElement>(null);
 
   const visibleProjects = projects.filter(p => {
     if (currentRole === 'admin') return true;
@@ -177,14 +226,33 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
 
   const notifyStatus = (msg: string) => {
     setUploadStatusMsg(msg);
-    setTimeout(() => setUploadStatusMsg(null), 4000);
+    setTimeout(() => setUploadStatusMsg(null), 4500);
   };
 
   const ensureDefaultScenesOnEdit = (proj: AdVibeProject): AdVibeProject => {
     const existingScenes = proj.virtualTour?.scenes;
+    const hasVirtualTourSec = (proj.sections || []).some(
+      s => s.type === 'virtual_tour'
+    );
+    const updatedSections = hasVirtualTourSec
+      ? proj.sections
+      : [
+          ...(proj.sections || []),
+          {
+            id: `sec-virtual-tour-${Date.now()}`,
+            type: 'virtual_tour' as const,
+            title: `${proj.title} — 360° Virtual Tour`,
+            subtitle: 'Interactive Panoramic Digital Twin',
+            badge: '360° VIRTUAL TOUR',
+            isEnabled: true,
+            order: Math.min((proj.sections?.length || 3) + 1, 5)
+          }
+        ];
+
     if (Array.isArray(existingScenes) && existingScenes.length > 0) {
-      return proj;
+      return { ...proj, sections: updatedSections };
     }
+
     const primaryUrl =
       proj.virtualTour?.url && proj.virtualTour.provider !== 'video'
         ? proj.virtualTour.url
@@ -195,6 +263,7 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
 
     return {
       ...proj,
+      sections: updatedSections,
       virtualTour: {
         ...proj.virtualTour,
         provider: 'custom360',
@@ -440,13 +509,16 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
     file?: File
   ) => {
     if (!file || !editingProject) return;
+    setIsUploadingMedia(true);
     try {
-      const dataUrl = await compressImageFile(file);
+      const compressed = await compressImageFile(file);
+      const permanentUrl = await uploadMediaDataUrlToServer(compressed, file.name);
+
       const updatedGallery = [...(editingProject.gallery || [])];
-      if (!updatedGallery.some(g => g.url === dataUrl)) {
+      if (!updatedGallery.some(g => g.url === permanentUrl)) {
         updatedGallery.unshift({
           id: `gal-${Date.now()}`,
-          url: dataUrl,
+          url: permanentUrl,
           type: 'image',
           category: 'Exterior',
           caption:
@@ -456,14 +528,16 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
         });
       }
 
-      // Sync hero section bgImageUrl so Open Full Project Showcase reflects it immediately
       const syncedSections = (editingProject.sections || []).map(sec =>
-        sec.type === 'hero' && target === 'bannerImage'
+        sec.type === 'hero'
           ? {
               ...sec,
               customSettings: {
                 ...sec.customSettings,
-                bgImageUrl: dataUrl
+                bgImageUrl:
+                  target === 'bannerImage'
+                    ? permanentUrl
+                    : editingProject.bannerImage || permanentUrl
               }
             }
           : sec
@@ -471,27 +545,27 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
 
       setEditingProject({
         ...editingProject,
-        [target]: dataUrl,
+        [target]: permanentUrl,
         ...(target === 'bannerImage' && !editingProject.mainImage
-          ? { mainImage: dataUrl }
+          ? { mainImage: permanentUrl }
           : {}),
         ...(target === 'mainImage' && !editingProject.bannerImage
-          ? { bannerImage: dataUrl }
+          ? { bannerImage: permanentUrl }
           : {}),
-        seo:
-          target === 'mainImage'
-            ? { ...editingProject.seo, ogImage: dataUrl }
-            : editingProject.seo,
+        seo: { ...editingProject.seo, ogImage: permanentUrl },
         gallery: updatedGallery,
         sections: syncedSections
       });
+
       notifyStatus(
         target === 'mainImage'
-          ? 'Main Listing Image uploaded! Click "Save & Publish Changes" to apply globally.'
-          : 'Main Showcase Hero Banner uploaded! Click "Save & Publish Changes" to apply globally.'
+          ? 'Main Listing Image uploaded to server! Click "Save & Publish Changes" to apply globally.'
+          : 'Main Showcase Hero Banner uploaded to server! Click "Save & Publish Changes" to apply globally.'
       );
     } catch (err) {
       console.error(err);
+    } finally {
+      setIsUploadingMedia(false);
     }
   };
 
@@ -500,26 +574,41 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
     const valid = Array.from(files).filter(f => f.type.startsWith('image/'));
     if (valid.length === 0) return;
 
-    const encoded = await Promise.all(valid.map(f => compressImageFile(f)));
-    const newItems = encoded.map((url, idx) => ({
-      id: `gal-${Date.now()}-${idx}`,
-      url,
-      type: 'image' as const,
-      category: 'Exterior',
-      caption:
-        newGalleryCaption.trim() ||
-        `${editingProject.title} — Photo ${editingProject.gallery.length + idx + 1}`
-    }));
+    setIsUploadingMedia(true);
+    try {
+      const uploadedItems = [];
+      for (let i = 0; i < valid.length; i++) {
+        const file = valid[i];
+        const compressed = await compressImageFile(file);
+        const permanentUrl = await uploadMediaDataUrlToServer(
+          compressed,
+          file.name
+        );
+        uploadedItems.push({
+          id: `gal-${Date.now()}-${i}`,
+          url: permanentUrl,
+          type: 'image' as const,
+          category: newGalleryCategory || 'Exterior',
+          caption:
+            newGalleryCaption.trim() ||
+            `${editingProject.title} — Photo ${(editingProject.gallery?.length || 0) + i + 1}`
+        });
+      }
 
-    const nextGallery = [...newItems, ...(editingProject.gallery || [])];
-    setEditingProject({
-      ...editingProject,
-      mainImage: editingProject.mainImage || nextGallery[0]?.url,
-      bannerImage: editingProject.bannerImage || nextGallery[0]?.url,
-      gallery: nextGallery
-    });
-    setNewGalleryCaption('');
-    notifyStatus(`Uploaded ${newItems.length} photo(s) from your computer!`);
+      const nextGallery = [...uploadedItems, ...(editingProject.gallery || [])];
+      setEditingProject({
+        ...editingProject,
+        mainImage: editingProject.mainImage || nextGallery[0]?.url,
+        bannerImage: editingProject.bannerImage || nextGallery[0]?.url,
+        gallery: nextGallery
+      });
+      setNewGalleryCaption('');
+      notifyStatus(
+        `Uploaded ${uploadedItems.length} photo(s) to permanent server storage!`
+      );
+    } finally {
+      setIsUploadingMedia(false);
+    }
   };
 
   const handleUploadLocalVideo = (file?: File) => {
@@ -529,60 +618,69 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
       return;
     }
     const sizeMB = file.size / (1024 * 1024);
-    if (sizeMB > 60) {
-      notifyStatus('Video file is over 60MB. Please use a shorter clip or paste a URL.');
+    if (sizeMB > 80) {
+      notifyStatus(
+        'Video file is over 80MB. Please use a shorter clip or paste a URL.'
+      );
       return;
     }
 
+    setIsUploadingMedia(true);
     const reader = new FileReader();
     reader.onload = async e => {
-      const videoDataUrl = e.target?.result as string;
-      let finalVideoUrl = videoDataUrl;
-
-      // Offload video to server /api/media/upload for instant streaming
       try {
-        const res = await fetch('/api/media/upload', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            dataUrl: videoDataUrl,
-            fileName: file.name
-          })
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (data?.url) finalVideoUrl = data.url;
-        }
-      } catch {
-        // Fallback to DataURI
-      }
+        const videoDataUrl = e.target?.result as string;
+        const finalVideoUrl = await uploadMediaDataUrlToServer(
+          videoDataUrl,
+          file.name
+        );
 
-      const vidTitle =
-        newVideoTitle.trim() ||
-        file.name.replace(/\.[^/.]+$/, '') ||
-        'Project Walkthrough';
-      const newVidItem = {
-        id: `vid-${Date.now()}`,
-        title: vidTitle,
-        category: 'Project Tour',
-        type: 'hosted' as const,
-        url: finalVideoUrl,
-        thumbnail:
-          editingProject.bannerImage ||
-          editingProject.mainImage ||
-          editingProject.seo?.ogImage ||
-          editingProject.logo,
-        duration: 'Walkthrough'
-      };
-      setEditingProject({
-        ...editingProject,
-        heroVideoUrl: finalVideoUrl,
-        heroVideoTitle: vidTitle,
-        videos: [newVidItem, ...(editingProject.videos || [])]
-      });
-      setNewVideoTitle('');
-      notifyStatus('Video uploaded & set as Main Banner Walkthrough Video!');
+        const vidTitle =
+          newVideoTitle.trim() ||
+          file.name.replace(/\.[^/.]+$/, '') ||
+          'Project Walkthrough';
+        const newVidItem = {
+          id: `vid-${Date.now()}`,
+          title: vidTitle,
+          category: newVideoCategory || 'Project Tour',
+          type: 'hosted' as const,
+          url: finalVideoUrl,
+          thumbnail:
+            editingProject.bannerImage ||
+            editingProject.mainImage ||
+            editingProject.seo?.ogImage ||
+            editingProject.logo,
+          duration: 'Walkthrough'
+        };
+
+        const syncedSections = (editingProject.sections || []).map(sec =>
+          sec.type === 'hero'
+            ? {
+                ...sec,
+                customSettings: {
+                  ...sec.customSettings,
+                  bgVideoUrl: finalVideoUrl
+                }
+              }
+            : sec
+        );
+
+        setEditingProject({
+          ...editingProject,
+          heroVideoUrl: finalVideoUrl,
+          heroVideoTitle: vidTitle,
+          videos: [newVidItem, ...(editingProject.videos || [])],
+          sections: syncedSections
+        });
+        setNewVideoTitle('');
+        notifyStatus(
+          'Walkthrough video uploaded & set as Main Banner Video!'
+        );
+      } finally {
+        setIsUploadingMedia(false);
+      }
     };
+    reader.onerror = () => setIsUploadingMedia(false);
     reader.readAsDataURL(file);
   };
 
@@ -629,7 +727,12 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
                 { title: '24/7 Gated Security', desc: 'Biometric entry and CCTV surveillance.' },
                 { title: 'German UPVC Glazing', desc: 'Soundproof and thermal insulated profiles.' }
               ]
-            : undefined
+            : newSectionType === 'intro'
+              ? {
+                  quote: editingProject.tagline,
+                  paragraphs: [editingProject.description]
+                }
+              : undefined
     };
 
     setEditingProject({
@@ -652,8 +755,8 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
     notifyStatus('Removed section from project showcase.');
   };
 
-  const handleSaveCurrentProject = () => {
-    if (!editingProject) return;
+  const handleSaveCurrentProject = (): AdVibeProject | null => {
+    if (!editingProject) return null;
     const primaryCover =
       editingProject.mainImage ||
       editingProject.bannerImage ||
@@ -661,17 +764,21 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
       editingProject.gallery?.[0]?.url ||
       editingProject.logo;
     const primaryBanner = editingProject.bannerImage || primaryCover;
+    const primaryVideo =
+      editingProject.heroVideoUrl ||
+      editingProject.videos?.[0]?.url ||
+      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4';
 
-    // Ensure hero section title, subtitle, and bgImageUrl match the edited project banner & title
     const syncedSections = (editingProject.sections || []).map(sec => {
       if (sec.type === 'hero') {
         return {
           ...sec,
-          title: editingProject.title,
-          subtitle: editingProject.tagline,
+          title: sec.title || editingProject.title,
+          subtitle: sec.subtitle || editingProject.tagline,
           customSettings: {
             ...sec.customSettings,
-            bgImageUrl: primaryBanner
+            bgImageUrl: primaryBanner,
+            bgVideoUrl: primaryVideo
           }
         };
       }
@@ -688,16 +795,14 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
       ...editingProject,
       mainImage: primaryCover,
       bannerImage: primaryBanner,
-      heroVideoUrl:
-        editingProject.heroVideoUrl ||
-        editingProject.videos?.[0]?.url ||
-        'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+      heroVideoUrl: primaryVideo,
       seo: {
         ...editingProject.seo,
         ogImage: primaryCover
       },
       virtualTour: {
         ...editingProject.virtualTour,
+        provider: 'custom360',
         url: primary360Url,
         scenes: scenesList
       },
@@ -708,14 +813,8 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
     onSaveProject(updatedProj);
     setEditingProject(null);
     notifyStatus(`Saved "${updatedProj.title}" and synced across the portal!`);
+    return updatedProj;
   };
-
-  const selectedProvinceObj = provinceCityData.find(
-    p => p.province === (editingProject?.province || 'Punjab')
-  );
-  const selectedCityObj = selectedProvinceObj?.cities.find(
-    c => c.name === (editingProject?.city || 'Taxila')
-  );
 
   return (
     <div className="w-full space-y-6 text-slate-900">
@@ -765,7 +864,7 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
                 activeTab === 'permissions'
                   ? 'bg-blue-600 text-white shadow-xs'
                   : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-              }`}
+            }`}
             >
               <Shield className="w-4 h-4" />
               <span>Agency Permissions</span>
@@ -786,7 +885,7 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
       </div>
 
       {uploadStatusMsg && (
-        <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2">
+        <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2">
           <Check className="w-4 h-4 text-emerald-600 shrink-0" />
           <span>{uploadStatusMsg}</span>
         </div>
@@ -962,8 +1061,8 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
               <button
                 type="button"
                 onClick={() => {
-                  handleSaveCurrentProject();
-                  onPreviewProject(editingProject.slug);
+                  const saved = handleSaveCurrentProject();
+                  if (saved) onPreviewProject(saved.slug);
                 }}
                 className="px-3.5 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
               >
@@ -1001,23 +1100,28 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
                 icon: Layers
               },
               {
+                key: 'highlights_amenities',
+                label: '4. Highlights, Amenities & Radar',
+                icon: Award
+              },
+              {
                 key: 'tour3d',
-                label: `4. 360° Virtual Tour CRUD (${editingProject.virtualTour?.scenes?.length || 0})`,
+                label: `5. 360° Virtual Tour CRUD (${editingProject.virtualTour?.scenes?.length || 0})`,
                 icon: Compass
               },
               {
                 key: 'hotspots',
-                label: `5. Master Plan Map & Pins (${editingProject.masterPlan.hotspots.length})`,
+                label: `6. Master Plan Map & Pins (${editingProject.masterPlan?.hotspots?.length || 0})`,
                 icon: MapPin
               },
               {
                 key: 'units',
-                label: `6. Linked Units (${editingProject.linkedPropertyIds.length})`,
+                label: `7. Linked Units (${editingProject.linkedPropertyIds?.length || 0})`,
                 icon: Building2
               },
               {
                 key: 'pricing',
-                label: `7. Payment Plans (${editingProject.pricingTiers.length})`,
+                label: `8. Payment Plans (${editingProject.pricingTiers?.length || 0})`,
                 icon: DollarSign
               }
             ].map(tab => {
@@ -1041,7 +1145,7 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
             })}
           </div>
 
-          {/* SUB-TAB 1: BASICS, DEVELOPER & HIGHLIGHTS */}
+          {/* SUB-TAB 1: BASICS & DEVELOPER */}
           {editorSubTab === 'basics' && (
             <div className="space-y-6 text-xs">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1085,25 +1189,17 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
                     className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900"
                   >
                     <option value="Housing Society">Housing Society</option>
-                    <option value="Commercial Mall & Tower">
-                      Commercial Mall &amp; Tower
-                    </option>
+                    <option value="Commercial Mall & Tower">Commercial Mall &amp; Tower</option>
                     <option value="High-Rise Tower">High-Rise Tower</option>
-                    <option value="Mixed-Use Megaproject">
-                      Mixed-Use Megaproject
-                    </option>
-                    <option value="Luxury Villa Enclave">
-                      Luxury Villa Enclave
-                    </option>
-                    <option value="Modular Smart Community">
-                      Modular Smart Community
-                    </option>
+                    <option value="Mixed-Use Megaproject">Mixed-Use Megaproject</option>
+                    <option value="Luxury Villa Enclave">Luxury Villa Enclave</option>
+                    <option value="Modular Smart Community">Modular Smart Community</option>
                   </select>
                 </div>
 
                 <div>
                   <label className="block text-slate-700 font-bold mb-1">
-                    Status
+                    Status Badge
                   </label>
                   <select
                     value={editingProject.status}
@@ -1114,18 +1210,15 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
                   >
                     <option value="Booking Open">Booking Open</option>
                     <option value="Under Construction">Under Construction</option>
-                    <option value="Ready for Possession">
-                      Ready for Possession
-                    </option>
+                    <option value="Ready for Possession">Ready for Possession</option>
                     <option value="Ready to Move">Ready to Move</option>
                     <option value="Pre-Launch">Pre-Launch</option>
-                    <option value="Completed">Completed</option>
                   </select>
                 </div>
 
                 <div>
                   <label className="block text-slate-700 font-bold mb-1">
-                    Formatted Starting Price
+                    Starting Price (Formatted)
                   </label>
                   <input
                     type="text"
@@ -1136,41 +1229,9 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
                         starting_price_formatted: e.target.value
                       })
                     }
+                    placeholder="e.g. PKR 38 Lakhs"
                     className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900 font-bold"
                   />
-                </div>
-
-                <div>
-                  <label className="block text-slate-700 font-bold mb-1">
-                    Province
-                  </label>
-                  <select
-                    value={editingProject.province || 'Punjab'}
-                    onChange={e => {
-                      const prov = e.target.value;
-                      const pObj = provinceCityData.find(
-                        p => p.province === prov
-                      );
-                      const firstCity =
-                        pObj?.cities[0]?.name || editingProject.city;
-                      const firstSoc =
-                        pObj?.cities[0]?.societies[0] || editingProject.area;
-                      setEditingProject({
-                        ...editingProject,
-                        province: prov,
-                        city: firstCity,
-                        society: firstSoc,
-                        area: firstSoc
-                      });
-                    }}
-                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900"
-                  >
-                    {provinceCityData.map(p => (
-                      <option key={p.province} value={p.province}>
-                        {p.province}
-                      </option>
-                    ))}
-                  </select>
                 </div>
 
                 <div>
@@ -1189,40 +1250,27 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
 
                 <div>
                   <label className="block text-slate-700 font-bold mb-1">
-                    Society / Zone / Area
+                    Sector / Area Label
                   </label>
                   <input
                     type="text"
-                    list="advibe-society-list"
                     value={editingProject.area}
                     onChange={e =>
-                      setEditingProject({
-                        ...editingProject,
-                        area: e.target.value,
-                        society: e.target.value
-                      })
+                      setEditingProject({ ...editingProject, area: e.target.value })
                     }
                     className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900"
                   />
-                  <datalist id="advibe-society-list">
-                    {(selectedCityObj?.societies || []).map(s => (
-                      <option key={s} value={s} />
-                    ))}
-                  </datalist>
                 </div>
 
-                <div className="md:col-span-3">
+                <div>
                   <label className="block text-slate-700 font-bold mb-1">
-                    Full Address
+                    Full Street Address
                   </label>
                   <input
                     type="text"
                     value={editingProject.address}
                     onChange={e =>
-                      setEditingProject({
-                        ...editingProject,
-                        address: e.target.value
-                      })
+                      setEditingProject({ ...editingProject, address: e.target.value })
                     }
                     className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900"
                   />
@@ -1230,16 +1278,13 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
 
                 <div className="md:col-span-3">
                   <label className="block text-slate-700 font-bold mb-1">
-                    Main Banner Headline / Tagline
+                    Executive Tagline / Hero Subtitle
                   </label>
                   <input
                     type="text"
                     value={editingProject.tagline}
                     onChange={e =>
-                      setEditingProject({
-                        ...editingProject,
-                        tagline: e.target.value
-                      })
+                      setEditingProject({ ...editingProject, tagline: e.target.value })
                     }
                     className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900"
                   />
@@ -1247,7 +1292,7 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
 
                 <div className="md:col-span-3">
                   <label className="block text-slate-700 font-bold mb-1">
-                    Comprehensive Showcase Description
+                    Comprehensive Project Description
                   </label>
                   <textarea
                     rows={3}
@@ -1261,75 +1306,80 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
                     className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900"
                   />
                 </div>
+              </div>
 
-                {/* Developer Details */}
-                <div>
-                  <label className="block text-slate-700 font-bold mb-1">
-                    Developer Name
-                  </label>
-                  <input
-                    type="text"
-                    value={editingProject.developer?.name || ''}
-                    onChange={e =>
-                      setEditingProject({
-                        ...editingProject,
-                        developer: {
-                          ...editingProject.developer,
-                          name: e.target.value
-                        }
-                      })
-                    }
-                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-slate-700 font-bold mb-1">
-                    Direct Sales Phone
-                  </label>
-                  <input
-                    type="text"
-                    value={editingProject.dealerPhone || '+92 336-5666727'}
-                    onChange={e =>
-                      setEditingProject({
-                        ...editingProject,
-                        dealerPhone: e.target.value
-                      })
-                    }
-                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-slate-700 font-bold mb-1">
-                    WhatsApp Hotline
-                  </label>
-                  <input
-                    type="text"
-                    value={editingProject.dealerWhatsApp || '923365666727'}
-                    onChange={e =>
-                      setEditingProject({
-                        ...editingProject,
-                        dealerWhatsApp: e.target.value.replace(/[^0-9]/g, '')
-                      })
-                    }
-                    className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-900"
-                  />
+              {/* Developer Details */}
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+                <h4 className="font-extrabold text-slate-900">
+                  Master Developer &amp; Advisor Hotline
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-slate-700 font-bold mb-1">
+                      Developer Name
+                    </label>
+                    <input
+                      type="text"
+                      value={editingProject.developer?.name || ''}
+                      onChange={e =>
+                        setEditingProject({
+                          ...editingProject,
+                          developer: {
+                            ...editingProject.developer,
+                            name: e.target.value
+                          }
+                        })
+                      }
+                      className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-700 font-bold mb-1">
+                      Sales Hotline Phone
+                    </label>
+                    <input
+                      type="text"
+                      value={editingProject.dealerPhone || ''}
+                      onChange={e =>
+                        setEditingProject({
+                          ...editingProject,
+                          dealerPhone: e.target.value
+                        })
+                      }
+                      className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-700 font-bold mb-1">
+                      WhatsApp Number
+                    </label>
+                    <input
+                      type="text"
+                      value={editingProject.dealerWhatsApp || ''}
+                      onChange={e =>
+                        setEditingProject({
+                          ...editingProject,
+                          dealerWhatsApp: e.target.value
+                        })
+                      }
+                      className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2"
+                    />
+                  </div>
                 </div>
               </div>
 
-              {/* Feature Tags Manager */}
-              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2.5">
-                <label className="block text-slate-800 font-bold">
-                  Key Project Features &amp; NOC Highlights
+              {/* Bullet Features */}
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+                <label className="block font-extrabold text-slate-900">
+                  Hero Banner Key Bullet Features
                 </label>
                 <div className="flex gap-2">
                   <input
                     type="text"
-                    placeholder="Add feature (e.g. RDA Approved, Underground Electricity, 1% Monthly Plan)"
                     value={newFeatureText}
                     onChange={e => setNewFeatureText(e.target.value)}
-                    className="flex-1 bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-900"
+                    placeholder="e.g. 100% RDA Approved NOC & Immediate Possession"
+                    className="flex-1 bg-white border border-slate-300 rounded-xl px-3 py-2"
                   />
                   <button
                     type="button"
@@ -1349,11 +1399,11 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
                     + Add Feature
                   </button>
                 </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {(editingProject.features || []).map((feat, idx) => (
+                <div className="flex flex-wrap gap-2">
+                  {(editingProject.features || []).map((feat, i) => (
                     <span
-                      key={idx}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-800 font-semibold"
+                      key={i}
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white border border-slate-200 text-xs font-semibold"
                     >
                       <span>{feat}</span>
                       <button
@@ -1362,72 +1412,31 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
                           setEditingProject({
                             ...editingProject,
                             features: (editingProject.features || []).filter(
-                              (_, i) => i !== idx
+                              (_, idx) => idx !== i
                             )
                           })
                         }
-                        className="text-slate-400 hover:text-rose-600 cursor-pointer"
+                        className="text-rose-600 cursor-pointer"
                       >
-                        <X className="w-3 h-3" />
+                        <X className="w-3.5 h-3.5" />
                       </button>
                     </span>
                   ))}
                 </div>
               </div>
-
-              <div className="flex flex-wrap items-center gap-6 pt-2">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={editingProject.featured}
-                    onChange={e =>
-                      setEditingProject({
-                        ...editingProject,
-                        featured: e.target.checked
-                      })
-                    }
-                    className="w-4 h-4 rounded text-blue-600"
-                  />
-                  <span className="font-bold text-slate-800">
-                    Set as Featured AdVibe Banner Project
-                  </span>
-                </label>
-
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={editingProject.published}
-                    onChange={e =>
-                      setEditingProject({
-                        ...editingProject,
-                        published: e.target.checked
-                      })
-                    }
-                    className="w-4 h-4 rounded text-blue-600"
-                  />
-                  <span className="font-bold text-slate-800">
-                    Published (Visible to All Visitors)
-                  </span>
-                </label>
-              </div>
             </div>
           )}
 
-          {/* SUB-TAB 2: MAIN IMAGE, BANNER IMAGE, GALLERY & VIDEO UPLOADER */}
+          {/* SUB-TAB 2: MAIN BANNER, PHOTOS & VIDEO UPLOAD */}
           {editorSubTab === 'media' && (
             <div className="space-y-6 text-xs">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                {/* 1. Main Listing Card Image */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Main Listing Card Image */}
                 <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
                   <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-extrabold text-slate-900 text-sm">
-                        Main Listing Card Image
-                      </h4>
-                      <p className="text-[11px] text-slate-500">
-                        Displayed on the AdVibe project card in the directory listing.
-                      </p>
-                    </div>
+                    <label className="font-extrabold text-slate-900">
+                      1. Main Card Cover Image
+                    </label>
                     <input
                       ref={mainImageFileRef}
                       type="file"
@@ -1439,412 +1448,252 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
                     />
                     <button
                       type="button"
+                      disabled={isUploadingMedia}
                       onClick={() => mainImageFileRef.current?.click()}
-                      className="px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold flex items-center gap-1.5 cursor-pointer"
+                      className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold flex items-center gap-1.5 cursor-pointer"
                     >
                       <Upload className="w-3.5 h-3.5" />
                       <span>Upload from PC</span>
                     </button>
                   </div>
-
                   <input
                     type="text"
-                    value={
-                      editingProject.mainImage ||
-                      editingProject.seo?.ogImage ||
-                      ''
-                    }
+                    value={editingProject.mainImage || ''}
                     onChange={e =>
                       setEditingProject({
                         ...editingProject,
-                        mainImage: e.target.value,
-                        seo: { ...editingProject.seo, ogImage: e.target.value }
+                        mainImage: e.target.value
                       })
                     }
-                    placeholder="Or paste Main Listing Image URL..."
-                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-900"
+                    placeholder="Paste Main Image URL or upload from PC..."
+                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2"
                   />
-
-                  <div className="h-44 rounded-xl overflow-hidden bg-slate-200 border border-slate-300">
+                  <div className="h-44 rounded-xl overflow-hidden bg-slate-900 border border-slate-200">
                     <img
                       src={
                         editingProject.mainImage ||
-                        editingProject.seo?.ogImage ||
-                        editingProject.gallery?.[0]?.url
+                        editingProject.bannerImage ||
+                        editingProject.seo?.ogImage
                       }
-                      alt="Main Listing Preview"
+                      alt="Main Cover"
                       className="w-full h-full object-cover"
                     />
                   </div>
                 </div>
 
-                {/* 2. Main Showcase Hero Banner Image */}
+                {/* Main Showcase Hero Banner Image */}
                 <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
                   <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-extrabold text-slate-900 text-sm">
-                        Main Showcase Hero Banner Image
-                      </h4>
-                      <p className="text-[11px] text-slate-500">
-                        Displayed on the top AdVibe banner and &quot;Open Full Project Showcase&quot; hero.
-                      </p>
-                    </div>
+                    <label className="font-extrabold text-slate-900">
+                      2. Full Project Showcase Main Hero Banner
+                    </label>
                     <input
                       ref={bannerImageFileRef}
                       type="file"
                       accept="image/*"
                       className="hidden"
                       onChange={e =>
-                        handleUploadMainOrBanner(
-                          'bannerImage',
-                          e.target.files?.[0]
-                        )
+                        handleUploadMainOrBanner('bannerImage', e.target.files?.[0])
                       }
                     />
                     <button
                       type="button"
+                      disabled={isUploadingMedia}
                       onClick={() => bannerImageFileRef.current?.click()}
-                      className="px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold flex items-center gap-1.5 cursor-pointer"
+                      className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold flex items-center gap-1.5 cursor-pointer"
                     >
                       <Upload className="w-3.5 h-3.5" />
                       <span>Upload Banner from PC</span>
                     </button>
                   </div>
-
                   <input
                     type="text"
-                    value={
-                      editingProject.bannerImage ||
-                      editingProject.mainImage ||
-                      ''
-                    }
+                    value={editingProject.bannerImage || ''}
                     onChange={e => {
                       const val = e.target.value;
-                      const syncedSecs = (editingProject.sections || []).map(s =>
-                        s.type === 'hero'
-                          ? {
-                              ...s,
-                              customSettings: {
-                                ...s.customSettings,
-                                bgImageUrl: val
-                              }
-                            }
-                          : s
-                      );
                       setEditingProject({
                         ...editingProject,
                         bannerImage: val,
-                        sections: syncedSecs
+                        sections: (editingProject.sections || []).map(s =>
+                          s.type === 'hero'
+                            ? {
+                                ...s,
+                                customSettings: {
+                                  ...s.customSettings,
+                                  bgImageUrl: val
+                                }
+                              }
+                            : s
+                        )
                       });
                     }}
-                    placeholder="Or paste Hero Banner Image URL..."
-                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-900"
+                    placeholder="Paste Showcase Hero Banner URL or upload..."
+                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2"
                   />
-
-                  <div className="h-44 rounded-xl overflow-hidden bg-slate-200 border border-slate-300">
+                  <div className="h-44 rounded-xl overflow-hidden bg-slate-900 border border-slate-200">
                     <img
                       src={
                         editingProject.bannerImage ||
                         editingProject.mainImage ||
-                        editingProject.seo?.ogImage ||
-                        editingProject.gallery?.[0]?.url
+                        editingProject.seo?.ogImage
                       }
-                      alt="Hero Banner Preview"
+                      alt="Showcase Hero Banner"
                       className="w-full h-full object-cover"
                     />
                   </div>
                 </div>
               </div>
 
-              {/* 3. Gallery Photos Upload & Manager */}
-              <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              {/* Main Banner Walkthrough Video & Videos Manager */}
+              <div className="p-5 rounded-2xl bg-indigo-50/70 border border-indigo-200 space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
-                    <h4 className="font-extrabold text-slate-900 text-sm">
-                      Project Photo Gallery ({editingProject.gallery.length} Photos)
-                    </h4>
-                    <p className="text-[11px] text-slate-500">
-                      Upload multiple photos from your computer or add via URL. Click &quot;Set as Banner&quot; on any photo to make it the main showcase banner.
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <input
-                      ref={galleryFileRef}
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      className="hidden"
-                      onChange={e => handleUploadGalleryFiles(e.target.files)}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => galleryFileRef.current?.click()}
-                      className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold flex items-center gap-1.5 cursor-pointer"
-                    >
-                      <Upload className="w-4 h-4" />
-                      <span>Upload Photos from PC</span>
-                    </button>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  <input
-                    type="text"
-                    value={newGalleryUrl}
-                    onChange={e => setNewGalleryUrl(e.target.value)}
-                    placeholder="Or paste image URL..."
-                    className="sm:col-span-2 bg-white border border-slate-300 rounded-xl px-3 py-2"
-                  />
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={newGalleryCaption}
-                      onChange={e => setNewGalleryCaption(e.target.value)}
-                      placeholder="Caption..."
-                      className="flex-1 bg-white border border-slate-300 rounded-xl px-3 py-2"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (!newGalleryUrl.trim()) return;
-                        const newItem = {
-                          id: `gal-${Date.now()}`,
-                          url: newGalleryUrl.trim(),
-                          type: 'image' as const,
-                          category: 'Exterior',
-                          caption:
-                            newGalleryCaption.trim() ||
-                            `${editingProject.title} Photo`
-                        };
-                        setEditingProject({
-                          ...editingProject,
-                          gallery: [newItem, ...editingProject.gallery]
-                        });
-                        setNewGalleryUrl('');
-                        setNewGalleryCaption('');
-                        notifyStatus('Added photo to project gallery!');
-                      }}
-                      className="px-3.5 py-2 rounded-xl bg-slate-900 text-white font-bold shrink-0 cursor-pointer"
-                    >
-                      + Add URL
-                    </button>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {editingProject.gallery.map(item => (
-                    <div
-                      key={item.id}
-                      className="bg-white rounded-xl border border-slate-200 overflow-hidden flex flex-col justify-between shadow-2xs"
-                    >
-                      <div className="relative h-28 bg-slate-900">
-                        <img
-                          src={item.url}
-                          alt={item.caption}
-                          className="w-full h-full object-cover"
-                        />
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setEditingProject({
-                              ...editingProject,
-                              gallery: editingProject.gallery.filter(
-                                g => g.id !== item.id
-                              )
-                            })
-                          }
-                          className="absolute top-1.5 right-1.5 p-1 rounded-lg bg-rose-600 text-white cursor-pointer"
-                          title="Delete Photo"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
-                      </div>
-                      <div className="p-2 space-y-1.5">
-                        <input
-                          type="text"
-                          value={item.caption}
-                          onChange={e =>
-                            setEditingProject({
-                              ...editingProject,
-                              gallery: editingProject.gallery.map(g =>
-                                g.id === item.id
-                                  ? { ...g, caption: e.target.value }
-                                  : g
-                              )
-                            })
-                          }
-                          className="w-full text-[11px] bg-slate-50 border border-slate-200 rounded px-1.5 py-1"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const syncedSecs = (
-                              editingProject.sections || []
-                            ).map(s =>
-                              s.type === 'hero'
-                                ? {
-                                    ...s,
-                                    customSettings: {
-                                      ...s.customSettings,
-                                      bgImageUrl: item.url
-                                    }
-                                  }
-                                : s
-                            );
-                            setEditingProject({
-                              ...editingProject,
-                              mainImage: item.url,
-                              bannerImage: item.url,
-                              sections: syncedSecs
-                            });
-                            notifyStatus(
-                              'Set photo as Main Listing & Hero Showcase Banner!'
-                            );
-                          }}
-                          className="w-full py-1 rounded bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white text-[10px] font-bold transition-colors cursor-pointer"
-                        >
-                          Set as Main Banner
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* 4. Walkthrough & Banner Video Uploader */}
-              <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div>
-                    <h4 className="font-extrabold text-slate-900 text-sm flex items-center gap-2">
-                      <Video className="w-4 h-4 text-blue-600" />
+                    <h4 className="font-extrabold text-indigo-950 flex items-center gap-2 text-sm">
+                      <Video className="w-4 h-4 text-indigo-600" />
                       <span>
-                        Main Banner Video &amp; Walkthrough Clips ({editingProject.videos.length})
+                        3. &quot;Watch Banner Video&quot; &amp; &quot;Play Walkthrough Video&quot; Manager
                       </span>
                     </h4>
-                    <p className="text-[11px] text-slate-500">
-                      Upload an MP4/WebM video from your computer or paste a YouTube / MP4 URL. This powers &quot;Watch Banner Video&quot; and &quot;Play Walkthrough Video&quot;.
+                    <p className="text-[11px] text-slate-600">
+                      Upload an MP4/WebM walkthrough video from your computer or paste a direct video/YouTube URL.
                     </p>
                   </div>
 
-                  <div>
-                    <input
-                      ref={videoFileRef}
-                      type="file"
-                      accept="video/*"
-                      className="hidden"
-                      onChange={e => handleUploadLocalVideo(e.target.files?.[0])}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => videoFileRef.current?.click()}
-                      className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold flex items-center gap-1.5 cursor-pointer"
-                    >
-                      <Film className="w-4 h-4" />
-                      <span>Upload Video from PC</span>
-                    </button>
-                  </div>
+                  <input
+                    ref={videoFileRef}
+                    type="file"
+                    accept="video/mp4,video/webm,video/quicktime"
+                    className="hidden"
+                    onChange={e => handleUploadLocalVideo(e.target.files?.[0])}
+                  />
+                  <button
+                    type="button"
+                    disabled={isUploadingMedia}
+                    onClick={() => videoFileRef.current?.click()}
+                    className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold flex items-center gap-1.5 cursor-pointer shadow-xs"
+                  >
+                    <Film className="w-4 h-4" />
+                    <span>
+                      {isUploadingMedia
+                        ? 'Uploading Video...'
+                        : 'Upload Walkthrough Video (MP4/WebM)'}
+                    </span>
+                  </button>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
                     <label className="block font-bold text-slate-700 mb-1">
-                      Primary Banner Video URL (MP4 or YouTube)
+                      Primary Banner / Walkthrough Video URL
                     </label>
                     <input
                       type="text"
-                      value={
-                        editingProject.heroVideoUrl ||
-                        editingProject.videos?.[0]?.url ||
-                        ''
-                      }
+                      value={editingProject.heroVideoUrl || ''}
                       onChange={e =>
                         setEditingProject({
                           ...editingProject,
                           heroVideoUrl: e.target.value
                         })
                       }
-                      placeholder="https://...mp4 or https://youtube.com/watch?v=..."
+                      placeholder="https://...mp4, /uploads/...mp4, or YouTube URL"
                       className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2"
                     />
                   </div>
                   <div>
                     <label className="block font-bold text-slate-700 mb-1">
-                      Add Additional Video Clip to Showcase
+                      Primary Video Title
                     </label>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={newVideoTitle}
-                        onChange={e => setNewVideoTitle(e.target.value)}
-                        placeholder="Video title..."
-                        className="w-1/3 bg-white border border-slate-300 rounded-xl px-2.5 py-2"
-                      />
-                      <input
-                        type="text"
-                        value={newVideoUrl}
-                        onChange={e => setNewVideoUrl(e.target.value)}
-                        placeholder="MP4 or YouTube URL..."
-                        className="flex-1 bg-white border border-slate-300 rounded-xl px-2.5 py-2"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (!newVideoUrl.trim()) return;
-                          const isYt =
-                            newVideoUrl.includes('youtube.com') ||
-                            newVideoUrl.includes('youtu.be');
-                          const vItem = {
-                            id: `vid-${Date.now()}`,
-                            title:
-                              newVideoTitle.trim() ||
-                              `${editingProject.title} Video Tour`,
-                            category: 'Project Tour',
-                            type: (isYt ? 'youtube' : 'hosted') as
-                              | 'youtube'
-                              | 'hosted',
-                            url: newVideoUrl.trim(),
-                            thumbnail:
-                              editingProject.bannerImage ||
-                              editingProject.mainImage ||
-                              editingProject.logo,
-                            duration: '02:00'
-                          };
-                          setEditingProject({
-                            ...editingProject,
-                            heroVideoUrl: vItem.url,
-                            videos: [vItem, ...(editingProject.videos || [])]
-                          });
-                          setNewVideoUrl('');
-                          setNewVideoTitle('');
-                          notifyStatus(
-                            'Added video and set as Main Banner Video!'
-                          );
-                        }}
-                        className="px-3.5 py-2 rounded-xl bg-slate-900 text-white font-bold shrink-0 cursor-pointer"
-                      >
-                        + Add
-                      </button>
-                    </div>
+                    <input
+                      type="text"
+                      value={editingProject.heroVideoTitle || ''}
+                      onChange={e =>
+                        setEditingProject({
+                          ...editingProject,
+                          heroVideoTitle: e.target.value
+                        })
+                      }
+                      placeholder="Official 4K Project Walkthrough"
+                      className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2"
+                    />
                   </div>
                 </div>
 
-                {editingProject.videos.length > 0 && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Add Extra Video to Project Video Gallery */}
+                <div className="pt-3 border-t border-indigo-200/80 grid grid-cols-1 md:grid-cols-4 gap-2">
+                  <input
+                    type="text"
+                    value={newVideoTitle}
+                    onChange={e => setNewVideoTitle(e.target.value)}
+                    placeholder="Video Title (e.g. Drone Site Progress)"
+                    className="bg-white border border-slate-300 rounded-xl px-3 py-2"
+                  />
+                  <select
+                    value={newVideoCategory}
+                    onChange={e => setNewVideoCategory(e.target.value)}
+                    className="bg-white border border-slate-300 rounded-xl px-3 py-2"
+                  >
+                    <option value="Project Tour">Project Tour</option>
+                    <option value="Construction">Construction Progress</option>
+                    <option value="Apartment Tour">Model Villa / Suite Tour</option>
+                    <option value="Developer Message">Developer Message</option>
+                  </select>
+                  <input
+                    type="text"
+                    value={newVideoUrl}
+                    onChange={e => setNewVideoUrl(e.target.value)}
+                    placeholder="Paste MP4 or YouTube URL..."
+                    className="bg-white border border-slate-300 rounded-xl px-3 py-2"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!newVideoUrl.trim()) return;
+                      const url = newVideoUrl.trim();
+                      const isYt =
+                        url.includes('youtube.com') || url.includes('youtu.be');
+                      const added = {
+                        id: `vid-${Date.now()}`,
+                        title: newVideoTitle.trim() || `${editingProject.title} Video`,
+                        category: newVideoCategory,
+                        type: (isYt ? 'youtube' : 'hosted') as 'youtube' | 'hosted',
+                        url,
+                        thumbnail:
+                          editingProject.bannerImage ||
+                          editingProject.mainImage ||
+                          editingProject.logo,
+                        duration: '02:00'
+                      };
+                      setEditingProject({
+                        ...editingProject,
+                        heroVideoUrl: editingProject.heroVideoUrl || url,
+                        videos: [added, ...(editingProject.videos || [])]
+                      });
+                      setNewVideoUrl('');
+                      setNewVideoTitle('');
+                      notifyStatus('Added video to project showcase!');
+                    }}
+                    className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold cursor-pointer"
+                  >
+                    + Add Video URL
+                  </button>
+                </div>
+
+                {editingProject.videos && editingProject.videos.length > 0 && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-2">
                     {editingProject.videos.map(v => (
                       <div
                         key={v.id}
-                        className="p-3 rounded-xl bg-white border border-slate-200 flex items-center justify-between gap-3"
+                        className="p-3 rounded-xl bg-white border border-slate-200 flex items-center justify-between gap-2"
                       >
                         <div className="min-w-0">
                           <div className="font-bold text-slate-900 truncate">
                             {v.title}
                           </div>
-                          <div className="text-[10px] text-slate-400 truncate font-mono">
-                            {v.url}
+                          <div className="text-[10px] text-indigo-600 font-semibold">
+                            {v.category} • {v.type}
                           </div>
                         </div>
-                        <div className="flex items-center gap-1.5 shrink-0">
+                        <div className="flex items-center gap-1 shrink-0">
                           <button
                             type="button"
                             onClick={() => {
@@ -1853,19 +1702,11 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
                                 heroVideoUrl: v.url,
                                 heroVideoTitle: v.title
                               });
-                              notifyStatus(
-                                `"${v.title}" set as Primary Banner Video!`
-                              );
+                              notifyStatus(`Set "${v.title}" as Main Banner Video!`);
                             }}
-                            className={`px-2.5 py-1 rounded-lg text-[10px] font-bold cursor-pointer ${
-                              editingProject.heroVideoUrl === v.url
-                                ? 'bg-emerald-600 text-white'
-                                : 'bg-blue-50 text-blue-700 hover:bg-blue-100'
-                            }`}
+                            className="px-2 py-1 rounded bg-indigo-50 text-indigo-700 font-bold text-[10px] cursor-pointer"
                           >
-                            {editingProject.heroVideoUrl === v.url
-                              ? 'Active Banner Video'
-                              : 'Use on Banner'}
+                            Set Main
                           </button>
                           <button
                             type="button"
@@ -1877,7 +1718,7 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
                                 )
                               })
                             }
-                            className="p-1.5 rounded-lg bg-rose-50 text-rose-600 cursor-pointer"
+                            className="p-1 text-rose-600 cursor-pointer"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -1887,112 +1728,311 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
                   </div>
                 )}
               </div>
-            </div>
-          )}
 
-          {/* SUB-TAB 3: PAGE SECTIONS FULL CRUD */}
-          {editorSubTab === 'sections' && (
-            <div className="space-y-5 text-xs">
-              {/* Add New Section Bar */}
-              <div className="p-4 rounded-2xl bg-blue-50/70 border border-blue-200 space-y-3">
-                <h4 className="font-extrabold text-blue-950 text-sm flex items-center gap-2">
-                  <Plus className="w-4 h-4 text-blue-600" />
-                  <span>Add New Section to Project Showcase (Full CRUD)</span>
-                </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5">
-                  <select
-                    value={newSectionType}
-                    onChange={e =>
-                      setNewSectionType(e.target.value as AdVibeSectionType)
-                    }
-                    className="bg-white border border-slate-300 rounded-xl px-3 py-2 font-bold text-slate-900"
+              {/* Photo Gallery Manager */}
+              <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <h4 className="font-extrabold text-slate-900 text-sm">
+                      4. Project Showcase Photo Gallery ({editingProject.gallery?.length || 0} Photos)
+                    </h4>
+                    <p className="text-[11px] text-slate-500">
+                      Upload multiple high-resolution photos or add image URLs.
+                    </p>
+                  </div>
+                  <input
+                    ref={galleryFileRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={e => handleUploadGalleryFiles(e.target.files)}
+                  />
+                  <button
+                    type="button"
+                    disabled={isUploadingMedia}
+                    onClick={() => galleryFileRef.current?.click()}
+                    className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold flex items-center gap-1.5 cursor-pointer"
                   >
-                    {SECTION_TYPE_OPTIONS.map(opt => (
-                      <option key={opt.type} value={opt.type}>
-                        {opt.label}
-                      </option>
-                    ))}
+                    <Upload className="w-4 h-4" />
+                    <span>Upload Multiple Photos from PC</span>
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
+                  <input
+                    type="text"
+                    value={newGalleryCaption}
+                    onChange={e => setNewGalleryCaption(e.target.value)}
+                    placeholder="Photo Caption"
+                    className="bg-white border border-slate-300 rounded-xl px-3 py-2"
+                  />
+                  <select
+                    value={newGalleryCategory}
+                    onChange={e => setNewGalleryCategory(e.target.value)}
+                    className="bg-white border border-slate-300 rounded-xl px-3 py-2"
+                  >
+                    <option value="Exterior">Exterior</option>
+                    <option value="Interior">Interior</option>
+                    <option value="Aerial Drone">Aerial Drone</option>
+                    <option value="Construction Update">Construction Update</option>
+                    <option value="Amenities">Amenities</option>
                   </select>
                   <input
                     type="text"
-                    value={newSectionTitle}
-                    onChange={e => setNewSectionTitle(e.target.value)}
-                    placeholder="Section Heading Title..."
-                    className="bg-white border border-slate-300 rounded-xl px-3 py-2"
-                  />
-                  <input
-                    type="text"
-                    value={newSectionSubtitle}
-                    onChange={e => setNewSectionSubtitle(e.target.value)}
-                    placeholder="Subtitle / Description..."
+                    value={newGalleryUrl}
+                    onChange={e => setNewGalleryUrl(e.target.value)}
+                    placeholder="Paste Image URL..."
                     className="bg-white border border-slate-300 rounded-xl px-3 py-2"
                   />
                   <button
                     type="button"
-                    onClick={handleAddSection}
-                    className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold cursor-pointer"
+                    onClick={() => {
+                      if (!newGalleryUrl.trim()) return;
+                      const item = {
+                        id: `gal-${Date.now()}`,
+                        url: newGalleryUrl.trim(),
+                        type: 'image' as const,
+                        category: newGalleryCategory,
+                        caption:
+                          newGalleryCaption.trim() ||
+                          `${editingProject.title} Gallery Photo`
+                      };
+                      setEditingProject({
+                        ...editingProject,
+                        gallery: [item, ...(editingProject.gallery || [])]
+                      });
+                      setNewGalleryUrl('');
+                      setNewGalleryCaption('');
+                      notifyStatus('Added photo to gallery!');
+                    }}
+                    className="px-4 py-2 rounded-xl bg-slate-900 text-white font-bold cursor-pointer"
                   >
-                    + Add Section
+                    + Add Photo URL
                   </button>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-3">
+                  {(editingProject.gallery || []).map(g => (
+                    <div
+                      key={g.id}
+                      className="rounded-xl overflow-hidden bg-white border border-slate-200 flex flex-col justify-between"
+                    >
+                      <div className="relative h-28 bg-slate-900">
+                        <img
+                          src={g.url}
+                          alt={g.caption}
+                          className="w-full h-full object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setEditingProject({
+                              ...editingProject,
+                              gallery: editingProject.gallery.filter(
+                                item => item.id !== g.id
+                              )
+                            })
+                          }
+                          className="absolute top-1.5 right-1.5 p-1 rounded bg-rose-600 text-white cursor-pointer"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
+                      <div className="p-2 space-y-1">
+                        <div className="text-[10px] font-bold text-slate-800 truncate">
+                          {g.caption}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingProject({
+                              ...editingProject,
+                              mainImage: g.url,
+                              bannerImage: g.url
+                            });
+                            notifyStatus('Set photo as Main Banner & Cover!');
+                          }}
+                          className="w-full py-1 rounded bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-[10px] cursor-pointer"
+                        >
+                          Set as Main Banner
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* SUB-TAB 3: PAGE SECTIONS CRUD */}
+          {editorSubTab === 'sections' && (
+            <div className="space-y-5 text-xs">
+              <div className="p-4 rounded-2xl bg-blue-50/70 border border-blue-200 space-y-3">
+                <h4 className="font-extrabold text-blue-950 text-sm">
+                  Create &amp; Add New Page Section to Project Showcase
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Section Type
+                    </label>
+                    <select
+                      value={newSectionType}
+                      onChange={e =>
+                        setNewSectionType(e.target.value as AdVibeSectionType)
+                      }
+                      className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 font-bold"
+                    >
+                      {SECTION_TYPE_OPTIONS.map(opt => (
+                        <option key={opt.type} value={opt.type}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Section Heading Title
+                    </label>
+                    <input
+                      type="text"
+                      value={newSectionTitle}
+                      onChange={e => setNewSectionTitle(e.target.value)}
+                      placeholder="e.g. Executive Highlights"
+                      className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Section Subtitle
+                    </label>
+                    <input
+                      type="text"
+                      value={newSectionSubtitle}
+                      onChange={e => setNewSectionSubtitle(e.target.value)}
+                      placeholder="e.g. Engineered for modern living"
+                      className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2"
+                    />
+                  </div>
+
+                  <div className="flex items-end gap-2">
+                    <div className="flex-1">
+                      <label className="block font-bold text-slate-700 mb-1">
+                        Badge Label
+                      </label>
+                      <input
+                        type="text"
+                        value={newSectionBadge}
+                        onChange={e => setNewSectionBadge(e.target.value)}
+                        placeholder="HIGHLIGHTS"
+                        className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleAddSection}
+                      className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold cursor-pointer shrink-0"
+                    >
+                      + Add Section
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              {/* Sections List */}
               <div className="space-y-2.5">
                 {editingProject.sections.map((sec, idx) => {
                   const isEditingThis = editingSectionId === sec.id;
                   return (
                     <div
                       key={sec.id}
-                      className={`rounded-2xl border p-4 transition-all ${
+                      className={`p-4 rounded-2xl border transition-all ${
                         sec.isEnabled
-                          ? 'bg-white border-slate-200 shadow-2xs'
-                          : 'bg-slate-50 border-slate-200 opacity-60'
+                          ? 'bg-white border-slate-200'
+                          : 'bg-slate-100 border-slate-200 opacity-65'
                       }`}
                     >
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <span className="w-7 h-7 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center font-mono font-bold text-slate-700 shrink-0">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <span className="w-7 h-7 rounded-lg bg-slate-900 text-white font-black flex items-center justify-center">
                             {idx + 1}
                           </span>
-                          <div className="min-w-0">
+                          <div>
                             <div className="flex items-center gap-2">
-                              <span className="font-extrabold text-slate-900 text-sm truncate">
+                              <span className="font-extrabold text-slate-900 text-sm">
                                 {sec.title}
                               </span>
-                              <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-mono uppercase">
+                              <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-bold uppercase">
                                 {sec.type}
                               </span>
+                              {sec.badge && (
+                                <span className="px-2 py-0.5 rounded bg-amber-50 text-amber-800 text-[10px] font-bold">
+                                  {sec.badge}
+                                </span>
+                              )}
                             </div>
-                            <p className="text-[11px] text-slate-500 truncate">
+                            <p className="text-[11px] text-slate-500">
                               {sec.subtitle}
                             </p>
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-1.5 shrink-0">
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            disabled={idx === 0}
+                            onClick={() => handleMoveSection(idx, 'up')}
+                            className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 disabled:opacity-30 cursor-pointer"
+                            title="Move Up"
+                          >
+                            <ArrowUp className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            disabled={idx === editingProject.sections.length - 1}
+                            onClick={() => handleMoveSection(idx, 'down')}
+                            className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 disabled:opacity-30 cursor-pointer"
+                            title="Move Down"
+                          >
+                            <ArrowDown className="w-3.5 h-3.5" />
+                          </button>
+
                           <button
                             type="button"
                             onClick={() =>
+                              setEditingSectionId(isEditingThis ? null : sec.id)
+                            }
+                            className="px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white font-bold cursor-pointer flex items-center gap-1"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                            <span>{isEditingThis ? 'Done' : 'Edit Section'}</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const next = editingProject.sections.map(s =>
+                                s.id === sec.id
+                                  ? { ...s, isEnabled: !s.isEnabled }
+                                  : s
+                              );
                               setEditingProject({
                                 ...editingProject,
-                                sections: editingProject.sections.map(s =>
-                                  s.id === sec.id
-                                    ? { ...s, isEnabled: !s.isEnabled }
-                                    : s
-                                )
-                              })
-                            }
-                            className={`px-2.5 py-1.5 rounded-xl font-bold flex items-center gap-1 cursor-pointer border ${
+                                sections: next
+                              });
+                            }}
+                            className={`px-2.5 py-1.5 rounded-lg font-bold flex items-center gap-1 cursor-pointer ${
                               sec.isEnabled
-                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                : 'bg-slate-200 text-slate-600 border-slate-300'
+                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                : 'bg-slate-200 text-slate-600'
                             }`}
                           >
                             {sec.isEnabled ? (
                               <>
                                 <Eye className="w-3.5 h-3.5" />
-                                <span>Enabled</span>
+                                <span>Visible</span>
                               </>
                             ) : (
                               <>
@@ -2004,38 +2044,8 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
 
                           <button
                             type="button"
-                            onClick={() =>
-                              setEditingSectionId(
-                                isEditingThis ? null : sec.id
-                              )
-                            }
-                            className="px-2.5 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold flex items-center gap-1 cursor-pointer"
-                          >
-                            <Edit3 className="w-3.5 h-3.5" />
-                            <span>{isEditingThis ? 'Done' : 'Edit'}</span>
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => handleMoveSection(idx, 'up')}
-                            disabled={idx === 0}
-                            className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 disabled:opacity-30 cursor-pointer"
-                          >
-                            <ArrowUp className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleMoveSection(idx, 'down')}
-                            disabled={idx === editingProject.sections.length - 1}
-                            className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 disabled:opacity-30 cursor-pointer"
-                          >
-                            <ArrowDown className="w-3.5 h-3.5" />
-                          </button>
-
-                          <button
-                            type="button"
                             onClick={() => handleDeleteSection(sec.id)}
-                            className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 cursor-pointer"
+                            className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white cursor-pointer"
                             title="Delete Section"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -2044,67 +2054,127 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
                       </div>
 
                       {isEditingThis && (
-                        <div className="mt-4 pt-4 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 p-3.5 rounded-xl">
-                          <div>
-                            <label className="block font-bold text-slate-700 mb-1">
-                              Section Title
-                            </label>
-                            <input
-                              type="text"
-                              value={sec.title}
-                              onChange={e =>
-                                setEditingProject({
-                                  ...editingProject,
-                                  sections: editingProject.sections.map(s =>
-                                    s.id === sec.id
-                                      ? { ...s, title: e.target.value }
-                                      : s
-                                  )
-                                })
-                              }
-                              className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2"
-                            />
+                        <div className="mt-4 pt-4 border-t border-slate-200 space-y-3 bg-slate-50 p-3.5 rounded-xl">
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <div>
+                              <label className="block font-bold text-slate-700 mb-1">
+                                Section Title
+                              </label>
+                              <input
+                                type="text"
+                                value={sec.title}
+                                onChange={e => {
+                                  const val = e.target.value;
+                                  setEditingProject({
+                                    ...editingProject,
+                                    sections: editingProject.sections.map(s =>
+                                      s.id === sec.id ? { ...s, title: val } : s
+                                    )
+                                  });
+                                }}
+                                className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2"
+                              />
+                            </div>
+                            <div>
+                              <label className="block font-bold text-slate-700 mb-1">
+                                Section Subtitle
+                              </label>
+                              <input
+                                type="text"
+                                value={sec.subtitle}
+                                onChange={e => {
+                                  const val = e.target.value;
+                                  setEditingProject({
+                                    ...editingProject,
+                                    sections: editingProject.sections.map(s =>
+                                      s.id === sec.id ? { ...s, subtitle: val } : s
+                                    )
+                                  });
+                                }}
+                                className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2"
+                              />
+                            </div>
+                            <div>
+                              <label className="block font-bold text-slate-700 mb-1">
+                                Section Badge
+                              </label>
+                              <input
+                                type="text"
+                                value={sec.badge || ''}
+                                onChange={e => {
+                                  const val = e.target.value;
+                                  setEditingProject({
+                                    ...editingProject,
+                                    sections: editingProject.sections.map(s =>
+                                      s.id === sec.id ? { ...s, badge: val } : s
+                                    )
+                                  });
+                                }}
+                                className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2"
+                              />
+                            </div>
                           </div>
-                          <div>
-                            <label className="block font-bold text-slate-700 mb-1">
-                              Subtitle
-                            </label>
-                            <input
-                              type="text"
-                              value={sec.subtitle}
-                              onChange={e =>
-                                setEditingProject({
-                                  ...editingProject,
-                                  sections: editingProject.sections.map(s =>
-                                    s.id === sec.id
-                                      ? { ...s, subtitle: e.target.value }
-                                      : s
-                                  )
-                                })
-                              }
-                              className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2"
-                            />
-                          </div>
-                          <div>
-                            <label className="block font-bold text-slate-700 mb-1">
-                              Badge Text
-                            </label>
-                            <input
-                              type="text"
-                              value={sec.badge || ''}
-                              onChange={e =>
-                                setEditingProject({
-                                  ...editingProject,
-                                  sections: editingProject.sections.map(s =>
-                                    s.id === sec.id
-                                      ? { ...s, badge: e.target.value }
-                                      : s
-                                  )
-                                })
-                              }
-                              className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2"
-                            />
-                          </div>
+
+                          {(sec.type === 'intro' || sec.type === 'story') && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              <div>
+                                <label className="block font-bold text-slate-700 mb-1">
+                                  Manifesto Quote
+                                </label>
+                                <input
+                                  type="text"
+                                  value={sec.content?.quote || ''}
+                                  onChange={e => {
+                                    const val = e.target.value;
+                                    setEditingProject({
+                                      ...editingProject,
+                                      sections: editingProject.sections.map(s =>
+                                        s.id === sec.id
+                                          ? {
+                                              ...s,
+                                              content: {
+                                                ...s.content,
+                                                quote: val
+                                              }
+                                            }
+                                          : s
+                                      )
+                                    });
+                                  }}
+                                  className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2"
+                                />
+                              </div>
+                              <div>
+                                <label className="block font-bold text-slate-700 mb-1">
+                                  Overview Paragraphs (One per line)
+                                </label>
+                                <textarea
+                                  rows={3}
+                                  value={(sec.content?.paragraphs || []).join('\n')}
+                                  onChange={e => {
+                                    const lines = e.target.value
+                                      .split('\n')
+                                      .filter(Boolean);
+                                    setEditingProject({
+                                      ...editingProject,
+                                      sections: editingProject.sections.map(s =>
+                                        s.id === sec.id
+                                          ? {
+                                              ...s,
+                                              content: {
+                                                ...s.content,
+                                                paragraphs: lines
+                                              }
+                                            }
+                                          : s
+                                      )
+                                    });
+                                  }}
+                                  className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2"
+                                />
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
@@ -2114,544 +2184,547 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
             </div>
           )}
 
-          {/* SUB-TAB 4: 360° VIRTUAL TOUR SCENES FULL CRUD */}
+          {/* SUB-TAB 4: HIGHLIGHTS, AMENITIES & LOCATION RADAR CRUD */}
+          {editorSubTab === 'highlights_amenities' && (
+            <div className="space-y-6 text-xs">
+              {/* Highlights CRUD */}
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+                <h4 className="font-extrabold text-slate-900 text-sm">
+                  Project Highlights ({editingProject.highlights?.length || 0})
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
+                  <input
+                    type="text"
+                    value={newHlTitle}
+                    onChange={e => setNewHlTitle(e.target.value)}
+                    placeholder="Highlight Title (e.g. 225ft Boulevard)"
+                    className="bg-white border border-slate-300 rounded-xl px-3 py-2"
+                  />
+                  <input
+                    type="text"
+                    value={newHlValue}
+                    onChange={e => setNewHlValue(e.target.value)}
+                    placeholder="Badge Value (e.g. Direct Access)"
+                    className="bg-white border border-slate-300 rounded-xl px-3 py-2"
+                  />
+                  <input
+                    type="text"
+                    value={newHlDesc}
+                    onChange={e => setNewHlDesc(e.target.value)}
+                    placeholder="Short Description..."
+                    className="bg-white border border-slate-300 rounded-xl px-3 py-2"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!newHlTitle.trim()) return;
+                      const item = {
+                        id: `hl-${Date.now()}`,
+                        title: newHlTitle.trim(),
+                        value: newHlValue.trim() || 'Key Highlight',
+                        description: newHlDesc.trim(),
+                        iconName: 'Compass',
+                        image: editingProject.mainImage
+                      };
+                      setEditingProject({
+                        ...editingProject,
+                        highlights: [...(editingProject.highlights || []), item]
+                      });
+                      setNewHlTitle('');
+                      setNewHlValue('');
+                      setNewHlDesc('');
+                    }}
+                    className="px-4 py-2 rounded-xl bg-blue-600 text-white font-bold cursor-pointer"
+                  >
+                    + Add Highlight
+                  </button>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {(editingProject.highlights || []).map(hl => (
+                    <div
+                      key={hl.id}
+                      className="p-3 rounded-xl bg-white border border-slate-200 flex items-center justify-between gap-2"
+                    >
+                      <div>
+                        <div className="font-bold text-slate-900">
+                          {hl.title} ({hl.value})
+                        </div>
+                        <div className="text-[11px] text-slate-500">
+                          {hl.description}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setEditingProject({
+                            ...editingProject,
+                            highlights: editingProject.highlights.filter(
+                              i => i.id !== hl.id
+                            )
+                          })
+                        }
+                        className="text-rose-600 cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Amenities CRUD */}
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+                <h4 className="font-extrabold text-slate-900 text-sm">
+                  World-Class Amenities ({editingProject.amenities?.length || 0})
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
+                  <input
+                    type="text"
+                    value={newAmName}
+                    onChange={e => setNewAmName(e.target.value)}
+                    placeholder="Amenity Name"
+                    className="bg-white border border-slate-300 rounded-xl px-3 py-2"
+                  />
+                  <select
+                    value={newAmCat}
+                    onChange={e => setNewAmCat(e.target.value)}
+                    className="bg-white border border-slate-300 rounded-xl px-3 py-2"
+                  >
+                    <option value="Wellness & Sports">Wellness &amp; Sports</option>
+                    <option value="Security & Infrastructure">Security &amp; Infrastructure</option>
+                    <option value="Lifestyle & Leisure">Lifestyle &amp; Leisure</option>
+                    <option value="Smart Technology">Smart Technology</option>
+                  </select>
+                  <input
+                    type="text"
+                    value={newAmDesc}
+                    onChange={e => setNewAmDesc(e.target.value)}
+                    placeholder="Amenity Description"
+                    className="bg-white border border-slate-300 rounded-xl px-3 py-2"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!newAmName.trim()) return;
+                      const item = {
+                        id: `am-${Date.now()}`,
+                        name: newAmName.trim(),
+                        category: newAmCat,
+                        description: newAmDesc.trim(),
+                        iconName: 'Waves',
+                        image: editingProject.mainImage
+                      };
+                      setEditingProject({
+                        ...editingProject,
+                        amenities: [...(editingProject.amenities || []), item]
+                      });
+                      setNewAmName('');
+                      setNewAmDesc('');
+                    }}
+                    className="px-4 py-2 rounded-xl bg-blue-600 text-white font-bold cursor-pointer"
+                  >
+                    + Add Amenity
+                  </button>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {(editingProject.amenities || []).map(am => (
+                    <div
+                      key={am.id}
+                      className="p-3 rounded-xl bg-white border border-slate-200 flex items-center justify-between gap-2"
+                    >
+                      <div>
+                        <div className="font-bold text-slate-900">
+                          {am.name} ({am.category})
+                        </div>
+                        <div className="text-[11px] text-slate-500">
+                          {am.description}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setEditingProject({
+                            ...editingProject,
+                            amenities: editingProject.amenities.filter(
+                              i => i.id !== am.id
+                            )
+                          })
+                        }
+                        className="text-rose-600 cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Location Radar CRUD */}
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+                <h4 className="font-extrabold text-slate-900 text-sm">
+                  Location &amp; Proximity Landmarks ({editingProject.locationPoints?.length || 0})
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
+                  <input
+                    type="text"
+                    value={newLocName}
+                    onChange={e => setNewLocName(e.target.value)}
+                    placeholder="Landmark Name (e.g. M-1 Motorway)"
+                    className="bg-white border border-slate-300 rounded-xl px-3 py-2"
+                  />
+                  <input
+                    type="text"
+                    value={newLocDist}
+                    onChange={e => setNewLocDist(e.target.value)}
+                    placeholder="Distance (e.g. 2.5 km)"
+                    className="bg-white border border-slate-300 rounded-xl px-3 py-2"
+                  />
+                  <input
+                    type="text"
+                    value={newLocTime}
+                    onChange={e => setNewLocTime(e.target.value)}
+                    placeholder="Drive Time (e.g. 4 mins)"
+                    className="bg-white border border-slate-300 rounded-xl px-3 py-2"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!newLocName.trim()) return;
+                      const pt = {
+                        id: `loc-${Date.now()}`,
+                        name: newLocName.trim(),
+                        category: 'Highway & Access',
+                        distance: newLocDist.trim() || '2 km',
+                        driveTime: newLocTime.trim() || '3 mins'
+                      };
+                      setEditingProject({
+                        ...editingProject,
+                        locationPoints: [
+                          ...(editingProject.locationPoints || []),
+                          pt
+                        ]
+                      });
+                      setNewLocName('');
+                    }}
+                    className="px-4 py-2 rounded-xl bg-blue-600 text-white font-bold cursor-pointer"
+                  >
+                    + Add Landmark
+                  </button>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {(editingProject.locationPoints || []).map(lp => (
+                    <div
+                      key={lp.id}
+                      className="p-3 rounded-xl bg-white border border-slate-200 flex items-center justify-between"
+                    >
+                      <span className="font-bold text-slate-900">
+                        {lp.name} — {lp.distance} ({lp.driveTime})
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setEditingProject({
+                            ...editingProject,
+                            locationPoints: editingProject.locationPoints.filter(
+                              i => i.id !== lp.id
+                            )
+                          })
+                        }
+                        className="text-rose-600 cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* SUB-TAB 5: 360 VIRTUAL TOUR CRUD */}
           {editorSubTab === 'tour3d' && (
             <div className="space-y-6 text-xs">
-              {/* Add / Edit 360° Scene Form */}
-              <div className="p-5 rounded-2xl bg-blue-50/70 border border-blue-200 space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <div>
-                    <h4 className="font-extrabold text-blue-950 text-sm flex items-center gap-2">
-                      <Compass className="w-4 h-4 text-blue-600" />
-                      <span>
-                        360° Virtual Tour Scenes Manager (Full CRUD — Upload from PC or URL)
-                      </span>
-                    </h4>
-                    <p className="text-[11px] text-slate-600">
-                      Add, edit, or delete 360° panoramic scenes. These scenes are visible on both the main AdVibe page and &quot;Open Full Project Showcase&quot;.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200 space-y-3">
+                <h4 className="font-extrabold text-amber-950 text-sm">
+                  Add New 360° Panoramic Scene (Visible in &quot;Open Full Project Showcase&quot;)
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div>
                     <label className="block font-bold text-slate-700 mb-1">
-                      Scene Title / Room Name *
+                      Scene Name *
                     </label>
                     <input
                       type="text"
                       value={newSceneName}
                       onChange={e => setNewSceneName(e.target.value)}
-                      placeholder="e.g. Main Boulevard 225ft / Executive Penthouse Lounge"
+                      placeholder="e.g. Main Boulevard & Entrance 360°"
                       className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2"
                     />
                   </div>
                   <div>
                     <label className="block font-bold text-slate-700 mb-1">
-                      Scene Category
+                      Category
                     </label>
                     <input
                       type="text"
                       value={newSceneCategory}
                       onChange={e => setNewSceneCategory(e.target.value)}
-                      placeholder="Exterior / Interior / Aerial 360°"
                       className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2"
                     />
                   </div>
-
-                  {/* Day 360 Image Upload or URL */}
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <label className="font-bold text-slate-700">
-                        Daytime 360° Panorama Image *
-                      </label>
-                      <input
-                        ref={sceneDayFileRef}
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={async e => {
-                          const file = e.target.files?.[0];
-                          if (!file) return;
-                          const dataUrl = await compressImageFile(file, 2200);
-                          setNewSceneImageUrl(dataUrl);
-                          notifyStatus('Uploaded Daytime 360° image from PC!');
-                        }}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => sceneDayFileRef.current?.click()}
-                        className="px-2.5 py-1 rounded-lg bg-blue-600 text-white text-[11px] font-bold flex items-center gap-1 cursor-pointer"
-                      >
-                        <Upload className="w-3 h-3" />
-                        <span>Upload from PC</span>
-                      </button>
-                    </div>
-                    <input
-                      type="text"
-                      value={newSceneImageUrl}
-                      onChange={e => setNewSceneImageUrl(e.target.value)}
-                      placeholder="Paste 360° image URL or upload from PC..."
-                      className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2"
-                    />
-                  </div>
-
-                  {/* Night 360 Image Upload or URL */}
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <label className="font-bold text-slate-700">
-                        Evening / Night 360° Image (Optional)
-                      </label>
-                      <input
-                        ref={sceneNightFileRef}
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={async e => {
-                          const file = e.target.files?.[0];
-                          if (!file) return;
-                          const dataUrl = await compressImageFile(file, 2200);
-                          setNewSceneNightUrl(dataUrl);
-                          notifyStatus('Uploaded Night 360° image from PC!');
-                        }}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => sceneNightFileRef.current?.click()}
-                        className="px-2.5 py-1 rounded-lg bg-indigo-600 text-white text-[11px] font-bold flex items-center gap-1 cursor-pointer"
-                      >
-                        <Upload className="w-3 h-3" />
-                        <span>Upload Night PC</span>
-                      </button>
-                    </div>
-                    <input
-                      type="text"
-                      value={newSceneNightUrl}
-                      onChange={e => setNewSceneNightUrl(e.target.value)}
-                      placeholder="Paste evening 360° URL or leave blank..."
-                      className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2"
-                    />
-                  </div>
-
-                  <div className="sm:col-span-2 flex gap-2">
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Description
+                    </label>
                     <input
                       type="text"
                       value={newSceneDesc}
                       onChange={e => setNewSceneDesc(e.target.value)}
-                      placeholder="Scene architectural description..."
+                      placeholder="Panoramic view details..."
+                      className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newSceneImageUrl}
+                      onChange={e => setNewSceneImageUrl(e.target.value)}
+                      placeholder="Day 360° Panorama Image URL..."
                       className="flex-1 bg-white border border-slate-300 rounded-xl px-3 py-2"
+                    />
+                    <input
+                      ref={sceneDayFileRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={async e => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const comp = await compressImageFile(file);
+                        const url = await uploadMediaDataUrlToServer(comp, file.name);
+                        setNewSceneImageUrl(url);
+                      }}
                     />
                     <button
                       type="button"
-                      onClick={() => {
-                        if (!newSceneImageUrl.trim()) {
-                          notifyStatus(
-                            'Please upload or paste a 360° image URL first.'
-                          );
-                          return;
-                        }
-                        const currentScenes =
-                          editingProject.virtualTour?.scenes || [];
-                        const newSceneObj = {
-                          id: `scene-${Date.now()}`,
-                          name:
-                            newSceneName.trim() ||
-                            `360° View ${currentScenes.length + 1}`,
-                          category: newSceneCategory || '360° View',
-                          imageUrl: newSceneImageUrl.trim(),
-                          nightImageUrl:
-                            newSceneNightUrl.trim() || newSceneImageUrl.trim(),
-                          description: newSceneDesc.trim(),
-                          hotspots: []
-                        };
-                        const updatedScenes = [...currentScenes, newSceneObj];
-                        setEditingProject({
-                          ...editingProject,
-                          virtualTour: {
-                            ...editingProject.virtualTour,
-                            provider: 'custom360',
-                            url: updatedScenes[0].imageUrl,
-                            scenes: updatedScenes
-                          }
-                        });
-                        setNewSceneName('');
-                        setNewSceneImageUrl('');
-                        setNewSceneNightUrl('');
-                        setNewSceneDesc('');
-                        notifyStatus(
-                          `Added "${newSceneObj.name}" to 360° Virtual Tour!`
-                        );
-                      }}
-                      className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold shrink-0 cursor-pointer"
+                      onClick={() => sceneDayFileRef.current?.click()}
+                      className="px-3 py-2 rounded-xl bg-slate-900 text-white font-bold cursor-pointer"
                     >
-                      + Add 360° Scene
+                      Upload Day
+                    </button>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newSceneNightUrl}
+                      onChange={e => setNewSceneNightUrl(e.target.value)}
+                      placeholder="Evening/Night 360° Image URL (Optional)..."
+                      className="flex-1 bg-white border border-slate-300 rounded-xl px-3 py-2"
+                    />
+                    <input
+                      ref={sceneNightFileRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={async e => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const comp = await compressImageFile(file);
+                        const url = await uploadMediaDataUrlToServer(comp, file.name);
+                        setNewSceneNightUrl(url);
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => sceneNightFileRef.current?.click()}
+                      className="px-3 py-2 rounded-xl bg-slate-700 text-white font-bold cursor-pointer"
+                    >
+                      Upload Night
                     </button>
                   </div>
                 </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!newSceneName.trim() || !newSceneImageUrl.trim()) return;
+                    const newScene = {
+                      id: `scene-${Date.now()}`,
+                      name: newSceneName.trim(),
+                      category: newSceneCategory,
+                      imageUrl: newSceneImageUrl.trim(),
+                      nightImageUrl: newSceneNightUrl.trim() || newSceneImageUrl.trim(),
+                      description: newSceneDesc.trim() || editingProject.tagline,
+                      hotspots: []
+                    };
+                    const currentScenes = editingProject.virtualTour?.scenes || [];
+                    setEditingProject({
+                      ...editingProject,
+                      virtualTour: {
+                        ...editingProject.virtualTour,
+                        provider: 'custom360',
+                        url: newScene.imageUrl,
+                        scenes: [...currentScenes, newScene]
+                      }
+                    });
+                    setNewSceneName('');
+                    setNewSceneImageUrl('');
+                    setNewSceneNightUrl('');
+                    setNewSceneDesc('');
+                    notifyStatus('Added 360° Virtual Tour Scene!');
+                  }}
+                  className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold cursor-pointer"
+                >
+                  + Add 360° Scene
+                </button>
               </div>
 
-              {/* Existing 360° Scenes CRUD Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {(editingProject.virtualTour?.scenes || []).map((sc, sIdx) => (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {(editingProject.virtualTour?.scenes || []).map(sc => (
                   <div
                     key={sc.id}
-                    className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-2xs flex flex-col justify-between"
+                    className="rounded-xl overflow-hidden bg-white border border-slate-200 flex flex-col justify-between"
                   >
-                    <div className="relative h-40 bg-slate-900">
-                      <img
-                        src={sc.imageUrl}
-                        alt={sc.name}
-                        className="w-full h-full object-cover"
-                      />
-                      <span className="absolute top-2.5 left-2.5 px-2.5 py-0.5 rounded-md bg-slate-950/80 text-white text-[10px] font-bold">
-                        Scene {sIdx + 1}: {sc.category || '360° Panorama'}
-                      </span>
-                      <div className="absolute top-2.5 right-2.5 flex gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setEditingSceneId(
-                              editingSceneId === sc.id ? null : sc.id
-                            )
-                          }
-                          className="px-2.5 py-1 rounded-lg bg-white text-slate-900 font-bold text-[11px] shadow-sm cursor-pointer"
-                        >
-                          {editingSceneId === sc.id ? 'Done' : 'Edit Scene'}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const nextScenes = (
-                              editingProject.virtualTour?.scenes || []
-                            ).filter(item => item.id !== sc.id);
-                            setEditingProject({
-                              ...editingProject,
-                              virtualTour: {
-                                ...editingProject.virtualTour,
-                                url:
-                                  nextScenes[0]?.imageUrl ||
-                                  editingProject.virtualTour.url,
-                                scenes: nextScenes
-                              }
-                            });
-                            notifyStatus(`Deleted 360° scene "${sc.name}".`);
-                          }}
-                          className="p-1.5 rounded-lg bg-rose-600 text-white shadow-sm cursor-pointer"
-                          title="Delete 360° Scene"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="p-4 space-y-2.5">
-                      <div className="font-extrabold text-slate-900 text-sm">
-                        {sc.name}
-                      </div>
-                      {sc.description && (
-                        <p className="text-[11px] text-slate-500">
-                          {sc.description}
-                        </p>
-                      )}
-
-                      {editingSceneId === sc.id && (
-                        <div className="pt-2 border-t border-slate-100 space-y-2">
-                          <input
-                            type="text"
-                            value={sc.name}
-                            onChange={e => {
-                              const next = (
-                                editingProject.virtualTour?.scenes || []
-                              ).map(item =>
-                                item.id === sc.id
-                                  ? { ...item, name: e.target.value }
-                                  : item
-                              );
-                              setEditingProject({
-                                ...editingProject,
-                                virtualTour: {
-                                  ...editingProject.virtualTour,
-                                  scenes: next
-                                }
-                              });
-                            }}
-                            placeholder="Scene Name"
-                            className="w-full bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5"
-                          />
-                          <input
-                            type="text"
-                            value={sc.imageUrl}
-                            onChange={e => {
-                              const next = (
-                                editingProject.virtualTour?.scenes || []
-                              ).map(item =>
-                                item.id === sc.id
-                                  ? { ...item, imageUrl: e.target.value }
-                                  : item
-                              );
-                              setEditingProject({
-                                ...editingProject,
-                                virtualTour: {
-                                  ...editingProject.virtualTour,
-                                  url: next[0]?.imageUrl || e.target.value,
-                                  scenes: next
-                                }
-                              });
-                            }}
-                            placeholder="Daytime 360 Image URL"
-                            className="w-full bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 font-mono"
-                          />
-                          <input
-                            type="text"
-                            value={sc.nightImageUrl || ''}
-                            onChange={e => {
-                              const next = (
-                                editingProject.virtualTour?.scenes || []
-                              ).map(item =>
-                                item.id === sc.id
-                                  ? { ...item, nightImageUrl: e.target.value }
-                                  : item
-                              );
-                              setEditingProject({
-                                ...editingProject,
-                                virtualTour: {
-                                  ...editingProject.virtualTour,
-                                  scenes: next
-                                }
-                              });
-                            }}
-                            placeholder="Nighttime 360 Image URL"
-                            className="w-full bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 font-mono"
-                          />
+                    <img
+                      src={sc.imageUrl}
+                      alt={sc.name}
+                      className="h-32 w-full object-cover"
+                    />
+                    <div className="p-3 flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="font-bold text-slate-900 truncate">
+                          {sc.name}
                         </div>
-                      )}
+                        <div className="text-[10px] text-slate-500">
+                          {sc.category}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setEditingProject({
+                            ...editingProject,
+                            virtualTour: {
+                              ...editingProject.virtualTour,
+                              scenes: (
+                                editingProject.virtualTour?.scenes || []
+                              ).filter(s => s.id !== sc.id)
+                            }
+                          })
+                        }
+                        className="p-1.5 text-rose-600 cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </div>
                 ))}
               </div>
 
-              {/* Live 360° Preview */}
               <div className="pt-2">
-                <h5 className="font-extrabold text-slate-800 mb-2">
+                <h5 className="font-extrabold text-slate-900 mb-2">
                   Live 360° Virtual Tour Preview
                 </h5>
                 <Advibe3DVirtualTour
                   project={editingProject}
                   embedded={true}
-                  className="w-full h-[380px] rounded-2xl border border-slate-200"
+                  className="h-[400px]"
                 />
               </div>
             </div>
           )}
 
-          {/* SUB-TAB 5: MASTER PLAN IMAGE UPLOAD (PC OR URL) & SECTOR PINS CRUD */}
+          {/* SUB-TAB 6: MASTER PLAN & HOTSPOTS CRUD */}
           {editorSubTab === 'hotspots' && (
-            <div className="space-y-6 text-xs">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                {/* Master Plan Layout Image Upload / URL */}
-                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-extrabold text-slate-900 text-sm">
-                        Master Plan Layout Map Image
-                      </h4>
-                      <p className="text-[11px] text-slate-500">
-                        Upload Master Plan map from your local PC or paste an online URL.
-                      </p>
-                    </div>
-                    <input
-                      ref={masterPlanFileRef}
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={async e => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        const dataUrl = await compressImageFile(file, 2200);
-                        setEditingProject({
-                          ...editingProject,
-                          masterPlan: {
-                            ...editingProject.masterPlan,
-                            imageUrl: dataUrl
-                          }
-                        });
-                        notifyStatus('Uploaded Master Plan image from local PC!');
-                      }}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => masterPlanFileRef.current?.click()}
-                      className="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold flex items-center gap-1.5 cursor-pointer"
-                    >
-                      <Upload className="w-3.5 h-3.5" />
-                      <span>Upload Map from PC</span>
-                    </button>
-                  </div>
-
+            <div className="space-y-5 text-xs">
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="font-extrabold text-slate-900">
+                    Master Plan Layout Map Image
+                  </label>
                   <input
-                    type="text"
-                    value={editingProject.masterPlan.imageUrl}
-                    onChange={e =>
+                    ref={masterPlanFileRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={async e => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const comp = await compressImageFile(file);
+                      const url = await uploadMediaDataUrlToServer(comp, file.name);
                       setEditingProject({
                         ...editingProject,
                         masterPlan: {
                           ...editingProject.masterPlan,
-                          imageUrl: e.target.value
+                          imageUrl: url
                         }
-                      })
-                    }
-                    placeholder="Or paste Master Plan online URL..."
-                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-900"
+                      });
+                    }}
                   />
-
-                  <div className="h-48 rounded-xl overflow-hidden bg-slate-200 border border-slate-300">
-                    <img
-                      src={editingProject.masterPlan.imageUrl}
-                      alt="Master Plan Preview"
-                      className="w-full h-full object-contain bg-slate-900"
-                    />
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => masterPlanFileRef.current?.click()}
+                    className="px-3 py-1.5 rounded-xl bg-blue-600 text-white font-bold cursor-pointer"
+                  >
+                    Upload Master Plan Image
+                  </button>
                 </div>
-
-                {/* Satellite Map Image Upload / URL */}
-                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-extrabold text-slate-900 text-sm">
-                        Satellite / Drone Overlay Map (Optional)
-                      </h4>
-                      <p className="text-[11px] text-slate-500">
-                        Upload a satellite or drone map from local PC or paste an online URL.
-                      </p>
-                    </div>
-                    <input
-                      ref={satelliteMapFileRef}
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={async e => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        const dataUrl = await compressImageFile(file, 2200);
-                        setEditingProject({
-                          ...editingProject,
-                          masterPlan: {
-                            ...editingProject.masterPlan,
-                            satelliteImageUrl: dataUrl
-                          }
-                        });
-                        notifyStatus('Uploaded Satellite Map from local PC!');
-                      }}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => satelliteMapFileRef.current?.click()}
-                      className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold flex items-center gap-1.5 cursor-pointer"
-                    >
-                      <Upload className="w-3.5 h-3.5" />
-                      <span>Upload Satellite PC</span>
-                    </button>
-                  </div>
-
-                  <input
-                    type="text"
-                    value={editingProject.masterPlan.satelliteImageUrl || ''}
-                    onChange={e =>
-                      setEditingProject({
-                        ...editingProject,
-                        masterPlan: {
-                          ...editingProject.masterPlan,
-                          satelliteImageUrl: e.target.value
-                        }
-                      })
-                    }
-                    placeholder="Or paste Satellite Map online URL..."
-                    className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-slate-900"
-                  />
-
-                  <div className="h-48 rounded-xl overflow-hidden bg-slate-200 border border-slate-300 flex items-center justify-center">
-                    {editingProject.masterPlan.satelliteImageUrl ? (
-                      <img
-                        src={editingProject.masterPlan.satelliteImageUrl}
-                        alt="Satellite Map Preview"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <span className="text-slate-400">
-                        No satellite overlay set
-                      </span>
-                    )}
-                  </div>
-                </div>
+                <input
+                  type="text"
+                  value={editingProject.masterPlan?.imageUrl || ''}
+                  onChange={e =>
+                    setEditingProject({
+                      ...editingProject,
+                      masterPlan: {
+                        ...editingProject.masterPlan,
+                        imageUrl: e.target.value
+                      }
+                    })
+                  }
+                  className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2"
+                />
               </div>
 
-              {/* Add Master Plan Sector Hotspot Pin */}
-              <div className="p-4 rounded-2xl bg-blue-50/70 border border-blue-200 space-y-3">
-                <h4 className="font-extrabold text-blue-950 text-sm">
-                  Add Interactive Sector / Block Hotspot Pin on Master Plan
+              <div className="p-4 rounded-2xl bg-blue-50/60 border border-blue-200 space-y-3">
+                <h4 className="font-extrabold text-slate-900">
+                  Add Sector / Block Pin to Master Plan
                 </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5">
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
                   <input
                     type="text"
                     value={newHotspotTitle}
                     onChange={e => setNewHotspotTitle(e.target.value)}
-                    placeholder="Sector / Block Title (e.g. Executive Block)"
+                    placeholder="Pin Title (e.g. Executive Block)"
                     className="bg-white border border-slate-300 rounded-xl px-3 py-2"
                   />
-                  <select
-                    value={newHotspotCategory}
-                    onChange={e => setNewHotspotCategory(e.target.value)}
+                  <input
+                    type="number"
+                    min={5}
+                    max={95}
+                    value={newHotspotX}
+                    onChange={e => setNewHotspotX(Number(e.target.value))}
+                    placeholder="X % (0-100)"
                     className="bg-white border border-slate-300 rounded-xl px-3 py-2"
-                  >
-                    <option value="Residential Block">Residential Block</option>
-                    <option value="Commercial Broadway">
-                      Commercial Broadway
-                    </option>
-                    <option value="Civic Center">Civic Center</option>
-                    <option value="Park / Green Spine">Park / Green Spine</option>
-                  </select>
-                  <div className="grid grid-cols-2 gap-2">
-                    <input
-                      type="number"
-                      min={5}
-                      max={95}
-                      value={newHotspotX}
-                      onChange={e => setNewHotspotX(Number(e.target.value))}
-                      placeholder="X %"
-                      className="bg-white border border-slate-300 rounded-xl px-2.5 py-2"
-                      title="Horizontal Position %"
-                    />
-                    <input
-                      type="number"
-                      min={5}
-                      max={95}
-                      value={newHotspotY}
-                      onChange={e => setNewHotspotY(Number(e.target.value))}
-                      placeholder="Y %"
-                      className="bg-white border border-slate-300 rounded-xl px-2.5 py-2"
-                      title="Vertical Position %"
-                    />
-                  </div>
-                  <select
-                    value={newHotspotLinkedProp}
-                    onChange={e => setNewHotspotLinkedProp(e.target.value)}
+                  />
+                  <input
+                    type="number"
+                    min={5}
+                    max={95}
+                    value={newHotspotY}
+                    onChange={e => setNewHotspotY(Number(e.target.value))}
+                    placeholder="Y % (0-100)"
                     className="bg-white border border-slate-300 rounded-xl px-3 py-2"
-                  >
-                    <option value="">-- Link Property (Optional) --</option>
-                    {properties.map(p => (
-                      <option key={p.id} value={p.id}>
-                        {p.title.slice(0, 35)} ({p.priceFormatted})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="flex gap-2">
+                  />
                   <input
                     type="text"
                     value={newHotspotDesc}
                     onChange={e => setNewHotspotDesc(e.target.value)}
-                    placeholder="Sector description (plot sizes, possession status)..."
-                    className="flex-1 bg-white border border-slate-300 rounded-xl px-3 py-2"
+                    placeholder="Sector Description..."
+                    className="bg-white border border-slate-300 rounded-xl px-3 py-2"
                   />
                   <button
                     type="button"
@@ -2664,9 +2737,7 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
                         title: newHotspotTitle.trim(),
                         category: newHotspotCategory,
                         status: newHotspotStatus,
-                        description:
-                          newHotspotDesc.trim() ||
-                          'Verified plots and units available.',
+                        description: newHotspotDesc.trim(),
                         linkedPropertyId: newHotspotLinkedProp || undefined
                       };
                       setEditingProject({
@@ -2674,38 +2745,33 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
                         masterPlan: {
                           ...editingProject.masterPlan,
                           hotspots: [
-                            ...editingProject.masterPlan.hotspots,
+                            ...(editingProject.masterPlan?.hotspots || []),
                             pin
                           ]
                         }
                       });
                       setNewHotspotTitle('');
                       setNewHotspotDesc('');
-                      notifyStatus(`Added "${pin.title}" pin to Master Plan!`);
                     }}
                     className="px-4 py-2 rounded-xl bg-blue-600 text-white font-bold cursor-pointer"
                   >
-                    + Add Sector Pin
+                    + Add Pin
                   </button>
                 </div>
               </div>
 
-              {/* Existing Hotspots List */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {editingProject.masterPlan.hotspots.map(hp => (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {(editingProject.masterPlan?.hotspots || []).map(hp => (
                   <div
                     key={hp.id}
-                    className="p-3.5 rounded-xl bg-white border border-slate-200 flex items-center justify-between gap-3"
+                    className="p-3 rounded-xl bg-white border border-slate-200 flex items-center justify-between"
                   >
                     <div>
                       <div className="font-bold text-slate-900">
-                        {hp.title}{' '}
-                        <span className="text-[10px] font-mono text-blue-600">
-                          (X: {hp.x}%, Y: {hp.y}%)
-                        </span>
+                        {hp.title} ({hp.x}%, {hp.y}%)
                       </div>
                       <div className="text-[11px] text-slate-500">
-                        {hp.category} • {hp.description}
+                        {hp.description}
                       </div>
                     </div>
                     <button
@@ -2716,12 +2782,12 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
                           masterPlan: {
                             ...editingProject.masterPlan,
                             hotspots: editingProject.masterPlan.hotspots.filter(
-                              item => item.id !== hp.id
+                              i => i.id !== hp.id
                             )
                           }
                         })
                       }
-                      className="p-1.5 rounded-lg bg-rose-50 text-rose-600 cursor-pointer"
+                      className="text-rose-600 cursor-pointer"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -2731,99 +2797,62 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
             </div>
           )}
 
-          {/* SUB-TAB 6: LINKED UNITS MANAGER */}
+          {/* SUB-TAB 7: LINKED UNITS */}
           {editorSubTab === 'units' && (
             <div className="space-y-4 text-xs">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
-                <div>
-                  <h4 className="font-extrabold text-slate-900 text-sm">
-                    Linked Property Units ({editingProject.linkedPropertyIds.length} Selected)
-                  </h4>
-                  <p className="text-[11px] text-slate-500">
-                    Select properties to showcase inside this AdVibe project&apos;s Linked Units inventory section.
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={unitSearchQuery}
-                    onChange={e => setUnitSearchQuery(e.target.value)}
-                    placeholder="Filter properties..."
-                    className="bg-white border border-slate-300 rounded-xl px-3 py-1.5"
-                  />
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setEditingProject({
-                        ...editingProject,
-                        linkedPropertyIds: properties.map(p => p.id)
-                      })
-                    }
-                    className="px-3 py-1.5 rounded-xl bg-blue-600 text-white font-bold cursor-pointer"
-                  >
-                    Select All
-                  </button>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              <input
+                type="text"
+                value={unitSearchQuery}
+                onChange={e => setUnitSearchQuery(e.target.value)}
+                placeholder="Filter properties to link with this AdVibe project..."
+                className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2"
+              />
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto p-1">
                 {properties
-                  .filter(
-                    p =>
-                      !unitSearchQuery.trim() ||
-                      p.title
-                        .toLowerCase()
-                        .includes(unitSearchQuery.toLowerCase()) ||
-                      p.location.society
-                        .toLowerCase()
-                        .includes(unitSearchQuery.toLowerCase())
+                  .filter(p =>
+                    p.title.toLowerCase().includes(unitSearchQuery.toLowerCase())
                   )
                   .map(prop => {
-                    const isLinked = editingProject.linkedPropertyIds.includes(
-                      prop.id
-                    );
+                    const isLinked = (
+                      editingProject.linkedPropertyIds || []
+                    ).includes(prop.id);
                     return (
                       <div
                         key={prop.id}
                         onClick={() => {
-                          const nextIds = isLinked
-                            ? editingProject.linkedPropertyIds.filter(
-                                id => id !== prop.id
-                              )
-                            : [...editingProject.linkedPropertyIds, prop.id];
+                          const current = editingProject.linkedPropertyIds || [];
+                          const next = isLinked
+                            ? current.filter(id => id !== prop.id)
+                            : [...current, prop.id];
                           setEditingProject({
                             ...editingProject,
-                            linkedPropertyIds: nextIds
+                            linkedPropertyIds: next
                           });
                         }}
-                        className={`p-3 rounded-2xl border flex items-center gap-3 cursor-pointer transition-all ${
+                        className={`p-3 rounded-xl border flex items-center gap-3 cursor-pointer ${
                           isLinked
-                            ? 'bg-blue-50/80 border-blue-500 shadow-xs'
-                            : 'bg-white border-slate-200 hover:bg-slate-50'
+                            ? 'bg-blue-50 border-blue-500'
+                            : 'bg-white border-slate-200'
                         }`}
                       >
                         <img
                           src={prop.images[0]}
                           alt={prop.title}
-                          className="w-14 h-12 rounded-xl object-cover shrink-0"
+                          className="w-12 h-12 rounded-lg object-cover shrink-0"
                         />
                         <div className="min-w-0 flex-1">
                           <div className="font-bold text-slate-900 truncate">
                             {prop.title}
                           </div>
-                          <div className="text-[11px] text-blue-600 font-bold">
-                            {prop.priceFormatted} • {prop.area} {prop.areaUnit}
-                          </div>
-                          <div className="text-[10px] text-slate-500 truncate">
-                            {prop.location.society}, {prop.location.city}
+                          <div className="text-blue-600 font-extrabold">
+                            {prop.priceFormatted}
                           </div>
                         </div>
                         <input
                           type="checkbox"
                           checked={isLinked}
                           onChange={() => {}}
-                          className="w-4 h-4 text-blue-600 rounded pointer-events-none"
+                          className="w-4 h-4 pointer-events-none"
                         />
                       </div>
                     );
@@ -2832,141 +2861,128 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
             </div>
           )}
 
-          {/* SUB-TAB 7: PAYMENT PLANS CRUD */}
+          {/* SUB-TAB 8: PRICING & PAYMENT PLANS CRUD */}
           {editorSubTab === 'pricing' && (
-            <div className="space-y-4 text-xs">
-              <div className="flex items-center justify-between">
-                <h4 className="font-extrabold text-slate-900 text-sm">
-                  Payment Plans &amp; Investment Tiers ({editingProject.pricingTiers.length})
+            <div className="space-y-5 text-xs">
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+                <h4 className="font-extrabold text-slate-900">
+                  Add Payment Plan / Unit Investment Tier
                 </h4>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const newTier = {
-                      id: `tier-${Date.now()}`,
-                      unitType: '10 Marla Executive Plot / Unit',
-                      size: '250 Sq Yds',
-                      totalPrice: 'PKR 75,00,000',
-                      downPayment: 'PKR 15,00,000 (20%)',
-                      monthlyInstallment: 'PKR 1,25,000 x 36 Months',
-                      possession: 'On Ballot / Allocation',
-                      features: ['100% NOC Verified', 'Direct Boulevard Access']
-                    };
-                    setEditingProject({
-                      ...editingProject,
-                      pricingTiers: [...editingProject.pricingTiers, newTier]
-                    });
-                  }}
-                  className="px-3.5 py-2 rounded-xl bg-blue-600 text-white font-bold cursor-pointer"
-                >
-                  + Add Payment Tier
-                </button>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  <input
+                    type="text"
+                    value={newTierUnit}
+                    onChange={e => setNewTierUnit(e.target.value)}
+                    placeholder="Unit Type (e.g. 5 Marla Residential Plot)"
+                    className="bg-white border border-slate-300 rounded-xl px-3 py-2"
+                  />
+                  <input
+                    type="text"
+                    value={newTierSize}
+                    onChange={e => setNewTierSize(e.target.value)}
+                    placeholder="Size (e.g. 125 Sq Yds)"
+                    className="bg-white border border-slate-300 rounded-xl px-3 py-2"
+                  />
+                  <input
+                    type="text"
+                    value={newTierTotal}
+                    onChange={e => setNewTierTotal(e.target.value)}
+                    placeholder="Total Price (e.g. PKR 38,00,000)"
+                    className="bg-white border border-slate-300 rounded-xl px-3 py-2"
+                  />
+                  <input
+                    type="text"
+                    value={newTierDown}
+                    onChange={e => setNewTierDown(e.target.value)}
+                    placeholder="Down Payment (e.g. PKR 7,50,000)"
+                    className="bg-white border border-slate-300 rounded-xl px-3 py-2"
+                  />
+                  <input
+                    type="text"
+                    value={newTierMonthly}
+                    onChange={e => setNewTierMonthly(e.target.value)}
+                    placeholder="Monthly Installment (e.g. PKR 65,000 x 36)"
+                    className="bg-white border border-slate-300 rounded-xl px-3 py-2"
+                  />
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newTierPossession}
+                      onChange={e => setNewTierPossession(e.target.value)}
+                      placeholder="Possession Terms"
+                      className="flex-1 bg-white border border-slate-300 rounded-xl px-3 py-2"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!newTierUnit.trim() || !newTierTotal.trim()) return;
+                        const tier = {
+                          id: `tier-${Date.now()}`,
+                          unitType: newTierUnit.trim(),
+                          size: newTierSize.trim() || 'Standard',
+                          totalPrice: newTierTotal.trim(),
+                          downPayment: newTierDown.trim() || '20% Booking',
+                          monthlyInstallment:
+                            newTierMonthly.trim() || '36 Monthly Installments',
+                          possession:
+                            newTierPossession.trim() || 'Immediate Allocation',
+                          features: [
+                            '100% Verified Legal Title',
+                            'Direct Developer Allocation'
+                          ]
+                        };
+                        setEditingProject({
+                          ...editingProject,
+                          pricingTiers: [
+                            ...(editingProject.pricingTiers || []),
+                            tier
+                          ]
+                        });
+                        setNewTierUnit('');
+                        setNewTierSize('');
+                        setNewTierTotal('');
+                        setNewTierDown('');
+                        setNewTierMonthly('');
+                      }}
+                      className="px-4 py-2 rounded-xl bg-blue-600 text-white font-bold cursor-pointer shrink-0"
+                    >
+                      + Add Tier
+                    </button>
+                  </div>
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {editingProject.pricingTiers.map(tier => (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {(editingProject.pricingTiers || []).map(t => (
                   <div
-                    key={tier.id}
-                    className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2.5"
+                    key={t.id}
+                    className="p-4 rounded-2xl bg-white border border-slate-200 flex items-center justify-between gap-2"
                   >
-                    <div className="flex items-center justify-between gap-2">
-                      <input
-                        type="text"
-                        value={tier.unitType}
-                        onChange={e =>
-                          setEditingProject({
-                            ...editingProject,
-                            pricingTiers: editingProject.pricingTiers.map(t =>
-                              t.id === tier.id
-                                ? { ...t, unitType: e.target.value }
-                                : t
-                            )
-                          })
-                        }
-                        className="flex-1 bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 font-bold"
-                      />
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setEditingProject({
-                            ...editingProject,
-                            pricingTiers: editingProject.pricingTiers.filter(
-                              t => t.id !== tier.id
-                            )
-                          })
-                        }
-                        className="p-1.5 rounded-lg bg-rose-50 text-rose-600 cursor-pointer"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                    <div>
+                      <div className="font-extrabold text-slate-900">
+                        {t.unitType} ({t.size})
+                      </div>
+                      <div className="text-blue-600 font-black">
+                        {t.totalPrice} • Down: {t.downPayment}
+                      </div>
+                      <div className="text-[11px] text-slate-500">
+                        {t.monthlyInstallment}
+                      </div>
                     </div>
-
-                    <div className="grid grid-cols-2 gap-2">
-                      <input
-                        type="text"
-                        value={tier.size}
-                        onChange={e =>
-                          setEditingProject({
-                            ...editingProject,
-                            pricingTiers: editingProject.pricingTiers.map(t =>
-                              t.id === tier.id
-                                ? { ...t, size: e.target.value }
-                                : t
-                            )
-                          })
-                        }
-                        placeholder="Size"
-                        className="bg-white border border-slate-300 rounded-lg px-2.5 py-1.5"
-                      />
-                      <input
-                        type="text"
-                        value={tier.totalPrice}
-                        onChange={e =>
-                          setEditingProject({
-                            ...editingProject,
-                            pricingTiers: editingProject.pricingTiers.map(t =>
-                              t.id === tier.id
-                                ? { ...t, totalPrice: e.target.value }
-                                : t
-                            )
-                          })
-                        }
-                        placeholder="Total Price"
-                        className="bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 font-bold text-blue-700"
-                      />
-                      <input
-                        type="text"
-                        value={tier.downPayment}
-                        onChange={e =>
-                          setEditingProject({
-                            ...editingProject,
-                            pricingTiers: editingProject.pricingTiers.map(t =>
-                              t.id === tier.id
-                                ? { ...t, downPayment: e.target.value }
-                                : t
-                            )
-                          })
-                        }
-                        placeholder="Down Payment"
-                        className="bg-white border border-slate-300 rounded-lg px-2.5 py-1.5"
-                      />
-                      <input
-                        type="text"
-                        value={tier.monthlyInstallment}
-                        onChange={e =>
-                          setEditingProject({
-                            ...editingProject,
-                            pricingTiers: editingProject.pricingTiers.map(t =>
-                              t.id === tier.id
-                                ? { ...t, monthlyInstallment: e.target.value }
-                                : t
-                            )
-                          })
-                        }
-                        placeholder="Monthly Installment"
-                        className="bg-white border border-slate-300 rounded-lg px-2.5 py-1.5"
-                      />
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setEditingProject({
+                          ...editingProject,
+                          pricingTiers: editingProject.pricingTiers.filter(
+                            i => i.id !== t.id
+                          )
+                        })
+                      }
+                      className="text-rose-600 cursor-pointer"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 ))}
               </div>
@@ -2975,103 +2991,91 @@ export const AdvibeAdminManager: React.FC<AdvibeAdminManagerProps> = ({
         </div>
       )}
 
-      {/* 3. INQUIRIES & LEADS CRM TAB */}
+      {/* 3. INQUIRIES & LEADS TAB */}
       {activeTab === 'leads' && (
         <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-slate-700">
-              <thead className="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold border-b border-slate-200">
-                <tr>
-                  <th className="py-3 px-4">Client</th>
-                  <th className="py-3 px-4">Project</th>
-                  <th className="py-3 px-4">Preferred Unit</th>
-                  <th className="py-3 px-4">Message</th>
-                  <th className="py-3 px-4">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {leads.map(lead => (
-                  <tr key={lead.id} className="hover:bg-slate-50">
-                    <td className="py-3 px-4">
-                      <div className="font-bold text-slate-900">{lead.name}</div>
-                      <div className="text-[11px] text-slate-500">
-                        {lead.phone} • {lead.email}
-                      </div>
-                    </td>
-                    <td className="py-3 px-4 font-semibold">
+          <table className="w-full text-left text-xs">
+            <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase text-[10px] font-bold">
+              <tr>
+                <th className="py-3 px-4">Client</th>
+                <th className="py-3 px-4">Project &amp; Unit</th>
+                <th className="py-3 px-4">Contact</th>
+                <th className="py-3 px-4">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {leads.map(lead => (
+                <tr key={lead.id}>
+                  <td className="py-3 px-4 font-bold text-slate-900">
+                    {lead.name}
+                    <div className="text-[10px] text-slate-400">
+                      {lead.createdAt}
+                    </div>
+                  </td>
+                  <td className="py-3 px-4">
+                    <div className="font-bold text-blue-600">
                       {lead.projectTitle}
-                    </td>
-                    <td className="py-3 px-4 text-blue-600 font-bold">
+                    </div>
+                    <div className="text-[11px] text-slate-500">
                       {lead.preferredUnit}
-                    </td>
-                    <td className="py-3 px-4 max-w-xs truncate">
-                      {lead.message}
-                    </td>
-                    <td className="py-3 px-4">
-                      <select
-                        value={lead.status}
-                        onChange={e =>
-                          onUpdateLeadStatus(lead.id, e.target.value as any)
-                        }
-                        className="bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1 text-xs font-bold"
-                      >
-                        <option value="new">New</option>
-                        <option value="contacted">Contacted</option>
-                        <option value="site_visit_booked">
-                          Site Visit Booked
-                        </option>
-                        <option value="closed">Closed / Won</option>
-                      </select>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                    </div>
+                  </td>
+                  <td className="py-3 px-4">
+                    <div>{lead.phone}</div>
+                    <div className="text-[10px] text-slate-400">{lead.email}</div>
+                  </td>
+                  <td className="py-3 px-4">
+                    <select
+                      value={lead.status}
+                      onChange={e =>
+                        onUpdateLeadStatus(lead.id, e.target.value as any)
+                      }
+                      className="bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1 font-bold"
+                    >
+                      <option value="new">New Inquiry</option>
+                      <option value="contacted">Contacted</option>
+                      <option value="site_visit_booked">Site Visit Booked</option>
+                      <option value="closed">Closed / Converted</option>
+                    </select>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
 
       {/* 4. AGENCY PERMISSIONS TAB */}
       {activeTab === 'permissions' && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-4">
-          <h4 className="text-sm font-extrabold text-slate-900">
-            Certified Agency AdVibe Publishing Permissions
-          </h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-            {agencies.map(ag => (
-              <div
-                key={ag.id}
-                className="p-3.5 rounded-xl border border-slate-200 flex items-center justify-between gap-3"
-              >
-                <div className="flex items-center gap-3">
-                  <img
-                    src={ag.avatar || ag.logo}
-                    alt={ag.name}
-                    className="w-10 h-10 rounded-xl object-cover"
-                  />
-                  <div>
-                    <div className="font-bold text-slate-900">
-                      {ag.companyName}
-                    </div>
-                    <div className="text-[11px] text-slate-500">{ag.name}</div>
-                  </div>
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-3">
+          {agencies.map(ag => (
+            <div
+              key={ag.id}
+              className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs"
+            >
+              <div>
+                <div className="font-bold text-slate-900">
+                  {ag.companyName || ag.name}
                 </div>
-                <button
-                  type="button"
-                  onClick={() =>
-                    onToggleAgencyAdvibePermission(ag.id, !ag.canManageAdvibe)
-                  }
-                  className={`px-3 py-1.5 rounded-xl font-bold cursor-pointer ${
-                    ag.canManageAdvibe
-                      ? 'bg-emerald-600 text-white'
-                      : 'bg-slate-200 text-slate-700'
-                  }`}
-                >
-                  {ag.canManageAdvibe ? 'Authorized' : 'Restricted'}
-                </button>
+                <div className="text-[11px] text-slate-500">
+                  {ag.name} • {ag.city}
+                </div>
               </div>
-            ))}
-          </div>
+              <button
+                type="button"
+                onClick={() =>
+                  onToggleAgencyAdvibePermission(ag.id, !ag.canManageAdvibe)
+                }
+                className={`px-3.5 py-1.5 rounded-xl font-bold cursor-pointer ${
+                  ag.canManageAdvibe
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-slate-200 text-slate-700'
+                }`}
+              >
+                {ag.canManageAdvibe ? 'AdVibe Authorized' : 'Grant Access'}
+              </button>
+            </div>
+          ))}
         </div>
       )}
     </div>
