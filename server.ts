@@ -13,6 +13,7 @@ import {
   INITIAL_HERO_SLIDES,
   INITIAL_BLOGS,
   INITIAL_SITE_PORTIONS,
+  INITIAL_TOP_MENU_ITEMS,
 } from "./src/data/mockData";
 import {
   initialAdvibeProjects,
@@ -39,6 +40,7 @@ interface GlobalPortalState {
   userAccounts: any[];
   advibeProjects: any[];
   advibeLeads: any[];
+  topMenuItems: any[];
   updatedAt: string;
   revision: number;
 }
@@ -89,6 +91,58 @@ function mergeAccountsWithDefaultPasswords(savedAccounts?: any[]): any[] {
   return merged;
 }
 
+function normalizeTopMenuItems(items?: any[]): any[] {
+  if (!Array.isArray(items) || items.length === 0) {
+    return INITIAL_TOP_MENU_ITEMS.map((item) => ({ ...item }));
+  }
+  const normalized = items
+    .filter((item) => item && typeof item === "object" && item.id && item.label)
+    .map((item, idx) => ({
+      id: String(item.id),
+      label: String(item.label).trim() || "Menu Item",
+      iconName: String(item.iconName || "Home"),
+      order: typeof item.order === "number" ? item.order : idx + 1,
+      isVisible: item.isVisible !== false,
+      targetSectionId: item.targetSectionId || undefined,
+      customUrl: item.customUrl || undefined,
+    }));
+
+  for (const defItem of INITIAL_TOP_MENU_ITEMS) {
+    if (!normalized.some((i) => i.id === defItem.id)) {
+      normalized.push({ ...defItem, order: normalized.length + 1 });
+    }
+  }
+
+  return normalized
+    .sort((a, b) => a.order - b.order)
+    .map((item, idx) => ({ ...item, order: idx + 1 }));
+}
+
+function syncPropertiesWithAgencies(properties: any[], agencies: any[]): any[] {
+  if (!Array.isArray(properties)) return INITIAL_PROPERTIES;
+  if (!Array.isArray(agencies) || agencies.length === 0) return properties;
+
+  const agencyMap = new Map(agencies.map((a) => [a.id, a]));
+  return properties.map((prop) => {
+    const matchedAgency = agencyMap.get(prop.agencyId);
+    if (!matchedAgency) return prop;
+    const latestAvatar =
+      matchedAgency.avatar || matchedAgency.logo || prop.agentAvatar;
+    return {
+      ...prop,
+      agentName: matchedAgency.name || prop.agentName,
+      agentCompany: matchedAgency.companyName || prop.agentCompany,
+      agentPhone: matchedAgency.phone || prop.agentPhone,
+      agentWhatsApp: (
+        matchedAgency.whatsapp ||
+        prop.agentWhatsApp ||
+        ""
+      ).replace(/[^0-9]/g, ""),
+      agentAvatar: latestAvatar,
+    };
+  });
+}
+
 function normalizeHeroSlides(slides: any[], fallback: any[]): any[] {
   if (!Array.isArray(slides) || slides.length === 0) {
     return fallback;
@@ -112,7 +166,7 @@ function normalizeHeroSlides(slides: any[], fallback: any[]): any[] {
 
       return {
         ...s,
-        id: s.id || `slide-${ idx + 1 }-${ Date.now() }`,
+        id: s.id || `slide-${idx + 1}-${Date.now()}`,
         imageUrl: primaryImage,
         galleryImages: gallery.length > 0 ? gallery : [primaryImage],
         videoUrl,
@@ -154,7 +208,10 @@ function normalizeHeroSlides(slides: any[], fallback: any[]): any[] {
 
 function buildDefaultState(): GlobalPortalState {
   return {
-    properties: INITIAL_PROPERTIES,
+    properties: syncPropertiesWithAgencies(
+      INITIAL_PROPERTIES,
+      INITIAL_AGENCIES
+    ),
     agencies: INITIAL_AGENCIES,
     provinceCityData: INITIAL_PROVINCE_CITIES,
     heroSlides: normalizeHeroSlides(INITIAL_HERO_SLIDES, INITIAL_HERO_SLIDES),
@@ -164,6 +221,7 @@ function buildDefaultState(): GlobalPortalState {
     userAccounts: mergeAccountsWithDefaultPasswords(initialUserAccounts),
     advibeProjects: initialAdvibeProjects,
     advibeLeads: initialAdvibeLeads,
+    topMenuItems: normalizeTopMenuItems(INITIAL_TOP_MENU_ITEMS),
     updatedAt: new Date().toISOString(),
     revision: 1,
   };
@@ -191,15 +249,18 @@ function loadGlobalState(): GlobalPortalState {
       parseStateFile(STATE_FILE) || parseStateFile(BACKUP_STATE_FILE);
 
     if (parsed && typeof parsed === "object") {
+      const hydratedAgencies =
+        Array.isArray(parsed.agencies) && parsed.agencies.length > 0
+          ? parsed.agencies
+          : defaults.agencies;
+      const rawProperties =
+        Array.isArray(parsed.properties) && parsed.properties.length > 0
+          ? parsed.properties
+          : defaults.properties;
+
       const hydrated: GlobalPortalState = {
-        properties:
-          Array.isArray(parsed.properties) && parsed.properties.length > 0
-            ? parsed.properties
-            : defaults.properties,
-        agencies:
-          Array.isArray(parsed.agencies) && parsed.agencies.length > 0
-            ? parsed.agencies
-            : defaults.agencies,
+        properties: syncPropertiesWithAgencies(rawProperties, hydratedAgencies),
+        agencies: hydratedAgencies,
         provinceCityData:
           Array.isArray(parsed.provinceCityData) &&
           parsed.provinceCityData.length > 0
@@ -231,6 +292,7 @@ function loadGlobalState(): GlobalPortalState {
         advibeLeads: Array.isArray(parsed.advibeLeads)
           ? parsed.advibeLeads
           : defaults.advibeLeads,
+        topMenuItems: normalizeTopMenuItems(parsed.topMenuItems),
         updatedAt: parsed.updatedAt || defaults.updatedAt,
         revision:
           typeof parsed.revision === "number" && parsed.revision > 0
@@ -270,8 +332,6 @@ function persistDataUriToDiskIfNeeded(val: string): string {
   );
   if (!match) return val;
 
-  // Convert Base64 media larger than 80KB into a permanent static file on disk
-  // so portal-state.json remains fast and light for Incognito & mobile browsers.
   if (trimmed.length < 80000) return val;
 
   try {
@@ -281,6 +341,7 @@ function persistDataUriToDiskIfNeeded(val: string): string {
     let ext = mimeType.split("/")[1] || "bin";
     if (ext === "jpeg") ext = "jpg";
     if (ext === "quicktime") ext = "mov";
+    ext = ext.replace(/[^a-zA-Z0-9]/g, "");
     const fileName = `media-${Date.now()}-${Math.random()
       .toString(36)
       .slice(2, 8)}.${ext}`;
@@ -333,6 +394,15 @@ function sanitizeStateForClient(state: GlobalPortalState): GlobalPortalState {
       INITIAL_HERO_SLIDES
     );
   }
+  if (Array.isArray(copy.topMenuItems)) {
+    copy.topMenuItems = normalizeTopMenuItems(copy.topMenuItems);
+  }
+  if (Array.isArray(copy.properties) && Array.isArray(copy.agencies)) {
+    copy.properties = syncPropertiesWithAgencies(
+      copy.properties,
+      copy.agencies
+    );
+  }
   return copy;
 }
 
@@ -346,6 +416,7 @@ async function startServer() {
   app.use((req, res, next) => {
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.setHeader("X-Frame-Options", "SAMEORIGIN");
+    res.setHeader("X-XSS-Protection", "1; mode=block");
     res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
     if (req.path.startsWith("/api/")) {
       res.setHeader(
@@ -359,7 +430,6 @@ async function startServer() {
     next();
   });
 
-  // Serve uploaded images & 360 tour videos from both data/uploads and public/uploads
   app.use(
     "/uploads",
     express.static(UPLOADS_DIR, {
@@ -432,7 +502,6 @@ async function startServer() {
     });
   });
 
-  // Dedicated endpoint for uploading images & 360° project tour videos
   app.post("/api/media/upload", (req, res) => {
     try {
       const { dataUrl, fileName } = req.body || {};
@@ -452,6 +521,7 @@ async function startServer() {
       let ext = mimeType.split("/")[1] || "bin";
       if (ext === "jpeg") ext = "jpg";
       if (ext === "quicktime") ext = "mov";
+      ext = ext.replace(/[^a-zA-Z0-9]/g, "");
 
       const safeBaseName = String(fileName || "project-media")
         .replace(/\.[^/.]+$/, "")
@@ -484,7 +554,6 @@ async function startServer() {
     res.json(sanitizeStateForClient(globalPortalState));
   });
 
-  // Dedicated endpoint for Hero Banner & Portfolio Deck permanent global updates
   app.get("/api/hero-slides", (_req, res) => {
     res.json({
       status: "ok",
@@ -539,6 +608,7 @@ async function startServer() {
       "userAccounts",
       "advibeProjects",
       "advibeLeads",
+      "topMenuItems",
     ];
 
     let changed = false;
@@ -586,10 +656,14 @@ async function startServer() {
             );
             changed = true;
           }
-        } else if (
-          updates[key].length > 0 ||
-          key === "advibeLeads"
-        ) {
+        } else if (key === "topMenuItems") {
+          if (updates.topMenuItems.length > 0) {
+            globalPortalState.topMenuItems = normalizeTopMenuItems(
+              updates.topMenuItems
+            );
+            changed = true;
+          }
+        } else if (updates[key].length > 0 || key === "advibeLeads") {
           (globalPortalState as any)[key] = updates[key];
           changed = true;
         }
@@ -597,6 +671,10 @@ async function startServer() {
     }
 
     if (changed) {
+      globalPortalState.properties = syncPropertiesWithAgencies(
+        globalPortalState.properties,
+        globalPortalState.agencies
+      );
       saveGlobalState(globalPortalState);
       broadcastStateUpdate();
     }
