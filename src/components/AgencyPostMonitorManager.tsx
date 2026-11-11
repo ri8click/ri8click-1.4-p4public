@@ -9,7 +9,8 @@ import {
   X,
   Phone,
   UserCheck,
-  Camera
+  Camera,
+  CheckCircle2
 } from 'lucide-react';
 import { AgencyAccount, Property } from '../types';
 import { PAKISTAN_AGENT_AVATARS } from '../data/defaultAccounts';
@@ -23,6 +24,23 @@ interface AgencyPostMonitorManagerProps {
   onUpdateAgencies?: (agencies: AgencyAccount[]) => void;
 }
 
+async function uploadMediaDataUrl(dataUrl: string, fileName: string): Promise<string> {
+  try {
+    const res = await fetch('/api/media/upload', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ dataUrl, fileName })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data?.url) return data.url;
+    }
+  } catch {
+    // Fallback to inline dataUrl
+  }
+  return dataUrl;
+}
+
 export const AgencyPostMonitorManager: React.FC<
   AgencyPostMonitorManagerProps
 > = ({
@@ -33,11 +51,12 @@ export const AgencyPostMonitorManager: React.FC<
   onUpdateAgencies
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [editingAgency, setEditingAgency] = useState<AgencyAccount | null>(
-    null
-  );
+  const [editingAgency, setEditingAgency] = useState<AgencyAccount | null>(null);
   const [isAddingAgency, setIsAddingAgency] = useState(false);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const newAgencyFileRef = useRef<HTMLInputElement | null>(null);
 
   const [newAgencyForm, setNewAgencyForm] = useState({
     name: '',
@@ -52,25 +71,31 @@ export const AgencyPostMonitorManager: React.FC<
     role: 'agency' as const
   });
 
+  const showToast = (msg: string) => {
+    setNotice(msg);
+    setTimeout(() => setNotice(null), 4000);
+  };
+
   const filteredAgencies = agencies.filter(
     a =>
       a.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      a.companyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (a.companyName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       a.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (a.primarySociety || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handlePhotoUpload = (
     file: File | undefined,
-    onDone: (dataUrl: string) => void
+    onDone: (permanentUrl: string) => void
   ) => {
     if (!file) return;
+    setIsUploadingPhoto(true);
     const reader = new FileReader();
     reader.onload = ev => {
       const img = new Image();
-      img.onload = () => {
+      img.onload = async () => {
         const canvas = document.createElement('canvas');
-        const MAX_SIZE = 500;
+        const MAX_SIZE = 600;
         let w = img.width;
         let h = img.height;
         if (w > h && w > MAX_SIZE) {
@@ -84,10 +109,15 @@ export const AgencyPostMonitorManager: React.FC<
         canvas.height = h;
         const ctx = canvas.getContext('2d');
         ctx?.drawImage(img, 0, 0, w, h);
-        onDone(canvas.toDataURL('image/jpeg', 0.86));
+        const compressed = canvas.toDataURL('image/jpeg', 0.88);
+        const permanentUrl = await uploadMediaDataUrl(compressed, file.name);
+        onDone(permanentUrl);
+        setIsUploadingPhoto(false);
       };
+      img.onerror = () => setIsUploadingPhoto(false);
       img.src = ev.target?.result as string;
     };
+    reader.onerror = () => setIsUploadingPhoto(false);
     reader.readAsDataURL(file);
   };
 
@@ -95,18 +125,25 @@ export const AgencyPostMonitorManager: React.FC<
     e.preventDefault();
     if (!editingAgency) return;
 
+    const latestPhoto =
+      editingAgency.avatar || editingAgency.logo || PAKISTAN_AGENT_AVATARS.malikZeeshan;
+
     if (onUpdateAgencies) {
       const updated = agencies.map(a =>
         a.id === editingAgency.id
           ? {
               ...editingAgency,
-              logo: editingAgency.avatar || editingAgency.logo
+              avatar: latestPhoto,
+              logo: latestPhoto
             }
           : a
       );
       onUpdateAgencies(updated);
+      showToast(
+        `Updated "${editingAgency.name}" (${editingAgency.companyName}) and synchronized specialist photo across all posted advertisements!`
+      );
     } else {
-      onUpdateAgencyLimit(editingAgency.id, editingAgency.postLimit);
+      onUpdateAgencyLimit(editingAgency.id, editingAgency.postLimit || 25);
     }
     setEditingAgency(null);
   };
@@ -143,6 +180,7 @@ export const AgencyPostMonitorManager: React.FC<
 
     if (onAddNewAgency) {
       onAddNewAgency(newAgency);
+      showToast(`Authorized new brokerage "${newAgency.companyName}" globally!`);
     }
 
     setIsAddingAgency(false);
@@ -169,7 +207,7 @@ export const AgencyPostMonitorManager: React.FC<
             <span>Certified Agencies, Quotas &amp; Specialist Profiles</span>
           </h3>
           <p className="text-xs text-slate-500">
-            Edit agency details, upload regional specialist portraits, adjust ad limits, and onboard verified Pakistani brokerages.
+            Edit agency details and upload specialist portraits — changes automatically propagate to all advertisements posted by that agent.
           </p>
         </div>
 
@@ -195,6 +233,13 @@ export const AgencyPostMonitorManager: React.FC<
         </div>
       </div>
 
+      {notice && (
+        <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+          <span>{notice}</span>
+        </div>
+      )}
+
       {/* Add New Agency Card */}
       {isAddingAgency && (
         <div className="bg-blue-50/70 border border-blue-200 rounded-xl p-5 space-y-4">
@@ -217,7 +262,7 @@ export const AgencyPostMonitorManager: React.FC<
           >
             <div>
               <label className="block text-[11px] font-semibold text-slate-700 mb-1">
-                Agent / Principal Name
+                Agent / Principal Name *
               </label>
               <input
                 type="text"
@@ -233,7 +278,7 @@ export const AgencyPostMonitorManager: React.FC<
 
             <div>
               <label className="block text-[11px] font-semibold text-slate-700 mb-1">
-                Company / Agency Name
+                Company / Agency Name *
               </label>
               <input
                 type="text"
@@ -320,6 +365,42 @@ export const AgencyPostMonitorManager: React.FC<
               />
             </div>
 
+            <div className="sm:col-span-2 md:col-span-3 flex items-center gap-3 pt-1">
+              <img
+                src={newAgencyForm.avatar}
+                alt="Preview"
+                className="w-12 h-12 rounded-xl object-cover border border-slate-300"
+              />
+              <input
+                ref={newAgencyFileRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={e =>
+                  handlePhotoUpload(e.target.files?.[0], url =>
+                    setNewAgencyForm(prev => ({ ...prev, avatar: url }))
+                  )
+                }
+              />
+              <button
+                type="button"
+                onClick={() => newAgencyFileRef.current?.click()}
+                className="px-3 py-1.5 rounded-lg bg-slate-900 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+              >
+                <Camera className="w-3.5 h-3.5" />
+                <span>{isUploadingPhoto ? 'Uploading...' : 'Upload Specialist Photo'}</span>
+              </button>
+              <input
+                type="text"
+                value={newAgencyForm.avatar}
+                onChange={e =>
+                  setNewAgencyForm({ ...newAgencyForm, avatar: e.target.value })
+                }
+                placeholder="Or paste photo URL..."
+                className="flex-1 px-3 py-1.5 rounded-lg border border-slate-300 text-xs bg-white font-mono"
+              />
+            </div>
+
             <div className="sm:col-span-2 md:col-span-3 flex justify-end gap-2 pt-2">
               <button
                 type="button"
@@ -359,14 +440,15 @@ export const AgencyPostMonitorManager: React.FC<
                 const agencyPropertiesCount = properties.filter(
                   p => p.agencyId === agency.id
                 ).length;
+                const limit = agency.postLimit || 25;
                 const percentage = Math.min(
-                  Math.round((agencyPropertiesCount / agency.postLimit) * 100),
+                  Math.round((agencyPropertiesCount / limit) * 100),
                   100
                 );
                 const isNearLimit = percentage >= 85;
                 const resolvedAvatar = resolvePakistanAgentAvatar(
                   agency.avatar || agency.logo,
-                  `${agency.id} ${agency.name} ${agency.companyName}`,
+                  `${agency.id} ${agency.name} ${agency.companyName || ''}`,
                   idx
                 );
 
@@ -378,13 +460,14 @@ export const AgencyPostMonitorManager: React.FC<
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-3">
                         <img
+                          key={resolvedAvatar}
                           src={resolvedAvatar}
                           alt={agency.name}
                           className="w-10 h-10 rounded-xl object-cover object-top border border-slate-200"
                         />
                         <div>
                           <div className="font-bold text-slate-900 flex items-center gap-1.5">
-                            <span>{agency.companyName}</span>
+                            <span>{agency.companyName || agency.name}</span>
                             {agency.verified && (
                               <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
                             )}
@@ -417,14 +500,14 @@ export const AgencyPostMonitorManager: React.FC<
                     </td>
 
                     <td className="py-3 px-4 text-center font-bold text-blue-600">
-                      {agency.postLimit}
+                      {limit}
                     </td>
 
                     <td className="py-3 px-4">
                       <div className="space-y-1 min-w-[110px]">
                         <div className="flex justify-between text-[10px] font-semibold">
                           <span>
-                            {agencyPropertiesCount}/{agency.postLimit}
+                            {agencyPropertiesCount}/{limit}
                           </span>
                           <span
                             className={
@@ -451,7 +534,13 @@ export const AgencyPostMonitorManager: React.FC<
 
                     <td className="py-3 px-4 text-right">
                       <button
-                        onClick={() => setEditingAgency({ ...agency })}
+                        onClick={() =>
+                          setEditingAgency({
+                            ...agency,
+                            avatar: resolvedAvatar,
+                            logo: resolvedAvatar
+                          })
+                        }
                         className="px-2.5 py-1.5 rounded-lg text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-600 hover:text-white transition-colors inline-flex items-center gap-1 cursor-pointer"
                       >
                         <Edit3 className="w-3.5 h-3.5" />
@@ -473,7 +562,7 @@ export const AgencyPostMonitorManager: React.FC<
             <div className="bg-slate-900 text-white px-5 py-4 flex items-center justify-between">
               <h4 className="font-bold text-sm flex items-center gap-2">
                 <Building2 className="w-4 h-4 text-amber-400" />
-                <span>Edit Agency Profile, Photo &amp; Quota</span>
+                <span>Edit Agency Profile, Specialist Photo &amp; Quota</span>
               </h4>
               <button
                 onClick={() => setEditingAgency(null)}
@@ -491,7 +580,7 @@ export const AgencyPostMonitorManager: React.FC<
                 <img
                   src={editingAgency.avatar || editingAgency.logo}
                   alt={editingAgency.name}
-                  className="w-16 h-16 rounded-2xl object-cover object-top border-2 border-blue-500"
+                  className="w-16 h-16 rounded-2xl object-cover object-top border-2 border-blue-500 shrink-0"
                 />
                 <div className="flex-1 space-y-2">
                   <input
@@ -500,10 +589,10 @@ export const AgencyPostMonitorManager: React.FC<
                     accept="image/*"
                     className="hidden"
                     onChange={e =>
-                      handlePhotoUpload(e.target.files?.[0], dataUrl =>
+                      handlePhotoUpload(e.target.files?.[0], permanentUrl =>
                         setEditingAgency(prev =>
                           prev
-                            ? { ...prev, avatar: dataUrl, logo: dataUrl }
+                            ? { ...prev, avatar: permanentUrl, logo: permanentUrl }
                             : null
                         )
                       )
@@ -512,10 +601,15 @@ export const AgencyPostMonitorManager: React.FC<
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold flex items-center gap-1.5 cursor-pointer"
+                    disabled={isUploadingPhoto}
+                    className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                   >
                     <Camera className="w-3.5 h-3.5" />
-                    <span>Upload Specialist Photo</span>
+                    <span>
+                      {isUploadingPhoto
+                        ? 'Uploading Specialist Photo...'
+                        : 'Upload Specialist Photo from PC'}
+                    </span>
                   </button>
                   <input
                     type="text"
@@ -530,6 +624,9 @@ export const AgencyPostMonitorManager: React.FC<
                     placeholder="Or paste photo URL..."
                     className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1 font-mono"
                   />
+                  <p className="text-[10.5px] text-emerald-700 font-semibold">
+                    Saving will automatically update this photo on all advertisements posted by {editingAgency.name}.
+                  </p>
                 </div>
               </div>
 
@@ -558,7 +655,7 @@ export const AgencyPostMonitorManager: React.FC<
                   <input
                     type="text"
                     required
-                    value={editingAgency.companyName}
+                    value={editingAgency.companyName || ''}
                     onChange={e =>
                       setEditingAgency({
                         ...editingAgency,
@@ -590,7 +687,7 @@ export const AgencyPostMonitorManager: React.FC<
                   </label>
                   <input
                     type="text"
-                    value={editingAgency.primarySociety}
+                    value={editingAgency.primarySociety || ''}
                     onChange={e =>
                       setEditingAgency({
                         ...editingAgency,
@@ -625,7 +722,7 @@ export const AgencyPostMonitorManager: React.FC<
                     type="number"
                     min="1"
                     max="1000"
-                    value={editingAgency.postLimit}
+                    value={editingAgency.postLimit || 25}
                     onChange={e =>
                       setEditingAgency({
                         ...editingAgency,
@@ -650,7 +747,7 @@ export const AgencyPostMonitorManager: React.FC<
                   className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold flex items-center gap-1.5 shadow-sm cursor-pointer"
                 >
                   <Save className="w-3.5 h-3.5" />
-                  <span>Save Agency Profile</span>
+                  <span>Save Agency &amp; Sync All Ads</span>
                 </button>
               </div>
             </form>
