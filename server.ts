@@ -29,7 +29,8 @@ const PUBLIC_UPLOADS_DIR = path.resolve(process.cwd(), "public", "uploads");
 const STATE_FILE = path.join(DATA_DIR, "portal-state.json");
 const BACKUP_STATE_FILE = path.join(DATA_DIR, "portal-state.backup.json");
 
-interface GlobalPortalState {
+export interface GlobalPortalState {
+  schemaVersion: string;
   properties: any[];
   agencies: any[];
   provinceCityData: any[];
@@ -154,8 +155,8 @@ function normalizeHeroSlides(slides: any[], fallback: any[]): any[] {
         Array.isArray(s.galleryImages) && s.galleryImages.length > 0
           ? s.galleryImages.filter(Boolean)
           : s.imageUrl
-          ? [s.imageUrl]
-          : [];
+            ? [s.imageUrl]
+            : [];
       const primaryImage = gallery[0] || s.imageUrl || "";
       const videoUrl =
         s.videoUrl || s.samplePropertyData?.virtualTourVideoUrl || "";
@@ -208,6 +209,7 @@ function normalizeHeroSlides(slides: any[], fallback: any[]): any[] {
 
 function buildDefaultState(): GlobalPortalState {
   return {
+    schemaVersion: "ri8click_db_v2",
     properties: syncPropertiesWithAgencies(
       INITIAL_PROPERTIES,
       INITIAL_AGENCIES
@@ -258,7 +260,8 @@ function loadGlobalState(): GlobalPortalState {
           ? parsed.properties
           : defaults.properties;
 
-      const hydrated: GlobalPortalState = {
+      return {
+        schemaVersion: "ri8click_db_v2",
         properties: syncPropertiesWithAgencies(rawProperties, hydratedAgencies),
         agencies: hydratedAgencies,
         provinceCityData:
@@ -299,7 +302,6 @@ function loadGlobalState(): GlobalPortalState {
             ? parsed.revision
             : 1,
       };
-      return hydrated;
     }
   } catch (err) {
     console.error("Failed to hydrate portal-state.json:", err);
@@ -332,7 +334,7 @@ function persistDataUriToDiskIfNeeded(val: string): string {
   );
   if (!match) return val;
 
-  if (trimmed.length < 80000) return val;
+  if (trimmed.length < 60000) return val;
 
   try {
     ensureDirectories();
@@ -425,24 +427,17 @@ async function startServer() {
       );
       res.setHeader("Pragma", "no-cache");
       res.setHeader("Expires", "0");
-      res.setHeader("Surrogate-Control", "no-store");
     }
     next();
   });
 
   app.use(
     "/uploads",
-    express.static(UPLOADS_DIR, {
-      maxAge: "365d",
-      immutable: true,
-    })
+    express.static(UPLOADS_DIR, { maxAge: "365d", immutable: true })
   );
   app.use(
     "/uploads",
-    express.static(PUBLIC_UPLOADS_DIR, {
-      maxAge: "365d",
-      immutable: true,
-    })
+    express.static(PUBLIC_UPLOADS_DIR, { maxAge: "365d", immutable: true })
   );
 
   app.use(express.json({ limit: "150mb" }));
@@ -541,6 +536,15 @@ async function startServer() {
         .status(500)
         .json({ error: "Failed to save uploaded media file" });
     }
+  });
+
+  // Structured Database Export & Import Endpoints for 1:1 SQL/NoSQL Migration
+  app.get("/api/db/export", (_req, res) => {
+    res.json({
+      schemaVersion: "ri8click_db_v2",
+      exportedAt: new Date().toISOString(),
+      tables: sanitizeStateForClient(globalPortalState),
+    });
   });
 
   app.get("/api/state/version", (_req, res) => {
