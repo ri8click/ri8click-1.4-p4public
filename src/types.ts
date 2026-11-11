@@ -13,6 +13,16 @@ export type PropertyType =
   | 'Warehouse'
   | string;
 
+export interface TopNavigationItem {
+  id: string;
+  label: string;
+  iconName: string;
+  order: number;
+  isVisible: boolean;
+  targetSectionId?: string;
+  customUrl?: string;
+}
+
 export interface LocationData {
   province: string;
   city: string;
@@ -113,6 +123,8 @@ export interface ConsortiumDivision {
   badge: string;
   iconName: string;
   image: string;
+  linkUrl?: string;
+  linkTarget?: '_self' | '_blank';
   capabilities: string[];
   stats: { label: string; value: string }[];
   contactPerson: string;
@@ -214,6 +226,8 @@ export interface SiteSectionPortion {
 export type AdVibeProjectType =
   | 'Housing Society'
   | 'Commercial Mall & Tower'
+  | 'High-Rise Tower'
+  | 'Mixed-Use Megaproject'
   | 'Luxury Villa Enclave'
   | 'Waterfront / Eco Resort'
   | 'Mixed-Use Highrise'
@@ -225,6 +239,7 @@ export type AdVibeProjectStatus =
   | 'Booking Open'
   | 'Under Construction'
   | 'Ready for Possession'
+  | 'Ready to Move'
   | 'Completed'
   | string;
 
@@ -248,7 +263,8 @@ export type AdVibeSectionType =
   | 'developer'
   | 'enquiry'
   | 'lead_form'
-  | 'cta';
+  | 'cta'
+  | 'disclaimer';
 
 export interface AdVibeTheme {
   primaryColor: string;
@@ -269,6 +285,7 @@ export interface AdVibeSEO {
   metaTitle: string;
   metaDescription: string;
   ogImage: string;
+  canonicalUrl?: string;
   keywords: string[];
 }
 
@@ -279,6 +296,7 @@ export interface AdVibeDeveloper {
   foundedYear?: number;
   deliveredProjectsCount?: number;
   completedProjects?: number;
+  ongoingProjects?: number;
   rating?: number;
   description: string;
   headOffice?: string;
