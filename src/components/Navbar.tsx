@@ -1,30 +1,33 @@
-import React, { useState } from 'react';
-import { 
-  Heart, 
-  PlusCircle, 
-  Settings, 
-  User, 
-  Menu, 
-  X, 
-  Building2, 
-  ShieldCheck, 
-  ShieldAlert,
-  Compass, 
-  Home, 
-  Layers, 
+import React, { useState, useMemo } from 'react';
+import {
+  Heart,
+  PlusCircle,
+  Settings,
+  Menu,
+  X,
+  Building2,
+  ShieldCheck,
+  Compass,
+  Home,
+  Layers,
   Newspaper,
-  Calendar,
   Sparkles,
   Lock,
-  LogOut
+  LogOut,
+  MapPin,
+  Globe,
+  Star,
+  Phone
 } from 'lucide-react';
 import { Ri8ClickLogo } from './Ri8ClickLogo';
-import { AgencyAccount } from '../types';
+import { AgencyAccount, TopNavigationItem } from '../types';
 import { UserAccount } from '../data/defaultAccounts';
+import { INITIAL_TOP_MENU_ITEMS } from '../data/mockData';
 
 interface NavbarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
+  topMenuItems?: TopNavigationItem[];
   savedPropertiesCount: number;
   onOpenSavedModal: () => void;
   onOpenPostModal: () => void;
@@ -34,57 +37,96 @@ interface NavbarProps {
   currentRole: 'admin' | 'agency' | 'customer';
   currentAgency: AgencyAccount;
   currentUser: UserAccount | null;
-  onOpenLoginModal: (reason?: 'admin_required' | 'agency_required' | 'advibe_required' | 'general') => void;
+  onOpenLoginModal: (
+    reason?: 'admin_required' | 'agency_required' | 'advibe_required' | 'general'
+  ) => void;
   onLogout: () => void;
 }
+
+const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
+  Home,
+  Sparkles,
+  Building2,
+  Layers,
+  ShieldCheck,
+  Compass,
+  Newspaper,
+  MapPin,
+  Globe,
+  Star,
+  Phone
+};
 
 export const Navbar: React.FC<NavbarProps> = ({
   activeTab,
   setActiveTab,
+  topMenuItems = INITIAL_TOP_MENU_ITEMS,
   savedPropertiesCount,
   onOpenSavedModal,
   onOpenPostModal,
-  onOpenScheduleModal,
   onOpenAdmin,
   onOpenAuthRoleModal,
-  currentRole,
-  currentAgency,
   currentUser,
   onOpenLoginModal,
   onLogout
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const navLinks = [
-    { id: 'properties', label: 'Properties', icon: Home },
-    { id: 'advibe', label: 'AdVibe', icon: Sparkles },
-    { id: 'commercial', label: 'Commercial Plazas', icon: Building2 },
-    { id: 'modular', label: 'Capsule Houses', icon: Layers },
-    { id: 'agents', label: 'Certified Agents', icon: ShieldCheck },
-    { id: 'consortium', label: 'Consortium & UPVC', icon: Compass },
-    { id: 'news_blogs', label: 'News & Trends', icon: Newspaper },
-  ];
+  const visibleNavItems = useMemo(() => {
+    const base =
+      Array.isArray(topMenuItems) && topMenuItems.length > 0
+        ? topMenuItems
+        : INITIAL_TOP_MENU_ITEMS;
+    return [...base]
+      .filter(item => item.isVisible !== false)
+      .sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
+  }, [topMenuItems]);
 
-  const handleNavClick = (tabId: string) => {
-    setActiveTab(tabId);
+  const handleNavClick = (item: TopNavigationItem) => {
     setMobileMenuOpen(false);
-    
-    // Smooth scroll to corresponding sections if present
-    const map: Record<string, string> = {
+
+    if (item.customUrl && item.customUrl.trim()) {
+      const url = item.customUrl.trim();
+      if (url.startsWith('http://') || url.startsWith('https://')) {
+        window.open(url, '_blank', 'noopener,noreferrer');
+        return;
+      }
+      if (url.startsWith('#')) {
+        setActiveTab('properties');
+        setTimeout(() => {
+          const el = document.getElementById(url.slice(1));
+          if (el) el.scrollIntoView({ behavior: 'smooth' });
+        }, 60);
+        return;
+      }
+    }
+
+    if (item.id === 'advibe') {
+      setActiveTab('advibe');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    setActiveTab(item.id);
+
+    const defaultMap: Record<string, string> = {
       properties: 'properties-grid-section',
       commercial: 'commercial-section',
       modular: 'modular-section',
-      agents: 'agents-section',
       consortium: 'consortium-section',
-      news_blogs: 'news-blogs-section'
+      news_blogs: 'news-blogs-section',
+      agents: 'agents-section'
     };
-    if (map[tabId]) {
-      const el = document.getElementById(map[tabId]);
-      if (el) el.scrollIntoView({ behavior: 'smooth' });
+
+    const targetId = item.targetSectionId || defaultMap[item.id];
+    if (targetId) {
+      setTimeout(() => {
+        const el = document.getElementById(targetId);
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+      }, 60);
     }
   };
 
-  // Protected action handlers
   const handleAdminClick = () => {
     if (!currentUser || currentUser.role !== 'admin') {
       onOpenLoginModal('admin_required');
@@ -94,7 +136,10 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   const handlePostPropertyClick = () => {
-    if (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'agency')) {
+    if (
+      !currentUser ||
+      (currentUser.role !== 'admin' && currentUser.role !== 'agency')
+    ) {
       onOpenLoginModal('agency_required');
       return;
     }
@@ -106,27 +151,33 @@ export const Navbar: React.FC<NavbarProps> = ({
       {/* Top micro bar for corporate trust & security status */}
       <div className="bg-slate-900 text-slate-300 text-[11px] py-1 px-4 hidden sm:flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <span>Official Real Estate Portal & Consortium • Taxila, Faisal Hills, Islamabad</span>
+          <span>
+            Official Real Estate Portal &amp; Consortium • Taxila, Faisal Hills, Islamabad
+          </span>
           <span className="text-slate-600">|</span>
-          <span className="text-amber-400 font-semibold">100% Watermark Verified Portfolios</span>
+          <span className="text-amber-400 font-semibold">
+            100% Watermark Verified Portfolios
+          </span>
         </div>
         <div className="flex items-center gap-3">
           {currentUser ? (
             <>
               <button
                 onClick={onOpenAuthRoleModal}
-                className="hover:text-white transition-colors flex items-center gap-1 font-medium"
+                className="hover:text-white transition-colors flex items-center gap-1 font-medium cursor-pointer"
               >
                 <span>Authenticated:</span>
                 <span className="capitalize font-bold text-emerald-400">
-                  {currentUser.role === 'admin' ? 'Super Admin' : currentUser.companyName || currentUser.name}
+                  {currentUser.role === 'admin'
+                    ? 'Super Admin'
+                    : currentUser.companyName || currentUser.name}
                 </span>
               </button>
               <span className="text-slate-600">•</span>
               {currentUser.role === 'admin' ? (
                 <button
                   onClick={handleAdminClick}
-                  className="text-amber-400 hover:text-amber-300 transition-colors flex items-center gap-1 font-bold"
+                  className="text-amber-400 hover:text-amber-300 transition-colors flex items-center gap-1 font-bold cursor-pointer"
                 >
                   <Settings className="w-3 h-3" />
                   <span>Admin Console</span>
@@ -134,7 +185,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               ) : currentUser.role === 'agency' ? (
                 <button
                   onClick={onOpenAdmin}
-                  className="text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1 font-bold"
+                  className="text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1 font-bold cursor-pointer"
                   title="Open Certified Agent Panel"
                 >
                   <Building2 className="w-3 h-3" />
@@ -144,7 +195,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span className="text-slate-600">•</span>
               <button
                 onClick={onLogout}
-                className="text-rose-400 hover:text-rose-300 transition-colors flex items-center gap-1"
+                className="text-rose-400 hover:text-rose-300 transition-colors flex items-center gap-1 cursor-pointer"
                 title="Sign Out"
               >
                 <LogOut className="w-3 h-3" />
@@ -160,7 +211,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span className="text-slate-600">•</span>
               <button
                 onClick={() => onOpenLoginModal('general')}
-                className="text-blue-400 hover:text-white font-bold transition-colors flex items-center gap-1"
+                className="text-blue-400 hover:text-white font-bold transition-colors flex items-center gap-1 cursor-pointer"
               >
                 <ShieldCheck className="w-3 h-3" />
                 <span>Sign In / Agent Portal</span>
@@ -173,28 +224,43 @@ export const Navbar: React.FC<NavbarProps> = ({
       {/* Main Navbar */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 sm:h-18">
-          
           {/* Brand Logo */}
-          <div className="cursor-pointer" onClick={() => handleNavClick('properties')}>
+          <div
+            className="cursor-pointer"
+            onClick={() =>
+              handleNavClick({
+                id: 'properties',
+                label: 'Properties',
+                iconName: 'Home',
+                order: 1,
+                isVisible: true,
+                targetSectionId: 'properties-grid-section'
+              })
+            }
+          >
             <Ri8ClickLogo size="md" showSubtitle={true} variant="dark" />
           </div>
 
           {/* Desktop Navigation Links */}
           <nav className="hidden lg:flex items-center gap-1 xl:gap-2">
-            {navLinks.map((link) => {
-              const Icon = link.icon;
+            {visibleNavItems.map(link => {
+              const Icon = ICON_MAP[link.iconName] || Home;
               const isActive = activeTab === link.id;
               return (
                 <button
                   key={link.id}
-                  onClick={() => handleNavClick(link.id)}
-                  className={`px-3 py-2 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 whitespace-nowrap ${
-                    isActive 
-                      ? 'text-blue-700 bg-blue-50/80 shadow-2xs' 
+                  onClick={() => handleNavClick(link)}
+                  className={`px-3 py-2 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                    isActive
+                      ? 'text-blue-700 bg-blue-50/80 shadow-2xs'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
                   }`}
                 >
-                  <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-blue-600' : 'text-slate-400'}`} />
+                  <Icon
+                    className={`w-3.5 h-3.5 ${
+                      isActive ? 'text-blue-600' : 'text-slate-400'
+                    }`}
+                  />
                   <span>{link.label}</span>
                 </button>
               );
@@ -206,7 +272,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             {/* Saved Properties */}
             <button
               onClick={onOpenSavedModal}
-              className="relative p-2 rounded-lg text-slate-600 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+              className="relative p-2 rounded-lg text-slate-600 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
               title="Saved Properties"
             >
               <Heart className="w-5 h-5" />
@@ -217,21 +283,25 @@ export const Navbar: React.FC<NavbarProps> = ({
               )}
             </button>
 
-            {/* Post Property Button (Protected) */}
+            {/* Post Property Button */}
             <button
               onClick={handlePostPropertyClick}
-              className="px-3.5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs hover:shadow-md transition-all flex items-center gap-1.5 shrink-0"
-              title={currentUser ? "Post New Property" : "Agency Login Required to Post Property"}
+              className="px-3.5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs hover:shadow-md transition-all flex items-center gap-1.5 shrink-0 cursor-pointer"
+              title={
+                currentUser
+                  ? 'Post New Property'
+                  : 'Agency Login Required to Post Property'
+              }
             >
               <PlusCircle className="w-4 h-4" />
               <span className="hidden sm:inline">Post Property</span>
             </button>
 
-            {/* Role-Based Panel Pill Button: Admin Hub for Admin, Agent Panel for Agency, Hidden for Visitors */}
+            {/* Role-Based Panel Pill Button */}
             {currentUser?.role === 'admin' ? (
               <button
                 onClick={handleAdminClick}
-                className="p-2 sm:px-3 sm:py-2 rounded-lg border border-amber-400 bg-amber-50 text-amber-900 hover:bg-amber-100 text-xs font-semibold transition-colors flex items-center gap-1.5"
+                className="p-2 sm:px-3 sm:py-2 rounded-lg border border-amber-400 bg-amber-50 text-amber-900 hover:bg-amber-100 text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer"
                 title="Open Admin Console"
               >
                 <Settings className="w-4 h-4 text-amber-600" />
@@ -240,7 +310,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             ) : currentUser?.role === 'agency' ? (
               <button
                 onClick={onOpenAdmin}
-                className="p-2 sm:px-3 sm:py-2 rounded-lg border border-blue-400 bg-blue-50 text-blue-900 hover:bg-blue-100 text-xs font-semibold transition-colors flex items-center gap-1.5"
+                className="p-2 sm:px-3 sm:py-2 rounded-lg border border-blue-400 bg-blue-50 text-blue-900 hover:bg-blue-100 text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer"
                 title="Open Certified Agent Panel to manage listings and post ads"
               >
                 <Building2 className="w-4 h-4 text-blue-600" />
@@ -252,7 +322,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             {currentUser ? (
               <button
                 onClick={onOpenAuthRoleModal}
-                className="flex items-center gap-1.5 p-1 sm:px-2.5 sm:py-1 rounded-full bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 transition-colors text-xs"
+                className="flex items-center gap-1.5 p-1 sm:px-2.5 sm:py-1 rounded-full bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 transition-colors text-xs cursor-pointer"
                 title={`Signed in as ${currentUser.name} (${currentUser.role}). Click to switch or manage session.`}
               >
                 <img
@@ -261,13 +331,16 @@ export const Navbar: React.FC<NavbarProps> = ({
                   className="w-6 h-6 rounded-full object-cover border border-emerald-500"
                 />
                 <span className="hidden md:inline font-semibold text-emerald-900 truncate max-w-[100px]">
-                  {currentUser.role === 'admin' ? 'Super Admin' : (currentUser.companyName?.split(' ')[0] || currentUser.name.split(' ')[0])}
+                  {currentUser.role === 'admin'
+                    ? 'Super Admin'
+                    : currentUser.companyName?.split(' ')[0] ||
+                      currentUser.name.split(' ')[0]}
                 </span>
               </button>
             ) : (
               <button
                 onClick={() => onOpenLoginModal('general')}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-xs"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
                 title="Sign in to access agency and administrative features"
               >
                 <Lock className="w-3.5 h-3.5 text-amber-400" />
@@ -278,9 +351,13 @@ export const Navbar: React.FC<NavbarProps> = ({
             {/* Mobile Hamburger Menu Toggle */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+              className="lg:hidden p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 cursor-pointer"
             >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              {mobileMenuOpen ? (
+                <X className="w-6 h-6" />
+              ) : (
+                <Menu className="w-6 h-6" />
+              )}
             </button>
           </div>
         </div>
@@ -289,18 +366,24 @@ export const Navbar: React.FC<NavbarProps> = ({
       {/* Mobile Drawer Menu */}
       {mobileMenuOpen && (
         <div className="lg:hidden border-t border-slate-200 bg-white px-4 py-4 space-y-2 shadow-lg animate-in slide-in-from-top-2">
-          {navLinks.map((link) => {
-            const Icon = link.icon;
+          {visibleNavItems.map(link => {
+            const Icon = ICON_MAP[link.iconName] || Home;
             const isActive = activeTab === link.id;
             return (
               <button
                 key={link.id}
-                onClick={() => handleNavClick(link.id)}
-                className={`w-full px-3 py-2.5 rounded-lg text-xs font-semibold text-left flex items-center gap-2.5 ${
-                  isActive ? 'bg-blue-50 text-blue-700' : 'text-slate-700 hover:bg-slate-50'
+                onClick={() => handleNavClick(link)}
+                className={`w-full px-3 py-2.5 rounded-lg text-xs font-semibold text-left flex items-center gap-2.5 cursor-pointer ${
+                  isActive
+                    ? 'bg-blue-50 text-blue-700'
+                    : 'text-slate-700 hover:bg-slate-50'
                 }`}
               >
-                <Icon className={`w-4 h-4 ${isActive ? 'text-blue-600' : 'text-slate-400'}`} />
+                <Icon
+                  className={`w-4 h-4 ${
+                    isActive ? 'text-blue-600' : 'text-slate-400'
+                  }`}
+                />
                 <span>{link.label}</span>
               </button>
             );
@@ -313,10 +396,14 @@ export const Navbar: React.FC<NavbarProps> = ({
                     setMobileMenuOpen(false);
                     onOpenAuthRoleModal();
                   }}
-                  className="text-xs font-semibold text-emerald-700 py-1 flex items-center gap-1"
+                  className="text-xs font-semibold text-emerald-700 py-1 flex items-center gap-1 cursor-pointer"
                 >
                   <ShieldCheck className="w-3.5 h-3.5" />
-                  <span>{currentUser.role === 'admin' ? 'Super Admin' : currentUser.name}</span>
+                  <span>
+                    {currentUser.role === 'admin'
+                      ? 'Super Admin'
+                      : currentUser.name}
+                  </span>
                 </button>
                 {currentUser.role === 'admin' ? (
                   <button
@@ -324,7 +411,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                       setMobileMenuOpen(false);
                       handleAdminClick();
                     }}
-                    className="text-xs font-bold text-amber-600 py-1 flex items-center gap-1"
+                    className="text-xs font-bold text-amber-600 py-1 flex items-center gap-1 cursor-pointer"
                   >
                     <Settings className="w-3.5 h-3.5" />
                     <span>Admin Console</span>
@@ -335,7 +422,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                       setMobileMenuOpen(false);
                       onOpenAdmin();
                     }}
-                    className="text-xs font-bold text-blue-600 py-1 flex items-center gap-1"
+                    className="text-xs font-bold text-blue-600 py-1 flex items-center gap-1 cursor-pointer"
                   >
                     <Building2 className="w-3.5 h-3.5" />
                     <span>Agent Panel</span>
@@ -349,7 +436,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     setMobileMenuOpen(false);
                     onOpenLoginModal('general');
                   }}
-                  className="w-full text-xs font-bold text-blue-600 py-1 flex items-center justify-center gap-1.5"
+                  className="w-full text-xs font-bold text-blue-600 py-1 flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <ShieldCheck className="w-3.5 h-3.5" />
                   <span>Sign In / Agent Portal</span>
