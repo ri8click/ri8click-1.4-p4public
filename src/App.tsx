@@ -34,7 +34,8 @@ import {
   CONSORTIUM_DIVISIONS,
   INITIAL_HERO_SLIDES,
   INITIAL_BLOGS,
-  INITIAL_SITE_PORTIONS
+  INITIAL_SITE_PORTIONS,
+  INITIAL_TOP_MENU_ITEMS
 } from './data/mockData';
 import {
   initialUserAccounts,
@@ -51,7 +52,8 @@ import {
   SiteSectionPortion,
   AdVibeProject,
   AdVibeLead,
-  ConsortiumDivision
+  ConsortiumDivision,
+  TopNavigationItem
 } from './types';
 import { SlidersHorizontal, Sparkles, Plus, RotateCcw } from 'lucide-react';
 
@@ -65,7 +67,7 @@ function safeStorageGet(key: string): string | null {
       if (val !== null) return val;
     }
   } catch {
-    // Incognito / Private mode with storage disabled
+    // Incognito / Private mode
   }
   return memoryStorageFallback.get(key) ?? null;
 }
@@ -77,7 +79,7 @@ function safeStorageSet(key: string, value: string): void {
       window.localStorage.setItem(key, value);
     }
   } catch {
-    // Incognito / Private mode or storage quota exceeded — safely kept in memory
+    // Incognito / Private mode
   }
 }
 
@@ -87,21 +89,42 @@ function safeStorageRemove(key: string): void {
     if (typeof window !== 'undefined' && window.localStorage) {
       window.localStorage.removeItem(key);
     }
-  } catch {
-    // Ignore in restricted private mode
-  }
+  } catch {}
 }
 
-function sanitizePropertiesToPakistanAvatars(props: Property[]): Property[] {
+function sanitizePropertiesToPakistanAvatars(
+  props: Property[],
+  agenciesList?: AgencyAccount[]
+): Property[] {
   if (!Array.isArray(props) || props.length === 0) return INITIAL_PROPERTIES;
-  return props.map((p, idx) => ({
-    ...p,
-    agentAvatar: resolvePakistanAgentAvatar(
-      p.agentAvatar,
-      `${p.agencyId || ''} ${p.agentName || ''} ${p.agentCompany || ''}`,
-      idx
-    )
-  }));
+  const agencyMap = new Map(
+    (agenciesList || []).map(a => [a.id, a])
+  );
+
+  return props.map((p, idx) => {
+    const matchedAgency = agencyMap.get(p.agencyId);
+    const sourceAvatar =
+      matchedAgency?.avatar ||
+      matchedAgency?.logo ||
+      p.agentAvatar;
+
+    return {
+      ...p,
+      agentName: matchedAgency?.name || p.agentName,
+      agentCompany: matchedAgency?.companyName || p.agentCompany,
+      agentPhone: matchedAgency?.phone || p.agentPhone,
+      agentWhatsApp: (
+        matchedAgency?.whatsapp ||
+        p.agentWhatsApp ||
+        '923365666727'
+      ).replace(/[^0-9]/g, ''),
+      agentAvatar: resolvePakistanAgentAvatar(
+        sourceAvatar,
+        `${p.agencyId || ''} ${p.agentName || ''} ${p.agentCompany || ''}`,
+        idx
+      )
+    };
+  });
 }
 
 function sanitizeAgenciesToPakistanAvatars(
@@ -184,20 +207,32 @@ function loadInitialSlides(): HeroSlide[] {
 }
 
 export function App() {
-  const [properties, setProperties] = useState<Property[]>(() => {
-    try {
-      const saved = safeStorageGet('ri8click_properties_data');
-      if (saved) return sanitizePropertiesToPakistanAvatars(JSON.parse(saved));
-    } catch {}
-    return sanitizePropertiesToPakistanAvatars(INITIAL_PROPERTIES);
-  });
-
   const [agencies, setAgencies] = useState<AgencyAccount[]>(() => {
     try {
       const saved = safeStorageGet('ri8click_agencies_data');
       if (saved) return sanitizeAgenciesToPakistanAvatars(JSON.parse(saved));
     } catch {}
     return sanitizeAgenciesToPakistanAvatars(INITIAL_AGENCIES);
+  });
+
+  const [properties, setProperties] = useState<Property[]>(() => {
+    try {
+      const saved = safeStorageGet('ri8click_properties_data');
+      if (saved)
+        return sanitizePropertiesToPakistanAvatars(JSON.parse(saved), agencies);
+    } catch {}
+    return sanitizePropertiesToPakistanAvatars(INITIAL_PROPERTIES, agencies);
+  });
+
+  const [topMenuItems, setTopMenuItems] = useState<TopNavigationItem[]>(() => {
+    try {
+      const saved = safeStorageGet('ri8click_top_menu_items');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return INITIAL_TOP_MENU_ITEMS;
   });
 
   const [provinceCityData, setProvinceCityData] = useState<ProvinceCityData[]>(
@@ -279,7 +314,6 @@ export function App() {
     (remote: any, forceApply = false) => {
       if (!remote || typeof remote !== 'object') return;
 
-      // Never allow background polling or SSE to overwrite an active or just-completed admin save
       if (
         !forceApply &&
         (pendingSaveCountRef.current > 0 ||
@@ -304,16 +338,30 @@ export function App() {
         lastUpdatedAtRef.current = remote.updatedAt;
       }
 
+      let latestAgencies: AgencyAccount[] | undefined;
+      if (Array.isArray(remote.agencies) && remote.agencies.length > 0) {
+        latestAgencies = sanitizeAgenciesToPakistanAvatars(remote.agencies);
+        setAgencies(latestAgencies);
+        safeStorageSet('ri8click_agencies_data', JSON.stringify(latestAgencies));
+      }
+
       if (Array.isArray(remote.properties) && remote.properties.length > 0) {
-        const clean = sanitizePropertiesToPakistanAvatars(remote.properties);
+        const clean = sanitizePropertiesToPakistanAvatars(
+          remote.properties,
+          latestAgencies
+        );
         setProperties(clean);
         safeStorageSet('ri8click_properties_data', JSON.stringify(clean));
       }
-      if (Array.isArray(remote.agencies) && remote.agencies.length > 0) {
-        const clean = sanitizeAgenciesToPakistanAvatars(remote.agencies);
-        setAgencies(clean);
-        safeStorageSet('ri8click_agencies_data', JSON.stringify(clean));
+
+      if (Array.isArray(remote.topMenuItems) && remote.topMenuItems.length > 0) {
+        setTopMenuItems(remote.topMenuItems);
+        safeStorageSet(
+          'ri8click_top_menu_items',
+          JSON.stringify(remote.topMenuItems)
+        );
       }
+
       if (
         Array.isArray(remote.provinceCityData) &&
         remote.provinceCityData.length > 0
@@ -414,6 +462,12 @@ export function App() {
       safeStorageSet(
         'ri8click_agencies_data',
         JSON.stringify(partialState.agencies)
+      );
+    }
+    if (partialState.topMenuItems) {
+      safeStorageSet(
+        'ri8click_top_menu_items',
+        JSON.stringify(partialState.topMenuItems)
       );
     }
     if (partialState.provinceCityData) {
@@ -537,9 +591,7 @@ export function App() {
             }
           } catch {}
         };
-        eventSource.onerror = () => {
-          // Silently close if browser blocks SSE in strict private mode; polling handles updates
-        };
+        eventSource.onerror = () => {};
       }
     } catch {}
 
@@ -582,12 +634,18 @@ export function App() {
           setHeroSlides(normalizeClientSlides(JSON.parse(e.newValue)));
         } else if (e.key === 'ri8click_properties_data') {
           setProperties(
-            sanitizePropertiesToPakistanAvatars(JSON.parse(e.newValue))
+            sanitizePropertiesToPakistanAvatars(JSON.parse(e.newValue), agencies)
           );
         } else if (e.key === 'ri8click_agencies_data') {
-          setAgencies(
-            sanitizeAgenciesToPakistanAvatars(JSON.parse(e.newValue))
+          const nextAg = sanitizeAgenciesToPakistanAvatars(
+            JSON.parse(e.newValue)
           );
+          setAgencies(nextAg);
+          setProperties(prev =>
+            sanitizePropertiesToPakistanAvatars(prev, nextAg)
+          );
+        } else if (e.key === 'ri8click_top_menu_items') {
+          setTopMenuItems(JSON.parse(e.newValue));
         } else if (e.key === 'ri8click_user_accounts') {
           setUserAccounts(
             mergeUserAccountsWithDefaults(JSON.parse(e.newValue))
@@ -608,25 +666,66 @@ export function App() {
       document.removeEventListener('visibilitychange', handleVisibilityOrFocus);
       window.removeEventListener('storage', handleCrossTabStorage);
     };
-  }, [applyIncomingServerState]);
+  }, [applyIncomingServerState, agencies]);
 
   const handleUpdateProperties = useCallback(
     (nextProps: Property[]) => {
-      const clean = sanitizePropertiesToPakistanAvatars(nextProps);
+      const clean = sanitizePropertiesToPakistanAvatars(nextProps, agencies);
       setProperties(clean);
       pushStateToServer({ properties: clean });
+    },
+    [pushStateToServer, agencies]
+  );
+
+  // When Certified Agencies pictures/details are updated from Admin Hub, propagate to all posted ads & user accounts
+  const handleUpdateAgencies = useCallback(
+    (nextAgencies: AgencyAccount[]) => {
+      const cleanAgencies = sanitizeAgenciesToPakistanAvatars(nextAgencies);
+      const syncedProps = sanitizePropertiesToPakistanAvatars(
+        properties,
+        cleanAgencies
+      );
+      const syncedUsers = mergeUserAccountsWithDefaults(
+        userAccounts.map(u => {
+          if (!u.agencyId) return u;
+          const ag = cleanAgencies.find(a => a.id === u.agencyId);
+          if (!ag) return u;
+          return {
+            ...u,
+            name: ag.name || u.name,
+            companyName: ag.companyName || u.companyName,
+            phone: ag.phone || u.phone,
+            whatsapp: ag.whatsapp || u.whatsapp,
+            avatar: ag.avatar || ag.logo || u.avatar
+          };
+        })
+      );
+
+      setAgencies(cleanAgencies);
+      setProperties(syncedProps);
+      setUserAccounts(syncedUsers);
+
+      pushStateToServer({
+        agencies: cleanAgencies,
+        properties: syncedProps,
+        userAccounts: syncedUsers
+      });
+    },
+    [properties, userAccounts, pushStateToServer]
+  );
+
+  const handleUpdateTopMenuItems = useCallback(
+    (nextMenuItems: TopNavigationItem[]) => {
+      setTopMenuItems(nextMenuItems);
+      pushStateToServer({ topMenuItems: nextMenuItems });
     },
     [pushStateToServer]
   );
 
-  const handleUpdateAgencies = useCallback(
-    (nextAgencies: AgencyAccount[]) => {
-      const clean = sanitizeAgenciesToPakistanAvatars(nextAgencies);
-      setAgencies(clean);
-      pushStateToServer({ agencies: clean });
-    },
-    [pushStateToServer]
-  );
+  const handleResetTopMenuItems = useCallback(() => {
+    setTopMenuItems(INITIAL_TOP_MENU_ITEMS);
+    pushStateToServer({ topMenuItems: INITIAL_TOP_MENU_ITEMS });
+  }, [pushStateToServer]);
 
   const handleUpdateProvinceCityData = useCallback(
     (nextLocations: ProvinceCityData[]) => {
@@ -670,7 +769,6 @@ export function App() {
           }
         })
         .catch(() => {
-          // Fallback to general state endpoint if needed
           pushStateToServer({ heroSlides: normalized });
         })
         .finally(() => {
@@ -734,14 +832,21 @@ export function App() {
       });
 
       const cleanAgencies = sanitizeAgenciesToPakistanAvatars(updatedAgencies);
+      const cleanProps = sanitizePropertiesToPakistanAvatars(
+        properties,
+        cleanAgencies
+      );
+
       setAgencies(cleanAgencies);
+      setProperties(cleanProps);
 
       pushStateToServer({
         userAccounts: merged,
-        agencies: cleanAgencies
+        agencies: cleanAgencies,
+        properties: cleanProps
       });
     },
-    [agencies, pushStateToServer]
+    [agencies, properties, pushStateToServer]
   );
 
   const handleUpdateCurrentUser = useCallback(
@@ -768,25 +873,11 @@ export function App() {
         };
       });
 
-      const updatedProperties = properties.map(p => {
-        if (updatedUser.agencyId && p.agencyId === updatedUser.agencyId) {
-          return {
-            ...p,
-            agentName: updatedUser.name || p.agentName,
-            agentCompany: updatedUser.companyName || p.agentCompany,
-            agentPhone: updatedUser.phone || p.agentPhone,
-            agentWhatsApp: (updatedUser.whatsapp || p.agentWhatsApp).replace(
-              /[^0-9]/g,
-              ''
-            ),
-            agentAvatar: updatedUser.avatar || p.agentAvatar
-          };
-        }
-        return p;
-      });
-
       const cleanAgencies = sanitizeAgenciesToPakistanAvatars(updatedAgencies);
-      const cleanProps = sanitizePropertiesToPakistanAvatars(updatedProperties);
+      const cleanProps = sanitizePropertiesToPakistanAvatars(
+        properties,
+        cleanAgencies
+      );
 
       setAgencies(cleanAgencies);
       setProperties(cleanProps);
@@ -915,10 +1006,10 @@ export function App() {
   };
 
   const handleAddProperty = (newProp: Property) => {
-    const nextProps = sanitizePropertiesToPakistanAvatars([
-      newProp,
-      ...properties
-    ]);
+    const nextProps = sanitizePropertiesToPakistanAvatars(
+      [newProp, ...properties],
+      agencies
+    );
     const nextAgencies = agencies.map(ag =>
       ag.id === newProp.agencyId
         ? {
@@ -991,6 +1082,32 @@ export function App() {
         : a
     );
     handleUpdateAgencies(updated);
+  };
+
+  const handleNavigateConsortiumDivisionLink = (div: ConsortiumDivision) => {
+    const url = (div.linkUrl || '').trim();
+    if (!url) return;
+
+    if (url === 'tab:advibe' || url === '/advibe') {
+      setActiveTab('advibe');
+      setActiveAdvibeSlug(null);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      window.open(url, div.linkTarget || '_blank', 'noopener,noreferrer');
+      return;
+    }
+
+    if (url.startsWith('#')) {
+      setActiveTab('properties');
+      setActiveAdvibeSlug(null);
+      setTimeout(() => {
+        const el = document.getElementById(url.slice(1));
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+      }, 60);
+    }
   };
 
   const filteredProperties = useMemo(() => {
@@ -1084,6 +1201,7 @@ export function App() {
             setActiveAdvibeSlug(null);
           }
         }}
+        topMenuItems={topMenuItems}
         savedPropertiesCount={savedPropertyIds.length}
         onOpenSavedModal={() => setIsSavedModalOpen(true)}
         onOpenPostModal={() => {
@@ -1120,6 +1238,11 @@ export function App() {
           properties={properties}
           onBackToListing={() => setActiveAdvibeSlug(null)}
           onSelectProperty={prop => setSelectedProperty(prop)}
+          canEditProject={userRole === 'admin' || userRole === 'agency'}
+          onEditProjectInAdmin={() => {
+            setAdminInitialTab('advibe');
+            setIsAdminHubOpen(true);
+          }}
         />
       ) : activeTab === 'advibe' ? (
         <AdvibeListingPage
@@ -1276,6 +1399,33 @@ export function App() {
             />
           )}
 
+          {isPortionVisible('consortium_showcase') && (
+            <ConsortiumShowcase
+              divisions={consortiumDivisions}
+              onNavigateDivisionLink={handleNavigateConsortiumDivisionLink}
+              onSelectDivisionContact={div => {
+                const text = encodeURIComponent(
+                  `Assalam-o-Alaikum, I am inquiring about ${div.title} on ri8click.com.`
+                );
+                window.open(
+                  `https://wa.me/${div.contactWhatsApp}?text=${text}`,
+                  '_blank'
+                );
+              }}
+            />
+          )}
+
+          {isPortionVisible('news_blogs_section') && (
+            <NewsBlogsSection
+              blogs={blogs}
+              onSelectBlog={b => setSelectedBlog(b)}
+              onOpenAdminBlogManager={() => {
+                setAdminInitialTab('blogs');
+                setIsAdminHubOpen(true);
+              }}
+            />
+          )}
+
           {isPortionVisible('agencies_network') && (
             <AgenciesSection
               agencies={agencies}
@@ -1294,59 +1444,33 @@ export function App() {
               }}
             />
           )}
-
-          {isPortionVisible('consortium_showcase') && (
-            <ConsortiumShowcase
-              divisions={consortiumDivisions}
-              onSelectDivisionContact={div => {
-                const text = encodeURIComponent(
-                  `Assalam-o-Alaikum, I am inquiring about ${div.title} on ri8click.com.`
-                );
-                window.open(
-                  `https://wa.me/${div.contactWhatsApp}?text=${text}`,
-                  '_blank'
-                );
-              }}
-            />
-          )}
-
-          {isPortionVisible('news_blogs_section') && (
-            <NewsBlogsSection
-              blogs={blogs.filter(b => b.status === 'published')}
-              onSelectBlog={b => setSelectedBlog(b)}
-              onOpenAdminBlogManager={() => {
-                setAdminInitialTab('blogs');
-                setIsAdminHubOpen(true);
-              }}
-            />
-          )}
         </main>
       )}
 
       <Footer
         divisions={consortiumDivisions}
-        currentUser={currentUser}
-        onOpenLogin={() => {
-          setLoginModalReason('general');
-          setIsLoginModalOpen(true);
+        onSelectNavTab={tab => {
+          setActiveTab(tab);
+          if (tab !== 'advibe') setActiveAdvibeSlug(null);
         }}
         onOpenAdmin={() => {
           setAdminInitialTab('overview');
           setIsAdminHubOpen(true);
         }}
-        onSelectSociety={society => {
+        onSelectSociety={soc => {
           setActiveTab('properties');
           setActiveAdvibeSlug(null);
-          setFilters((prev: any) => ({ ...prev, society }));
-          document
-            .getElementById('properties-grid-section')
-            ?.scrollIntoView({ behavior: 'smooth' });
+          setFilters((prev: any) => ({ ...prev, society: soc }));
+          setTimeout(() => {
+            document
+              .getElementById('properties-grid-section')
+              ?.scrollIntoView({ behavior: 'smooth' });
+          }, 80);
         }}
-        onSelectNavTab={tab => {
-          setActiveTab(tab);
-          if (tab !== 'advibe') {
-            setActiveAdvibeSlug(null);
-          }
+        currentUser={currentUser}
+        onOpenLogin={() => {
+          setLoginModalReason('general');
+          setIsLoginModalOpen(true);
         }}
       />
 
@@ -1354,7 +1478,9 @@ export function App() {
         property={selectedProperty}
         onClose={() => setSelectedProperty(null)}
         isSaved={
-          selectedProperty ? savedPropertyIds.includes(selectedProperty.id) : false
+          selectedProperty
+            ? savedPropertyIds.includes(selectedProperty.id)
+            : false
         }
         onToggleSave={handleToggleSave}
         onScheduleTour={prop => {
@@ -1370,30 +1496,7 @@ export function App() {
       <BlogDetailModal
         blog={selectedBlog}
         onClose={() => setSelectedBlog(null)}
-      />
-
-      <ScheduleTourModal
-        isOpen={Boolean(tourProperty)}
-        property={tourProperty}
-        onClose={() => setTourProperty(null)}
-      />
-
-      <SavedPropertiesModal
-        isOpen={isSavedModalOpen}
-        onClose={() => setIsSavedModalOpen(false)}
-        savedProperties={properties.filter(p =>
-          savedPropertyIds.includes(p.id)
-        )}
-        onToggleSave={handleToggleSave}
-        onClearAllSaved={() => setSavedPropertyIds([])}
-        onSelectProperty={prop => {
-          setIsSavedModalOpen(false);
-          setSelectedProperty(prop);
-        }}
-        onScheduleTour={prop => {
-          setIsSavedModalOpen(false);
-          setTourProperty(prop);
-        }}
+        onSelectRelatedBlog={b => setSelectedBlog(b)}
       />
 
       <PostPropertyModal
@@ -1404,23 +1507,37 @@ export function App() {
         provinceCityData={provinceCityData}
         onAddProperty={handleAddProperty}
         onOpenAdmin={() => {
-          setIsPostModalOpen(false);
           setAdminInitialTab('agencies');
           setIsAdminHubOpen(true);
         }}
         isSuperAdmin={userRole === 'admin'}
-        onOpenRoleSwitcher={() => {
-          setIsPostModalOpen(false);
-          setIsRoleModalOpen(true);
-        }}
+        onOpenRoleSwitcher={() => setIsRoleModalOpen(true)}
         onUpdateProvinceCityData={handleUpdateProvinceCityData}
       />
 
+      <ScheduleTourModal
+        property={tourProperty}
+        onClose={() => setTourProperty(null)}
+      />
+
+      <SavedPropertiesModal
+        isOpen={isSavedModalOpen}
+        onClose={() => setIsSavedModalOpen(false)}
+        savedProperties={properties.filter(p =>
+          savedPropertyIds.includes(p.id)
+        )}
+        onRemoveSaved={handleToggleSave}
+        onSelectProperty={prop => {
+          setIsSavedModalOpen(false);
+          setSelectedProperty(prop);
+        }}
+        onClearAll={() => setSavedPropertyIds([])}
+      />
+
       <VirtualTour3DModal
-        isOpen={Boolean(virtual3DProperty)}
-        onClose={() => setVirtual3DProperty(null)}
         property={virtual3DProperty}
-        onScheduleTour={prop => {
+        onClose={() => setVirtual3DProperty(null)}
+        onSchedulePhysicalTour={prop => {
           setVirtual3DProperty(null);
           setTourProperty(prop);
         }}
@@ -1430,33 +1547,38 @@ export function App() {
         isOpen={isAdminHubOpen}
         onClose={() => setIsAdminHubOpen(false)}
         initialTab={adminInitialTab}
-        provinceCityData={provinceCityData}
-        onUpdateProvinceCityData={handleUpdateProvinceCityData}
+        topMenuItems={topMenuItems}
+        onUpdateTopMenuItems={handleUpdateTopMenuItems}
+        onResetTopMenuItems={handleResetTopMenuItems}
+        properties={properties}
+        onUpdateProperties={handleUpdateProperties}
+        onViewProperty={prop => {
+          setIsAdminHubOpen(false);
+          setSelectedProperty(prop);
+        }}
+        onOpenVirtualTour={prop => {
+          setIsAdminHubOpen(false);
+          setVirtual3DProperty(prop);
+        }}
         agencies={agencies}
         onUpdateAgencies={handleUpdateAgencies}
         onUpdateAgencyLimit={handleUpdateAgencyLimit}
         onAddNewAgency={handleAddNewAgency}
-        properties={properties}
-        onUpdateProperties={handleUpdateProperties}
-        onViewProperty={prop => setSelectedProperty(prop)}
-        onOpenVirtualTour={prop => setVirtual3DProperty(prop)}
+        provinceCityData={provinceCityData}
+        onUpdateProvinceCityData={handleUpdateProvinceCityData}
         heroSlides={heroSlides}
         onUpdateHeroSlides={handleUpdateHeroSlides}
         consortiumDivisions={consortiumDivisions}
         onUpdateConsortiumDivisions={handleUpdateConsortiumDivisions}
         blogs={blogs}
         onUpdateBlogs={handleUpdateBlogs}
-        onViewBlog={b => setSelectedBlog(b)}
+        onViewBlog={b => {
+          setIsAdminHubOpen(false);
+          setSelectedBlog(b);
+        }}
         portions={sitePortions}
         onUpdatePortions={handleUpdateSitePortions}
         onResetPortions={handleResetPortions}
-        currentRole={userRole}
-        isSuperAdmin={userRole === 'admin'}
-        currentUser={currentUser}
-        allUsers={userAccounts}
-        onUpdateCurrentUser={handleUpdateCurrentUser}
-        onUpdateAllUsers={handleUpdateUserAccounts}
-        onOpenRoleSwitcher={() => setIsRoleModalOpen(true)}
         advibeProjects={advibeProjects}
         advibeLeads={advibeLeads}
         onSaveAdvibeProject={handleSaveAdvibeProject}
@@ -1468,61 +1590,46 @@ export function App() {
           setIsAdminHubOpen(false);
           setActiveTab('advibe');
           setActiveAdvibeSlug(slug);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
         }}
+        currentRole={userRole}
+        isSuperAdmin={userRole === 'admin'}
+        currentUser={currentUser}
+        allUsers={userAccounts}
+        onUpdateCurrentUser={handleUpdateCurrentUser}
+        onUpdateAllUsers={handleUpdateUserAccounts}
+        onOpenRoleSwitcher={() => setIsRoleModalOpen(true)}
       />
 
       <AuthLoginModal
         isOpen={isLoginModalOpen}
         onClose={() => setIsLoginModalOpen(false)}
-        currentUser={currentUser}
-        onLogin={handleUserLogin}
-        onLogout={handleUserLogout}
-        requiredReason={loginModalReason}
-        agencies={agencies}
+        onLoginSuccess={handleUserLogin}
         allUsers={userAccounts}
+        reason={loginModalReason}
       />
 
       <AuthRoleModal
         isOpen={isRoleModalOpen}
         onClose={() => setIsRoleModalOpen(false)}
         currentRole={userRole}
-        currentAgency={currentAgency}
-        allAgencies={agencies}
-        allUsers={userAccounts}
+        onSelectRole={role => setUserRole(role)}
+        agencies={agencies}
+        selectedAgencyId={selectedAgencyId}
+        onSelectAgency={id => setSelectedAgencyId(id)}
         currentUser={currentUser}
-        onSelectRole={role => {
-          setUserRole(role);
-          if (role === 'admin') {
-            const adminAcc =
-              userAccounts.find(u => u.role === 'admin') ||
-              initialUserAccounts[0];
-            setCurrentUser(adminAcc);
-          } else if (role === 'customer') {
-            setCurrentUser(null);
-          }
+        allUsers={userAccounts}
+        onSwitchUserAccount={acc => {
+          setCurrentUser(acc);
+          setUserRole(acc.role);
+          if (acc.agencyId) setSelectedAgencyId(acc.agencyId);
         }}
-        onSelectAgency={agencyId => {
-          setSelectedAgencyId(agencyId);
-          const matchedUser = userAccounts.find(u => u.agencyId === agencyId);
-          if (matchedUser) {
-            setCurrentUser(matchedUser);
-            setUserRole('agency');
-          }
-        }}
-        onOpenAdminHub={() => {
-          setIsRoleModalOpen(false);
-          setAdminInitialTab('overview');
-          setIsAdminHubOpen(true);
-        }}
-        onOpenProfileTab={() => {
+        onOpenAdminProfile={() => {
           setIsRoleModalOpen(false);
           setAdminInitialTab('profile');
           setIsAdminHubOpen(true);
         }}
-        onOpenPostProperty={() => {
-          setIsRoleModalOpen(false);
-          setIsPostModalOpen(true);
-        }}
+        onLogout={handleUserLogout}
       />
 
       <AiChatbot properties={properties} agencies={agencies} />
