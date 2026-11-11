@@ -13,7 +13,8 @@ import {
   CheckCircle2,
   User,
   Compass,
-  Award
+  Award,
+  Menu
 } from 'lucide-react';
 import {
   ProvinceCityData,
@@ -24,14 +25,15 @@ import {
   SiteSectionPortion,
   AdVibeProject,
   AdVibeLead,
-  ConsortiumDivision
+  ConsortiumDivision,
+  TopNavigationItem
 } from '../types';
 import {
   UserAccount,
   PAKISTAN_AGENT_AVATARS,
   mergeUserAccountsWithDefaults
 } from '../data/defaultAccounts';
-import { CONSORTIUM_DIVISIONS } from '../data/mockData';
+import { CONSORTIUM_DIVISIONS, INITIAL_TOP_MENU_ITEMS } from '../data/mockData';
 import { AdvibeAdminManager } from './advibe/AdvibeAdminManager';
 import { AdminCitySocietyManager } from './AdminCitySocietyManager';
 import { AgencyPostMonitorManager } from './AgencyPostMonitorManager';
@@ -42,10 +44,12 @@ import { AdminPropertyManager } from './AdminPropertyManager';
 import { AdminUserProfileManager } from './AdminUserProfileManager';
 import { AdminRolesManager } from './AdminRolesManager';
 import { AdminConsortiumManager } from './AdminConsortiumManager';
+import { AdminTopMenuManager } from './AdminTopMenuManager';
 import { Ri8ClickLogo } from './Ri8ClickLogo';
 
 export type AdminTabType =
   | 'overview'
+  | 'top_menu'
   | 'properties'
   | 'advibe'
   | 'banners'
@@ -61,6 +65,9 @@ interface AdminHubModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialTab?: AdminTabType;
+  topMenuItems?: TopNavigationItem[];
+  onUpdateTopMenuItems?: (items: TopNavigationItem[]) => void;
+  onResetTopMenuItems?: () => void;
   properties: Property[];
   onUpdateProperties: (properties: Property[]) => void;
   onViewProperty?: (property: Property) => void;
@@ -105,6 +112,9 @@ export const AdminHubModal: React.FC<AdminHubModalProps> = ({
   isOpen,
   onClose,
   initialTab = 'overview',
+  topMenuItems = INITIAL_TOP_MENU_ITEMS,
+  onUpdateTopMenuItems,
+  onResetTopMenuItems,
   properties,
   onUpdateProperties,
   onViewProperty,
@@ -280,7 +290,7 @@ export const AdminHubModal: React.FC<AdminHubModalProps> = ({
                 </span>
               </div>
               <p className="text-[11px] text-slate-400 hidden sm:block">
-                Manage Hero Portfolio Deck, Properties, Capsule Homes, AdVibe, Roles (Super Admin / Agency / Visitor) &amp; User Profiles
+                Manage Top Menu, AdVibe Studio, Hero Portfolio Deck, Properties, Consortium Links, Certified Agencies &amp; User Roles
               </p>
             </div>
           </div>
@@ -339,6 +349,16 @@ export const AdminHubModal: React.FC<AdminHubModalProps> = ({
           {[
             { id: 'overview', label: 'Overview', icon: BarChart3 },
             {
+              id: 'top_menu',
+              label: `Top Menu (${topMenuItems.length})`,
+              icon: Menu
+            },
+            {
+              id: 'advibe',
+              label: `AdVibe Studio (${advibeProjects.length})`,
+              icon: Sparkles
+            },
+            {
               id: 'banners',
               label: `Hero Portfolio Deck (${heroSlides.length})`,
               icon: Sparkles
@@ -349,6 +369,16 @@ export const AdminHubModal: React.FC<AdminHubModalProps> = ({
               icon: Building2
             },
             {
+              id: 'consortium',
+              label: `Consortium Blocks (${consortiumDivisions.length})`,
+              icon: Compass
+            },
+            {
+              id: 'agencies',
+              label: `Agencies (${agencies.length})`,
+              icon: Users
+            },
+            {
               id: 'roles',
               label: `Roles & Users (${mergeUserAccountsWithDefaults(allUsers).length})`,
               icon: ShieldCheck
@@ -357,21 +387,6 @@ export const AdminHubModal: React.FC<AdminHubModalProps> = ({
               id: 'profile',
               label: 'My Profile & Photo',
               icon: User
-            },
-            {
-              id: 'agencies',
-              label: `Agencies (${agencies.length})`,
-              icon: Users
-            },
-            {
-              id: 'advibe',
-              label: `AdVibe Studio (${advibeProjects.length})`,
-              icon: Sparkles
-            },
-            {
-              id: 'consortium',
-              label: `Consortium Blocks (${consortiumDivisions.length})`,
-              icon: Compass
             },
             {
               id: 'portions',
@@ -426,6 +441,18 @@ export const AdminHubModal: React.FC<AdminHubModalProps> = ({
 
                 <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
                   <div className="text-[11px] font-semibold text-slate-500 uppercase">
+                    AdVibe Projects
+                  </div>
+                  <div className="text-2xl font-bold text-blue-600">
+                    {advibeProjects.length}
+                  </div>
+                  <div className="text-[10.5px] text-slate-400">
+                    Societies &amp; Highrises
+                  </div>
+                </div>
+
+                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
+                  <div className="text-[11px] font-semibold text-slate-500 uppercase">
                     Portfolio Deck Slides
                   </div>
                   <div className="text-2xl font-bold text-amber-600">
@@ -438,25 +465,13 @@ export const AdminHubModal: React.FC<AdminHubModalProps> = ({
 
                 <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
                   <div className="text-[11px] font-semibold text-slate-500 uppercase">
-                    User Roles &amp; Profiles
-                  </div>
-                  <div className="text-2xl font-bold text-purple-600">
-                    {mergeUserAccountsWithDefaults(allUsers).length}
-                  </div>
-                  <div className="text-[10.5px] text-slate-400">
-                    Admin, Agency &amp; Visitor
-                  </div>
-                </div>
-
-                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
-                  <div className="text-[11px] font-semibold text-slate-500 uppercase">
                     Certified Agencies
                   </div>
                   <div className="text-2xl font-bold text-emerald-600">
                     {agencies.length}
                   </div>
                   <div className="text-[10.5px] text-slate-400">
-                    Pakistan Regional Network
+                    Auto-Synced to All Ads
                   </div>
                 </div>
 
@@ -475,41 +490,54 @@ export const AdminHubModal: React.FC<AdminHubModalProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div
-                  onClick={() => setActiveTab('banners')}
+                  onClick={() => setActiveTab('top_menu')}
+                  className="bg-white p-5 rounded-xl border border-slate-200 hover:border-blue-500 transition-all cursor-pointer shadow-2xs space-y-2"
+                >
+                  <Menu className="w-6 h-6 text-blue-600" />
+                  <h4 className="text-sm font-bold text-slate-900">
+                    Top Menu Bar Sequence &amp; Text
+                  </h4>
+                  <p className="text-xs text-slate-500">
+                    Rename top navigation items, reorder menu sequence, or keep Certified Agents at the end of the top menu bar.
+                  </p>
+                </div>
+
+                <div
+                  onClick={() => setActiveTab('advibe')}
                   className="bg-white p-5 rounded-xl border border-slate-200 hover:border-amber-500 transition-all cursor-pointer shadow-2xs space-y-2"
                 >
                   <Sparkles className="w-6 h-6 text-amber-500" />
                   <h4 className="text-sm font-bold text-slate-900">
-                    Hero Section &amp; Crystal Portfolio Deck
+                    AdVibe Professional Ad Designer &amp; Showcase
                   </h4>
                   <p className="text-xs text-slate-500">
-                    Reorder, add, edit, or hide Hero Banner &amp; Portfolio Deck slides (including Model Q3 Forest Cabin Pod, Highrises &amp; UPVC).
+                    Design housing society &amp; highrise showcases, upload banner images/videos, manage Page Sections CRUD, 360° scenes, Master Plans &amp; Linked Units.
                   </p>
                 </div>
 
                 <div
-                  onClick={() => setActiveTab('roles')}
-                  className="bg-white p-5 rounded-xl border border-slate-200 hover:border-purple-500 transition-all cursor-pointer shadow-2xs space-y-2"
+                  onClick={() => setActiveTab('consortium')}
+                  className="bg-white p-5 rounded-xl border border-slate-200 hover:border-indigo-500 transition-all cursor-pointer shadow-2xs space-y-2"
                 >
-                  <ShieldCheck className="w-6 h-6 text-purple-600" />
+                  <Compass className="w-6 h-6 text-indigo-600" />
                   <h4 className="text-sm font-bold text-slate-900">
-                    User Roles (Super Admin, Agency &amp; Visitor)
+                    Consortium Blocks &amp; Image Redirect Links
                   </h4>
                   <p className="text-xs text-slate-500">
-                    Manage roles, permissions, profile photos, passwords, and authority levels for Super Admin, Certified Agencies, and Visitors.
+                    Upload division images and attach clickable redirect links to specific website sections or external URLs.
                   </p>
                 </div>
 
                 <div
-                  onClick={() => setActiveTab('profile')}
-                  className="bg-white p-5 rounded-xl border border-slate-200 hover:border-blue-500 transition-all cursor-pointer shadow-2xs space-y-2"
+                  onClick={() => setActiveTab('agencies')}
+                  className="bg-white p-5 rounded-xl border border-slate-200 hover:border-emerald-500 transition-all cursor-pointer shadow-2xs space-y-2"
                 >
-                  <Award className="w-6 h-6 text-blue-600" />
+                  <Users className="w-6 h-6 text-emerald-600" />
                   <h4 className="text-sm font-bold text-slate-900">
-                    My Profile, Photo Upload &amp; Credentials
+                    Certified Agencies &amp; Specialist Photos
                   </h4>
                   <p className="text-xs text-slate-500">
-                    Upload your profile photo from your device, update phone/WhatsApp numbers, company details, and security password.
+                    Edit agency profiles &amp; specialist photos — changes automatically update all advertisements posted by that agent.
                   </p>
                 </div>
 
@@ -527,32 +555,27 @@ export const AdminHubModal: React.FC<AdminHubModalProps> = ({
                 </div>
 
                 <div
-                  onClick={() => setActiveTab('agencies')}
-                  className="bg-white p-5 rounded-xl border border-slate-200 hover:border-emerald-500 transition-all cursor-pointer shadow-2xs space-y-2"
+                  onClick={() => setActiveTab('profile')}
+                  className="bg-white p-5 rounded-xl border border-slate-200 hover:border-purple-500 transition-all cursor-pointer shadow-2xs space-y-2"
                 >
-                  <Users className="w-6 h-6 text-emerald-600" />
+                  <Award className="w-6 h-6 text-purple-600" />
                   <h4 className="text-sm font-bold text-slate-900">
-                    Certified Agencies &amp; Specialist Photos
+                    My Profile, Photo Upload &amp; Credentials
                   </h4>
                   <p className="text-xs text-slate-500">
-                    Edit agency profiles, upload specialist photos, adjust ad posting quotas, and onboard regional brokerages.
-                  </p>
-                </div>
-
-                <div
-                  onClick={() => setActiveTab('portions')}
-                  className="bg-white p-5 rounded-xl border border-slate-200 hover:border-indigo-500 transition-all cursor-pointer shadow-2xs space-y-2"
-                >
-                  <Layout className="w-6 h-6 text-indigo-600" />
-                  <h4 className="text-sm font-bold text-slate-900">
-                    Manage All Website Blocks
-                  </h4>
-                  <p className="text-xs text-slate-500">
-                    Edit headings, subtitles, order, and visibility of all homepage sections.
+                    Upload your profile photo from your device, update phone/WhatsApp numbers, company details, and security password.
                   </p>
                 </div>
               </div>
             </div>
+          )}
+
+          {activeTab === 'top_menu' && (
+            <AdminTopMenuManager
+              menuItems={topMenuItems}
+              onUpdateMenuItems={onUpdateTopMenuItems || (() => {})}
+              onResetMenuItems={onResetTopMenuItems}
+            />
           )}
 
           {activeTab === 'properties' && (
