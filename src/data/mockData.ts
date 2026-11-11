@@ -5,7 +5,8 @@ import {
   ConsortiumDivision,
   HeroSlide,
   BlogPost,
-  SiteSectionPortion
+  SiteSectionPortion,
+  TopNavigationItem
 } from '../types';
 import { PAKISTAN_AGENT_AVATARS } from './defaultAccounts';
 
@@ -17,6 +18,64 @@ export const PAKISTAN_REGIONAL_AGENT_AVATARS = {
   mianAhmed_Lahore: PAKISTAN_AGENT_AVATARS.mianAhmed,
   tariqMehmood_Rawalpindi: PAKISTAN_AGENT_AVATARS.tariqMehmood
 };
+
+export const INITIAL_TOP_MENU_ITEMS: TopNavigationItem[] = [
+  {
+    id: 'properties',
+    label: 'Properties',
+    iconName: 'Home',
+    order: 1,
+    isVisible: true,
+    targetSectionId: 'properties-grid-section'
+  },
+  {
+    id: 'advibe',
+    label: 'AdVibe',
+    iconName: 'Sparkles',
+    order: 2,
+    isVisible: true
+  },
+  {
+    id: 'commercial',
+    label: 'Commercial Plazas',
+    iconName: 'Building2',
+    order: 3,
+    isVisible: true,
+    targetSectionId: 'commercial-section'
+  },
+  {
+    id: 'modular',
+    label: 'Capsule Houses',
+    iconName: 'Layers',
+    order: 4,
+    isVisible: true,
+    targetSectionId: 'modular-section'
+  },
+  {
+    id: 'consortium',
+    label: 'Consortium & UPVC',
+    iconName: 'Compass',
+    order: 5,
+    isVisible: true,
+    targetSectionId: 'consortium-section'
+  },
+  {
+    id: 'news_blogs',
+    label: 'News & Trends',
+    iconName: 'Newspaper',
+    order: 6,
+    isVisible: true,
+    targetSectionId: 'news-blogs-section'
+  },
+  {
+    id: 'agents',
+    label: 'Certified Agents',
+    iconName: 'ShieldCheck',
+    order: 7,
+    isVisible: true,
+    targetSectionId: 'agents-section'
+  }
+];
 
 export const INITIAL_PROVINCE_CITIES: ProvinceCityData[] = [
   {
@@ -361,6 +420,56 @@ export const INITIAL_PROPERTIES: Property[] = [
     virtualTourVideoTitle: 'Ri8Click Executive Commercial Plaza Walkthrough',
     hasVirtualTour: true
   },
+  {
+    id: 'prop-comm-2',
+    title: 'Silicon Heights Corporate IT Suite & Retail Galleria',
+    tagline: 'Grade-A Corporate Floor on GT Road / Margalla Corridor',
+    description:
+      'Dedicated corporate IT office suite and retail showroom in Faisal Hills Commercial Broadway with fiber-optic uplink, backup power, and high-speed capsule elevators.',
+    category: 'commercial',
+    type: 'Corporate Office',
+    purpose: 'for_sale',
+    price: 28500000,
+    priceFormatted: 'PKR 2.85 Crore',
+    currency: 'PKR',
+    location: {
+      province: 'Punjab',
+      city: 'Taxila',
+      society: 'Faisal Hills',
+      block: 'Commercial Broadway',
+      address: 'Plot #19, Main Commercial Broadway, Faisal Hills, Taxila',
+      latitude: 33.7305,
+      longitude: 72.8295,
+      mapZoom: 15
+    },
+    area: 1450,
+    areaUnit: 'Sq Ft',
+    floors: 6,
+    parking: 25,
+    features: [
+      'Guaranteed 9.2% Corporate Lease Return',
+      'High-Speed Capsule Elevators & Standby Generators',
+      'Ri8Click Acoustic Double Glazed Facade'
+    ],
+    images: [
+      'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=85',
+      'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1200&q=85'
+    ],
+    watermark: true,
+    agencyId: 'agency-3',
+    agentName: 'Engr. Haris Farooq',
+    agentPhone: '+92 336-5666727',
+    agentWhatsApp: '923365666727',
+    agentAvatar: PAKISTAN_REGIONAL_AGENT_AVATARS.engrHarisFarooq_Islamabad,
+    agentCompany: 'Beacon Prime Commercial Estates',
+    agentRating: 4.95,
+    isFeatured: true,
+    isHotCommercial: true,
+    viewsCount: 1290,
+    savesCount: 74,
+    createdAt: '2026-08-22',
+    status: 'active'
+  },
 
   // 2. RESIDENTIAL PROPERTIES
   {
@@ -464,7 +573,7 @@ export const INITIAL_PROPERTIES: Property[] = [
     status: 'active'
   },
 
-  // 3. CAPSULE / CONTAINER READYMADE MODULAR SMART HOUSES (Updated Professional Architectural Imagery)
+  // 3. CAPSULE / CONTAINER READYMADE MODULAR SMART HOUSES
   {
     id: 'prop-mod-1',
     title: 'AeroPod E7 — Luxury Panoramic Space Capsule Smart House',
@@ -673,6 +782,8 @@ export const CONSORTIUM_DIVISIONS: ConsortiumDivision[] = [
     iconName: 'Building2',
     image:
       'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1400&q=85',
+    linkUrl: '#properties-grid-section',
+    linkTarget: '_self',
     capabilities: [
       'Verified Direct-Owner & Developer Allocations',
       'High-Yield Commercial Plazas & Retail Showrooms',
@@ -697,6 +808,8 @@ export const CONSORTIUM_DIVISIONS: ConsortiumDivision[] = [
     iconName: 'HardHat',
     image:
       'https://images.unsplash.com/photo-1541888946425-d0fbb186c5f8?auto=format&fit=crop&w=1400&q=85',
+    linkUrl: '#commercial-section',
+    linkTarget: '_self',
     capabilities: [
       'A+ Grade Seismic-Resistant RCC Grey Structure',
       '3D Architectural, Structural & MEP Blueprints',
@@ -721,6 +834,8 @@ export const CONSORTIUM_DIVISIONS: ConsortiumDivision[] = [
     iconName: 'Maximize',
     image:
       'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1400&q=85',
+    linkUrl: '#properties-grid-section',
+    linkTarget: '_self',
     capabilities: [
       'Double & Triple Tempered Argon-Filled Glazing',
       '42dB Urban Noise Reduction & Dust Sealing',
@@ -745,6 +860,8 @@ export const CONSORTIUM_DIVISIONS: ConsortiumDivision[] = [
     iconName: 'Layers',
     image:
       'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1400&q=85',
+    linkUrl: '#modular-section',
+    linkTarget: '_self',
     capabilities: [
       'AeroPod Space Capsules & L-Shaped Container Villas',
       '24-Hour Rapid On-Site Crane Placement',
@@ -769,6 +886,8 @@ export const CONSORTIUM_DIVISIONS: ConsortiumDivision[] = [
     iconName: 'Cpu',
     image:
       'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1400&q=85',
+    linkUrl: 'tab:advibe',
+    linkTarget: '_self',
     capabilities: [
       'Interactive 360° Panoramic Digital Twins',
       'AdVibe Megaproject Showcase & Lead CRM',
@@ -955,11 +1074,32 @@ export const INITIAL_BLOGS: BlogPost[] = [
     coverImage:
       'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1200&q=85',
     authorName: 'Engr. Haris Farooq',
-    authorRole: 'Principal Engineer, Ri8click Modular',
+    authorRole: 'Principal Modular & Commercial Engineer',
     authorAvatar: PAKISTAN_REGIONAL_AGENT_AVATARS.engrHarisFarooq_Islamabad,
-    publishedAt: '2026-09-05',
+    publishedAt: '2026-09-08',
     readingTime: '4 min read',
-    tags: ['Capsule Homes', 'Modular', 'Tourism'],
+    tags: ['Space Capsule', 'Modular Homes', 'Tourism'],
+    viewsCount: 2410,
+    isFeatured: true,
+    status: 'published'
+  },
+  {
+    id: 'blog-3',
+    title: 'German UPVC Double-Glazed Windows: 40% Energy Savings in Pakistan Summers',
+    slug: 'german-upvc-double-glazed-windows-energy-savings',
+    category: 'Construction & UPVC',
+    excerpt:
+      'How multi-chamber UPVC profiles with argon-filled Low-E tempered glass eliminate street noise, dust, and extreme heat transfer.',
+    content:
+      'Modern residences in Taxila, Islamabad, and Lahore require superior thermal insulation. Ri8click German UPVC systems reduce air-conditioning load by up to 40% while providing 42dB acoustic isolation.',
+    coverImage:
+      'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=85',
+    authorName: 'Chaudhry Bilal Sadat',
+    authorRole: 'Director UPVC & Architectural Glazing',
+    authorAvatar: PAKISTAN_REGIONAL_AGENT_AVATARS.chaudhryBilal_FaisalHills,
+    publishedAt: '2026-09-05',
+    readingTime: '6 min read',
+    tags: ['German UPVC', 'Construction', 'Energy Efficiency'],
     viewsCount: 1520,
     isFeatured: true,
     status: 'published'
@@ -970,21 +1110,23 @@ export const INITIAL_SITE_PORTIONS: SiteSectionPortion[] = [
   {
     id: 'hero_slider',
     key: 'hero_slider',
-    name: 'Hero Portfolio Deck & Showroom Stage',
-    title: 'Ri8click Consortium Portfolio Deck',
-    subtitle: 'Interactive Capsule Homes, Highrises & Verified Villas',
-    isVisible: true,
+    name: 'Hero Architectural Banner & Crystal Portfolio Deck',
+    title: 'Ri8click Consortium — Capsule Homes, Highrises & UPVC',
+    subtitle: 'Interactive 360° Showroom & Verified Real Estate Portfolio',
+    badge: 'Showroom Live',
     isEnabled: true,
+    isVisible: true,
     order: 1
   },
   {
     id: 'search_bar',
     key: 'search_bar',
     name: 'Smart Property Filter & Search Bar',
-    title: 'Search Verified Pakistan Inventory',
+    title: 'Find Verified Properties Across Pakistan',
     subtitle: 'Filter by Province, City, Society, Category & Budget',
-    isVisible: true,
+    badge: 'Instant Search',
     isEnabled: true,
+    isVisible: true,
     order: 2
   },
   {
@@ -992,59 +1134,65 @@ export const INITIAL_SITE_PORTIONS: SiteSectionPortion[] = [
     key: 'properties_grid',
     name: 'Featured Watermarked Properties Grid',
     title: 'Featured Watermarked Properties',
-    subtitle: '100% Verified Residential, Commercial & Plot Listings',
-    isVisible: true,
+    subtitle: '100% Physically Verified Residential, Commercial & Modular Listings',
+    badge: 'Verified Inventory',
     isEnabled: true,
+    isVisible: true,
     order: 3
   },
   {
     id: 'commercial_showcase',
     key: 'commercial_showcase',
-    name: 'Commercial Plazas & High-Rise Towers',
-    title: 'High-Yield Commercial Plazas & Retail Outlets',
-    subtitle: 'Verified Commercial Inventory in Faisal Hills, Islamabad & Lahore',
-    isVisible: true,
+    name: 'Commercial Plazas & Corporate Centres',
+    title: 'Commercial Plazas & Corporate Centres',
+    subtitle: 'High ROI retail outlets, corporate towers, and shopping plazas',
+    badge: 'High ROI Commercial Hubs',
     isEnabled: true,
+    isVisible: true,
     order: 4
   },
   {
     id: 'modular_showcase',
     key: 'modular_showcase',
-    name: 'Readymade Space Capsule & Container Modular Homes',
+    name: 'Space Capsule & Modular Smart Homes',
     title: 'Readymade Space Capsule & Modular Smart Houses',
-    subtitle: 'Aerospace Aluminum Pods & Container Villas Installed in 24 Hours',
-    isVisible: true,
+    subtitle: 'Aerospace aluminum pods, double-glazed panoramic windows & 24-hour setup',
+    badge: 'Modular Prefab Innovation',
     isEnabled: true,
+    isVisible: true,
     order: 5
+  },
+  {
+    id: 'consortium_showcase',
+    key: 'consortium_showcase',
+    name: 'ri8click Group of Companies (Consortium Divisions)',
+    title: 'ri8click Group of Companies',
+    subtitle: 'Real Estate, Turnkey Construction, German UPVC, PropTech AI & Modular Pods',
+    badge: 'Corporate Consortium Structure',
+    isEnabled: true,
+    isVisible: true,
+    order: 6
+  },
+  {
+    id: 'news_blogs_section',
+    key: 'news_blogs_section',
+    name: 'Market Trends & Real Estate Intelligence Blogs',
+    title: 'Market Trends, Faisal Hills & Taxila Insights',
+    subtitle: 'Verified analysis on development, NOC guidelines & UPVC architecture',
+    badge: 'Real Estate Intelligence',
+    isEnabled: true,
+    isVisible: true,
+    order: 7
   },
   {
     id: 'agencies_network',
     key: 'agencies_network',
     name: 'Top Certified Agencies & Real Estate Specialists',
     title: 'Top Certified Agencies & Real Estate Specialists',
-    subtitle: 'Verified Regional Brokers Across Taxila, Faisal Hills, Islamabad & Lahore',
-    isVisible: true,
+    subtitle: 'Connect directly with verified Pakistani real estate specialists',
+    badge: 'Verified Multi-Agent Network',
     isEnabled: true,
-    order: 6
-  },
-  {
-    id: 'consortium_showcase',
-    key: 'consortium_showcase',
-    name: 'ri8click Corporate Consortium Structure',
-    title: 'ri8click Group of Companies',
-    subtitle: 'Real Estate, Turnkey Construction, German UPVC, Modular Pods & PropTech AI',
     isVisible: true,
-    isEnabled: true,
-    order: 7
-  },
-  {
-    id: 'news_blogs_section',
-    key: 'news_blogs_section',
-    name: 'Market Intelligence, News & Blogs',
-    title: 'Real Estate Market Intelligence & Construction Guides',
-    subtitle: 'Latest Updates on Faisal Hills, Modular Pods & Tax/NOC Regulations',
-    isVisible: true,
-    isEnabled: true,
     order: 8
   }
 ];
