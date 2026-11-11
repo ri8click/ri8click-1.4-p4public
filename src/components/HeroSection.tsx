@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence, useDragControls } from 'motion/react';
 import {
   Building2,
-  Sparkles,
   Play,
   Pause,
   ChevronLeft,
@@ -10,11 +9,9 @@ import {
   ChevronUp,
   ChevronDown,
   Compass,
-  ShieldCheck,
   Layers,
   MapPin,
   Box,
-  CheckCircle2,
   EyeOff,
   Camera,
   Video,
@@ -26,11 +23,11 @@ import {
   Home,
   Wrench,
   FileText,
-  RefreshCw,
   GripHorizontal,
-  Move,
   RotateCcw,
-  Settings
+  Settings,
+  CheckCircle2,
+  ExternalLink
 } from 'lucide-react';
 import { PropertyCategory, HeroSlide, Property } from '../types';
 import { INITIAL_HERO_SLIDES } from '../data/mockData';
@@ -53,14 +50,6 @@ type TourDeckCategory =
   | 'properties_plots_villas'
   | 'upvc_construction';
 
-interface BrokenImageRecord {
-  id: string;
-  waypointLabel: string;
-  brokenUrl: string;
-  replacedWithUrl: string;
-  timestamp: string;
-}
-
 interface CameraWaypoint {
   id: string;
   code: string;
@@ -82,10 +71,6 @@ interface CameraWaypoint {
   galleryImages?: string[];
   videoUrl: string;
   videoTitle?: string;
-  motionOrigin: string;
-  panX: [string, string];
-  panY: [string, string];
-  scaleRange: [number, number];
   order: number;
   specs: {
     id: string;
@@ -96,22 +81,12 @@ interface CameraWaypoint {
 
 const MODULAR_CAPSULE_GALLERY = {
   fallbackCapsule1:
-    'https://images.unsplash.com/photo-1518780664697-55e3ad937233?auto=format&fit=crop&w=1600&q=85',
+    'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1600&q=85',
   fallbackCapsule2:
-    'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1600&q=85'
+    'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1600&q=85'
 };
 
 const ISLAMABAD_HIGHRISE_PROJECTS_GALLERY = {
-  centaurusTower:
-    'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1600&q=85',
-  gigaMallTower:
-    'https://images.unsplash.com/photo-1582407947304-fd86f028f716?auto=format&fit=crop&w=1600&q=85',
-  ufoneJinnahAvenue:
-    'https://images.unsplash.com/photo-1577495508048-b635879837f1?auto=format&fit=crop&w=1600&q=85',
-  skyparkOneGulberg:
-    'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1600&q=85',
-  stateLifeTower:
-    'https://images.unsplash.com/photo-1554469384-e58fac16e23a?auto=format&fit=crop&w=1600&q=85',
   fallbackHighrise1:
     'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1600&q=85',
   fallbackHighrise2:
@@ -122,16 +97,12 @@ const CONSTRUCTED_HOUSES_GALLERY = {
   house1_modernFaisalHillsVilla:
     'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1600&q=85',
   house2_contemporaryKanalEstate:
-    'https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=1600&q=85',
-  house3_stoneGlassMansion:
-    'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1600&q=85'
+    'https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=1600&q=85'
 };
 
 const UPVC_AND_INTERIOR_GALLERY = {
   upvc1_slidingPatioDoors:
-    'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1600&q=85',
-  upvc2_casementTiltTurnWindows:
-    'https://images.unsplash.com/photo-1600566753376-12c8ab7fb75b?auto=format&fit=crop&w=1600&q=85'
+    'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1600&q=85'
 };
 
 const SHOWROOM_VIDEOS = {
@@ -143,25 +114,38 @@ const SHOWROOM_VIDEOS = {
     'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4'
 };
 
-const INITIAL_REPLACED_BROKEN_LINKS: BrokenImageRecord[] = [
-  {
-    id: 'rep-1',
-    waypointLabel: 'The Centaurus & Citadel 7 Highrise',
-    brokenUrl: 'legacy-highrise-asset-1',
-    replacedWithUrl: ISLAMABAD_HIGHRISE_PROJECTS_GALLERY.centaurusTower,
-    timestamp: 'Verified High-Resolution Media'
-  },
-  {
-    id: 'rep-2',
-    waypointLabel: 'Giga Mall & Goldcrest Highlife',
-    brokenUrl: 'legacy-highrise-asset-2',
-    replacedWithUrl: ISLAMABAD_HIGHRISE_PROJECTS_GALLERY.gigaMallTower,
-    timestamp: 'Verified High-Resolution Media'
-  }
-];
-
 type AtmosphereGrade = 'crystal_daylight' | 'solar_vivid' | 'showroom_hdr';
 const WAYPOINT_DURATION_MS = 6500;
+
+function parseVideoEmbedInfo(url: string, isMuted: boolean): {
+  type: 'youtube' | 'vimeo' | 'native';
+  src: string;
+} {
+  const trimmed = (url || '').trim() || SHOWROOM_VIDEOS.architecturalFlyover;
+  const ytMatch = trimmed.match(
+    /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/
+  );
+  if (ytMatch && ytMatch[1]) {
+    return {
+      type: 'youtube',
+      src: `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1&mute=${
+        isMuted ? 1 : 0
+      }&loop=1&playlist=${ytMatch[1]}&rel=0`
+    };
+  }
+  const vimeoMatch = trimmed.match(
+    /vimeo\.com\/(?:channels\/(?:\w+\/)?|groups\/(?:[^/]*)\/videos\/|album\/(?:\d+)\/video\/|video\/|)(\d+)/
+  );
+  if (vimeoMatch && vimeoMatch[1]) {
+    return {
+      type: 'vimeo',
+      src: `https://player.vimeo.com/video/${vimeoMatch[1]}?autoplay=1&muted=${
+        isMuted ? 1 : 0
+      }&loop=1`
+    };
+  }
+  return { type: 'native', src: trimmed };
+}
 
 function resolveSlideTourCategory(slide: HeroSlide): {
   tourCategory: Exclude<TourDeckCategory, 'all_showroom'>;
@@ -170,9 +154,21 @@ function resolveSlideTourCategory(slide: HeroSlide): {
   codePrefix: string;
   fallbackImg: string;
   videoUrl: string;
+  videoTitle: string;
 } {
   const sampleCat = slide.samplePropertyData?.category;
   const tagText = `${slide.categoryTag || ''} ${slide.title || ''} ${slide.subtitle || ''}`.toLowerCase();
+  const explicitVideo = (
+    slide.videoUrl ||
+    slide.samplePropertyData?.virtualTourVideoUrl ||
+    ''
+  ).trim();
+  const explicitVideoTitle =
+    (
+      slide.videoTitle ||
+      slide.samplePropertyData?.virtualTourVideoTitle ||
+      ''
+    ).trim() || `${slide.title} — 360° Video Tour`;
 
   if (
     sampleCat === 'modular' ||
@@ -184,11 +180,11 @@ function resolveSlideTourCategory(slide: HeroSlide): {
     return {
       tourCategory: 'capsule_containers',
       propertyCategory: 'modular',
-      divisionTag:
-        'RI8CLICK CONSORTIUM // CONTAINER & SPACE CAPSULE SMART HOUSES',
+      divisionTag: 'RI8CLICK CONSORTIUM // CONTAINER & SPACE CAPSULE SMART HOUSES',
       codePrefix: 'CAPSULE',
       fallbackImg: MODULAR_CAPSULE_GALLERY.fallbackCapsule1,
-      videoUrl: SHOWROOM_VIDEOS.capsuleInteriorWalk
+      videoUrl: explicitVideo || SHOWROOM_VIDEOS.capsuleInteriorWalk,
+      videoTitle: explicitVideoTitle
     };
   }
 
@@ -205,7 +201,8 @@ function resolveSlideTourCategory(slide: HeroSlide): {
       divisionTag: 'RI8CLICK CONSORTIUM // GERMAN UPVC & TURNKEY ENGINEERING',
       codePrefix: 'UPVC',
       fallbackImg: UPVC_AND_INTERIOR_GALLERY.upvc1_slidingPatioDoors,
-      videoUrl: SHOWROOM_VIDEOS.villaDroneOrbit
+      videoUrl: explicitVideo || SHOWROOM_VIDEOS.villaDroneOrbit,
+      videoTitle: explicitVideoTitle
     };
   }
 
@@ -221,10 +218,11 @@ function resolveSlideTourCategory(slide: HeroSlide): {
     return {
       tourCategory: 'highrise_projects',
       propertyCategory: 'commercial',
-      divisionTag: 'RI8CLICK CONSORTIUM // ISLAMABAD HIGHRISE PROJECTS',
-      codePrefix: 'ISB',
+      divisionTag: 'RI8CLICK CONSORTIUM // ISLAMABAD & LAHORE HIGHRISE PROJECTS',
+      codePrefix: 'HIGHRISE',
       fallbackImg: ISLAMABAD_HIGHRISE_PROJECTS_GALLERY.fallbackHighrise1,
-      videoUrl: SHOWROOM_VIDEOS.architecturalFlyover
+      videoUrl: explicitVideo || SHOWROOM_VIDEOS.architecturalFlyover,
+      videoTitle: explicitVideoTitle
     };
   }
 
@@ -234,73 +232,59 @@ function resolveSlideTourCategory(slide: HeroSlide): {
     divisionTag: 'RI8CLICK CONSORTIUM // VERIFIED PLOTS & LUXURY VILLAS',
     codePrefix: 'PROP',
     fallbackImg: CONSTRUCTED_HOUSES_GALLERY.house1_modernFaisalHillsVilla,
-    videoUrl: SHOWROOM_VIDEOS.villaDroneOrbit
+    videoUrl: explicitVideo || SHOWROOM_VIDEOS.villaDroneOrbit,
+    videoTitle: explicitVideoTitle
   };
 }
 
 export const HeroSection: React.FC<HeroSectionProps> = ({
   onSelectCategoryFilter,
   onExploreClick,
-  onContactAgentClick,
   onOpen3DTour,
   slides = [],
   properties = [],
   canManageDeck = false,
   onOpenBannerAdmin
 }) => {
-  const [tourCategory, setTourCategory] =
-    useState<TourDeckCategory>('all_showroom');
+  const [tourCategory, setTourCategory] = useState<TourDeckCategory>('all_showroom');
   const [waypointIdx, setWaypointIdx] = useState<number>(0);
   const [isPaused, setIsPaused] = useState<boolean>(false);
   const [isVideoTourActive, setIsVideoTourActive] = useState<boolean>(false);
-  const [isCinemaTheaterMode, setIsCinemaTheaterMode] =
-    useState<boolean>(false);
+  const [isCinemaTheaterMode, setIsCinemaTheaterMode] = useState<boolean>(false);
   const [isMuted, setIsMuted] = useState<boolean>(true);
-  const [atmosphere, setAtmosphere] =
-    useState<AtmosphereGrade>('solar_vivid');
+  const [atmosphere, setAtmosphere] = useState<AtmosphereGrade>('crystal_daylight');
 
-  const [showLeftDescription, setShowLeftDescription] =
-    useState<boolean>(false);
+  const [showLeftDescription, setShowLeftDescription] = useState<boolean>(false);
   const [showDirectorDeck, setShowDirectorDeck] = useState<boolean>(true);
   const [showSpecCards, setShowSpecCards] = useState<boolean>(true);
-  const [showConsortiumRibbon, setShowConsortiumRibbon] =
-    useState<boolean>(false);
   const [showCategoryBar, setShowCategoryBar] = useState<boolean>(true);
-  const [showShowroomTourBar, setShowShowroomTourBar] =
-    useState<boolean>(true);
+  const [showShowroomTourBar, setShowShowroomTourBar] = useState<boolean>(true);
   const [isHudMenuOpen, setIsHudMenuOpen] = useState<boolean>(false);
-  const [showBrokenLinkModal, setShowBrokenLinkModal] =
-    useState<boolean>(false);
 
-  const [brokenLinksLog, setBrokenLinksLog] = useState<BrokenImageRecord[]>(
-    INITIAL_REPLACED_BROKEN_LINKS
-  );
-
-  const [isMobileViewport, setIsMobileViewport] = useState<boolean>(() =>
-    typeof window !== 'undefined' ? window.innerWidth < 1024 : false
-  );
   const [isDeckFloating, setIsDeckFloating] = useState<boolean>(true);
   const [isDeckMinimized, setIsDeckMinimized] = useState<boolean>(false);
   const [deckResetKey, setDeckResetKey] = useState<number>(0);
+  const [isMobileScreen, setIsMobileScreen] = useState<boolean>(false);
+
   const portfolioDeckDragControls = useDragControls();
   const heroStageRef = useRef<HTMLElement | null>(null);
-  const touchStartXRef = useRef<number | null>(null);
 
   const [videoFailed, setVideoFailed] = useState<boolean>(false);
   const [failedUrls, setFailedUrls] = useState<Record<string, boolean>>({});
-  const [customActiveImageOverride, setCustomActiveImageOverride] = useState<
-    string | null
-  >(null);
+  const [customActiveImageOverride, setCustomActiveImageOverride] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
   useEffect(() => {
-    const handleResize = () => {
-      const mobile = window.innerWidth < 1024;
-      setIsMobileViewport(mobile);
+    const checkViewport = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobileScreen(mobile);
+      if (mobile) {
+        setIsDeckFloating(false);
+      }
     };
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    checkViewport();
+    window.addEventListener('resize', checkViewport);
+    return () => window.removeEventListener('resize', checkViewport);
   }, []);
 
   const sanitizeConsortiumText = (text: string) =>
@@ -325,21 +309,12 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           ? slide.galleryImages.filter(Boolean)
           : [slide.imageUrl].filter(Boolean);
 
-      const primaryImg =
-        slideGallery[0] || slide.imageUrl || meta.fallbackImg;
+      const primaryImg = slideGallery[0] || slide.imageUrl || meta.fallbackImg;
       const secondaryImg = slideGallery[1] || primaryImg;
       const cleanTitle = sanitizeConsortiumText(slide.title);
       const shortLabel = cleanTitle.includes('—')
         ? cleanTitle.split('—')[0].trim().slice(0, 32)
         : cleanTitle.slice(0, 32);
-
-      const panPresets: [string, string][] = [
-        ['0%', '-1.2%'],
-        ['-1.0%', '0.8%'],
-        ['0.8%', '-0.8%'],
-        ['-0.6%', '0.6%']
-      ];
-      const panPair = panPresets[idx % panPresets.length];
 
       const featuresList =
         Array.isArray(slide.features) && slide.features.length > 0
@@ -349,15 +324,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               'German UPVC Thermal & Acoustic Glazing',
               'Direct Transfer & Turnkey Delivery'
             ];
-
-      const resolvedSlideVideo =
-        slide.videoUrl ||
-        slide.samplePropertyData?.virtualTourVideoUrl ||
-        meta.videoUrl;
-      const resolvedSlideVideoTitle =
-        slide.videoTitle ||
-        slide.samplePropertyData?.virtualTourVideoTitle ||
-        `${cleanTitle} — 360° Virtual Tour`;
 
       return {
         id: slide.id,
@@ -372,20 +338,18 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         headline: cleanTitle,
         description: sanitizeConsortiumText(slide.description || ''),
         valuation: slide.price || 'PKR 85 Lakh',
-        locationBadge: `${slide.society || 'Faisal Hills'} • ${slide.location || 'Taxila & Islamabad'}`,
+        locationBadge: `${slide.society || 'Faisal Hills'} • ${
+          slide.location || 'Taxila & Islamabad'
+        }`,
         focalLength: '24MM ARCHITECTURAL',
-        elevation: `${slide.tourRoomsCount || Math.max(slideGallery.length, 4)} ROOMS / ANGLES`,
+        elevation: `${slide.tourRoomsCount || Math.max(slideGallery.length, 4)} ANGLES`,
         fov: '88° WIDE',
         imageUrl: primaryImg,
         secondaryImageUrl: secondaryImg,
         fallbackUrl: meta.fallbackImg,
         galleryImages: slideGallery.length > 0 ? slideGallery : [primaryImg],
-        videoUrl: resolvedSlideVideo,
-        videoTitle: resolvedSlideVideoTitle,
-        motionOrigin: 'center center',
-        panX: panPair,
-        panY: ['0%', '-0.8%'],
-        scaleRange: [1.01, 1.05],
+        videoUrl: meta.videoUrl,
+        videoTitle: meta.videoTitle,
         order: slide.order ?? idx + 1,
         specs: featuresList.slice(0, 4).map((feat, fIdx) => ({
           id: `${slide.id}-spec-${fIdx}`,
@@ -402,72 +366,97 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
       };
     });
 
-    if (slideWaypoints.length > 0) {
-      return slideWaypoints;
-    }
+    const existingTitles = new Set(slideWaypoints.map(w => w.headline.toLowerCase()));
+    const customModularProps = (properties || []).filter(
+      p =>
+        p &&
+        p.status !== 'pending' &&
+        (p.category === 'modular' ||
+          (p.type && p.type.toLowerCase().includes('capsule'))) &&
+        p.images &&
+        p.images.length > 0 &&
+        !existingTitles.has(p.title.toLowerCase()) &&
+        !['prop-mod-1', 'prop-mod-2', 'prop-mod-3'].includes(p.id)
+    );
 
-    return [
-      {
-        id: 'fallback-wp-1',
-        code: 'SHOWROOM 01 //',
-        label: 'Faisal Hills Designer Villa',
-        subLabel: '1-Kanal Luxury Residence • Taxila & Islamabad',
-        tourCategory: 'properties_plots_villas',
-        propertyCategory: 'residential',
-        divisionTag: 'RI8CLICK CONSORTIUM // VERIFIED PROPERTIES',
-        headline: 'Modern 1-Kanal Designer Villa in Faisal Hills',
-        description:
-          'Verified luxury residential and commercial inventory across Taxila, Faisal Hills, and Islamabad.',
-        valuation: 'PKR 6.85 Crore',
-        locationBadge: 'Faisal Hills, Taxila / Islamabad',
+    const propertyWaypoints: CameraWaypoint[] = customModularProps.map((prop, pIdx) => {
+      const primaryImg = prop.images[0] || MODULAR_CAPSULE_GALLERY.fallbackCapsule1;
+      const secondaryImg = prop.images[1] || primaryImg;
+      return {
+        id: `prop-wp-${prop.id}`,
+        code: `NEW POST ${pIdx + 1} //`,
+        label: prop.title.slice(0, 28),
+        subLabel: prop.tagline || `${prop.location.society}, ${prop.location.city}`,
+        tourCategory: 'capsule_containers',
+        propertyCategory: 'modular',
+        divisionTag: 'RI8CLICK CONSORTIUM // LIVE POSTED CAPSULE & MODULAR',
+        headline: prop.title,
+        description: prop.description,
+        valuation: prop.priceFormatted,
+        locationBadge: `${prop.location.society}, ${prop.location.city}`,
         focalLength: '24MM PRIME',
-        elevation: '1 KANAL',
-        fov: '88° WIDE',
-        imageUrl: CONSTRUCTED_HOUSES_GALLERY.house1_modernFaisalHillsVilla,
-        secondaryImageUrl:
-          CONSTRUCTED_HOUSES_GALLERY.house2_contemporaryKanalEstate,
-        fallbackUrl: CONSTRUCTED_HOUSES_GALLERY.house3_stoneGlassMansion,
-        galleryImages: [
-          CONSTRUCTED_HOUSES_GALLERY.house1_modernFaisalHillsVilla
-        ],
-        videoUrl: SHOWROOM_VIDEOS.villaDroneOrbit,
-        videoTitle: 'Faisal Hills Designer Villa 360° Tour',
-        motionOrigin: 'center center',
-        panX: ['0%', '-1%'],
-        panY: ['0%', '-0.8%'],
-        scaleRange: [1.01, 1.05],
-        order: 1,
-        specs: [
+        elevation: `${prop.area} ${prop.areaUnit}`,
+        fov: '86° WIDE',
+        imageUrl: primaryImg,
+        secondaryImageUrl: secondaryImg,
+        fallbackUrl: MODULAR_CAPSULE_GALLERY.fallbackCapsule1,
+        galleryImages: prop.images,
+        videoUrl: prop.virtualTourVideoUrl || SHOWROOM_VIDEOS.capsuleInteriorWalk,
+        videoTitle: prop.virtualTourVideoTitle || `${prop.title} — 360° Video Tour`,
+        order: 1000 + pIdx,
+        specs: (prop.features || []).slice(0, 4).map((f, fIdx) => ({
+          id: `${prop.id}-sp-${fIdx}`,
+          title: `Feature ${fIdx + 1}`,
+          spec: f
+        }))
+      };
+    });
+
+    const combined = [...slideWaypoints, ...propertyWaypoints];
+    return combined.length > 0
+      ? combined
+      : [
           {
-            id: 'fb-1',
-            title: 'Highlight',
-            spec: '100% Verified Ri8click Listing'
+            id: 'fallback-wp-1',
+            code: 'SHOWROOM 01 //',
+            label: 'Faisal Hills Designer Villa',
+            subLabel: '1-Kanal Luxury Residence • Taxila & Islamabad',
+            tourCategory: 'properties_plots_villas',
+            propertyCategory: 'residential',
+            divisionTag: 'RI8CLICK CONSORTIUM // VERIFIED PROPERTIES',
+            headline: 'Modern 1-Kanal Designer Villa in Faisal Hills',
+            description:
+              'Verified luxury residential and commercial inventory across Taxila, Faisal Hills, and Islamabad.',
+            valuation: 'PKR 6.85 Crore',
+            locationBadge: 'Faisal Hills, Taxila / Islamabad',
+            focalLength: '24MM PRIME',
+            elevation: '1 KANAL',
+            fov: '88° WIDE',
+            imageUrl: CONSTRUCTED_HOUSES_GALLERY.house1_modernFaisalHillsVilla,
+            secondaryImageUrl: CONSTRUCTED_HOUSES_GALLERY.house2_contemporaryKanalEstate,
+            fallbackUrl: CONSTRUCTED_HOUSES_GALLERY.house1_modernFaisalHillsVilla,
+            galleryImages: [CONSTRUCTED_HOUSES_GALLERY.house1_modernFaisalHillsVilla],
+            videoUrl: SHOWROOM_VIDEOS.villaDroneOrbit,
+            videoTitle: 'Faisal Hills 360° Video Tour',
+            order: 1,
+            specs: [{ id: 'fb-1', title: 'Highlight', spec: '100% Verified Ri8click Listing' }]
           }
-        ]
-      }
-    ];
+        ];
   }, [slides, properties]);
 
   const cameraWaypoints = useMemo<CameraWaypoint[]>(() => {
     if (tourCategory === 'all_showroom') {
       return allCombinedWaypoints;
     }
-    const filtered = allCombinedWaypoints.filter(
-      w => w.tourCategory === tourCategory
-    );
+    const filtered = allCombinedWaypoints.filter(w => w.tourCategory === tourCategory);
     return filtered.length > 0 ? filtered : allCombinedWaypoints;
   }, [allCombinedWaypoints, tourCategory]);
 
-  const safeIdx =
-    waypointIdx < cameraWaypoints.length ? waypointIdx : 0;
-  const activeWaypoint =
-    cameraWaypoints[safeIdx] || allCombinedWaypoints[0];
+  const safeIdx = waypointIdx < cameraWaypoints.length ? waypointIdx : 0;
+  const activeWaypoint = cameraWaypoints[safeIdx] || allCombinedWaypoints[0];
 
   const resolveImageWithFallback = (wp: CameraWaypoint): string => {
-    if (
-      customActiveImageOverride &&
-      !failedUrls[customActiveImageOverride]
-    ) {
+    if (customActiveImageOverride && !failedUrls[customActiveImageOverride]) {
       return customActiveImageOverride;
     }
     if (!failedUrls[wp.imageUrl]) return wp.imageUrl;
@@ -478,29 +467,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 
   const resolvedImageUrl = resolveImageWithFallback(activeWaypoint);
 
-  const handleImageError = (brokenUrl: string, wpLabel: string) => {
-    setFailedUrls(prev => {
-      if (prev[brokenUrl]) return prev;
-      return { ...prev, [brokenUrl]: true };
-    });
-
-    setBrokenLinksLog(prev => {
-      if (prev.some(item => item.brokenUrl === brokenUrl)) return prev;
-      const replacement =
-        brokenUrl === activeWaypoint.imageUrl
-          ? activeWaypoint.secondaryImageUrl
-          : activeWaypoint.fallbackUrl;
-      return [
-        {
-          id: `auto-rep-${Date.now()}`,
-          waypointLabel: wpLabel,
-          brokenUrl,
-          replacedWithUrl: replacement,
-          timestamp: 'Auto-Replaced Live'
-        },
-        ...prev
-      ];
-    });
+  const handleImageError = (brokenUrl: string) => {
+    setFailedUrls(prev => (prev[brokenUrl] ? prev : { ...prev, [brokenUrl]: true }));
   };
 
   useEffect(() => {
@@ -520,20 +488,27 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
     return () => clearInterval(timer);
   }, [isPaused, isVideoTourActive, cameraWaypoints.length]);
 
+  const activeVideoEmbed = useMemo(
+    () =>
+      parseVideoEmbedInfo(
+        videoFailed ? SHOWROOM_VIDEOS.architecturalFlyover : activeWaypoint.videoUrl,
+        isMuted
+      ),
+    [activeWaypoint.videoUrl, isMuted, videoFailed]
+  );
+
   useEffect(() => {
-    if (isVideoTourActive && videoRef.current) {
+    if (isVideoTourActive && activeVideoEmbed.type === 'native' && videoRef.current) {
       videoRef.current.load();
       videoRef.current.play().catch(() => {
         setVideoFailed(true);
       });
     }
-  }, [isVideoTourActive, activeWaypoint.videoUrl]);
+  }, [isVideoTourActive, activeVideoEmbed.src, activeVideoEmbed.type]);
 
   const handlePrev = () => {
     setIsVideoTourActive(false);
-    setWaypointIdx(
-      prev => (prev - 1 + cameraWaypoints.length) % cameraWaypoints.length
-    );
+    setWaypointIdx(prev => (prev - 1 + cameraWaypoints.length) % cameraWaypoints.length);
   };
 
   const handleNext = () => {
@@ -542,27 +517,53 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   };
 
   const handleResetDeckPosition = () => {
-    setIsDeckFloating(true);
+    setIsDeckFloating(!isMobileScreen);
     setIsDeckMinimized(false);
     setDeckResetKey(prev => prev + 1);
   };
 
-  const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartXRef.current = e.touches[0]?.clientX ?? null;
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (touchStartXRef.current === null) return;
-    const endX = e.changedTouches[0]?.clientX ?? touchStartXRef.current;
-    const deltaX = endX - touchStartXRef.current;
-    if (Math.abs(deltaX) > 65) {
-      if (deltaX < 0) {
-        handleNext();
-      } else {
-        handlePrev();
-      }
-    }
-    touchStartXRef.current = null;
+  // Build a complete Property object for VirtualTour3DModal when opening 360° Tour from Hero Banner
+  const handleLaunchFull360Modal = (wp: CameraWaypoint) => {
+    const gallery =
+      wp.galleryImages && wp.galleryImages.length > 0
+        ? wp.galleryImages
+        : [wp.imageUrl, wp.secondaryImageUrl].filter(Boolean);
+    const tourPayload: Property = {
+      id: `hero-tour-${wp.id}`,
+      title: wp.headline,
+      tagline: wp.subLabel,
+      description: wp.description,
+      category:
+        wp.propertyCategory === 'all' ? 'modular' : wp.propertyCategory,
+      type: 'Capsule Smart House',
+      purpose: 'for_sale',
+      price: 8500000,
+      priceFormatted: wp.valuation,
+      currency: 'PKR',
+      location: {
+        province: 'Punjab',
+        city: wp.locationBadge.split('•')[1]?.trim() || 'Taxila / Islamabad',
+        society: wp.locationBadge.split('•')[0]?.trim() || 'Faisal Hills',
+        address: wp.locationBadge
+      },
+      area: wp.elevation,
+      areaUnit: 'Sq Ft',
+      features: wp.specs.map(s => s.spec),
+      images: gallery,
+      watermark: true,
+      agencyId: 'agency-1',
+      agentName: 'Malik Zeeshan Adil',
+      agentPhone: '+92 336-5666727',
+      agentWhatsApp: '923365666727',
+      agentAvatar: '',
+      agentCompany: 'Ri8click Consortium',
+      agentRating: 4.95,
+      createdAt: new Date().toISOString().split('T')[0],
+      virtualTourVideoUrl: wp.videoUrl,
+      virtualTourVideoTitle: wp.videoTitle || `${wp.headline} — 360° Video Tour`,
+      hasVirtualTour: true
+    };
+    onOpen3DTour(tourPayload);
   };
 
   const tourCategories: {
@@ -587,70 +588,32 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
       shortLabel: 'Capsule Pods',
       filterCategory: 'modular',
       icon: <Box className="w-3.5 h-3.5" />,
-      count: allCombinedWaypoints.filter(
-        w => w.tourCategory === 'capsule_containers'
-      ).length
+      count: allCombinedWaypoints.filter(w => w.tourCategory === 'capsule_containers').length
     },
     {
       id: 'highrise_projects',
-      label: 'Highrise Projects (Islamabad)',
-      shortLabel: 'Highrise Projects',
+      label: 'Highrise Projects',
+      shortLabel: 'Highrises',
       filterCategory: 'commercial',
       icon: <Building2 className="w-3.5 h-3.5" />,
-      count: allCombinedWaypoints.filter(
-        w => w.tourCategory === 'highrise_projects'
-      ).length
+      count: allCombinedWaypoints.filter(w => w.tourCategory === 'highrise_projects').length
     },
     {
       id: 'properties_plots_villas',
-      label: 'Properties (Plots & Houses)',
+      label: 'Plots & Villas',
       shortLabel: 'Plots & Villas',
       filterCategory: 'residential',
       icon: <Home className="w-3.5 h-3.5" />,
-      count: allCombinedWaypoints.filter(
-        w => w.tourCategory === 'properties_plots_villas'
-      ).length
+      count: allCombinedWaypoints.filter(w => w.tourCategory === 'properties_plots_villas')
+        .length
     },
     {
       id: 'upvc_construction',
-      label: 'Ri8click Consortium & UPVC',
+      label: 'Consortium & UPVC',
       shortLabel: 'UPVC & Doors',
       filterCategory: 'projects',
       icon: <Wrench className="w-3.5 h-3.5" />,
-      count: allCombinedWaypoints.filter(
-        w => w.tourCategory === 'upvc_construction'
-      ).length
-    }
-  ];
-
-  const consortiumPillars = [
-    {
-      id: 'capsule_containers' as TourDeckCategory,
-      category: 'modular' as PropertyCategory,
-      title: 'Container & Space Capsule Houses',
-      detail: 'Q3 Cabin • L-Loft • V2124 Duplex • Hex Pod',
-      icon: <Box className="w-4 h-4 text-amber-300" />
-    },
-    {
-      id: 'highrise_projects' as TourDeckCategory,
-      category: 'commercial' as PropertyCategory,
-      title: 'Islamabad Highrise Projects',
-      detail: 'Centaurus • Giga Mall • Citadel 7 • Ufone • ISE',
-      icon: <Building2 className="w-4 h-4 text-sky-300" />
-    },
-    {
-      id: 'properties_plots_villas' as TourDeckCategory,
-      category: 'residential' as PropertyCategory,
-      title: 'Properties: Plots & Constructed Villas',
-      detail: '5M, 10M, 1–2 Kanal Plots & Luxury Houses',
-      icon: <Home className="w-4 h-4 text-emerald-300" />
-    },
-    {
-      id: 'upvc_construction' as TourDeckCategory,
-      category: 'projects' as PropertyCategory,
-      title: 'German UPVC Doors, Windows & Interior',
-      detail: 'Sliding Patio, Tilt-Turn & Acoustic Partitions',
-      icon: <Layers className="w-4 h-4 text-purple-300" />
+      count: allCombinedWaypoints.filter(w => w.tourCategory === 'upvc_construction').length
     }
   ];
 
@@ -666,86 +629,48 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
     }
   }, [atmosphere]);
 
-  const ToggleSwitch = ({
-    label,
-    description,
-    checked,
-    onChange
-  }: {
-    label: string;
-    description?: string;
-    checked: boolean;
-    onChange: () => void;
-  }) => (
-    <button
-      type="button"
-      onClick={onChange}
-      className="w-full flex items-center justify-between gap-3 py-2 px-2.5 rounded-lg hover:bg-white/10 transition-colors text-left cursor-pointer"
-    >
-      <div>
-        <div className="text-xs font-semibold text-white">{label}</div>
-        {description && (
-          <div className="text-[10px] text-slate-300">{description}</div>
-        )}
-      </div>
-      <div
-        className={`w-9 h-5 rounded-full transition-colors p-0.5 flex items-center shrink-0 ${
-          checked ? 'bg-amber-400 justify-end' : 'bg-slate-700 justify-start'
-        }`}
-      >
-        <div className="w-4 h-4 rounded-full bg-slate-950 shadow-xs" />
-      </div>
-    </button>
-  );
-
-  const canDragDeck = isDeckFloating && !isMobileViewport;
+  const activeSlideGallery =
+    activeWaypoint.galleryImages && activeWaypoint.galleryImages.length > 0
+      ? activeWaypoint.galleryImages
+      : [activeWaypoint.imageUrl];
 
   return (
     <section
       ref={heroStageRef}
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
-      className="relative min-h-[620px] sm:min-h-[680px] lg:min-h-[790px] flex flex-col justify-between overflow-hidden bg-slate-900 text-white select-none"
+      className="relative min-h-[600px] sm:min-h-[680px] lg:min-h-[760px] flex flex-col justify-between overflow-hidden bg-slate-900 text-white select-none"
     >
       {/* 1. FULL-BLEED BACKGROUND STAGE */}
       <div className="absolute inset-0 z-0 overflow-hidden bg-slate-950">
         <AnimatePresence mode="sync">
-          {isVideoTourActive && !videoFailed ? (
+          {isVideoTourActive ? (
             <motion.div
-              key={`video-stream-${activeWaypoint.id}-${activeWaypoint.videoUrl}`}
+              key={`video-stream-${activeWaypoint.id}-${activeVideoEmbed.src}`}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.6 }}
-              className="absolute inset-0 w-full h-full"
+              transition={{ duration: 0.45 }}
+              className="absolute inset-0 w-full h-full bg-black"
             >
-              {activeWaypoint.videoUrl.includes('youtube.com') ||
-              activeWaypoint.videoUrl.includes('youtu.be') ? (
+              {activeVideoEmbed.type === 'youtube' ||
+              activeVideoEmbed.type === 'vimeo' ? (
                 <iframe
-                  src={
-                    activeWaypoint.videoUrl.includes('watch?v=')
-                      ? activeWaypoint.videoUrl.replace('watch?v=', 'embed/')
-                      : activeWaypoint.videoUrl.includes('youtu.be/')
-                      ? `https://www.youtube.com/embed/${
-                          activeWaypoint.videoUrl
-                            .split('youtu.be/')[1]
-                            ?.split('?')[0]
-                        }?autoplay=1&mute=1`
-                      : activeWaypoint.videoUrl
-                  }
+                  src={activeVideoEmbed.src}
                   title={activeWaypoint.videoTitle || activeWaypoint.headline}
-                  className="w-full h-full object-cover"
-                  allow="autoplay; fullscreen"
+                  className="w-full h-full border-0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
                 />
               ) : (
                 <video
                   ref={videoRef}
-                  src={activeWaypoint.videoUrl}
+                  key={activeVideoEmbed.src}
+                  src={activeVideoEmbed.src}
                   poster={resolvedImageUrl}
                   autoPlay
                   loop
                   muted={isMuted}
                   playsInline
+                  controls={false}
                   onError={() => setVideoFailed(true)}
                   style={atmosphereStyle}
                   className="w-full h-full object-cover object-center"
@@ -755,37 +680,13 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           ) : (
             <motion.div
               key={`${activeWaypoint.id}-${resolvedImageUrl}`}
-              initial={{
-                opacity: 0,
-                scale: activeWaypoint.scaleRange[0],
-                x: activeWaypoint.panX[0],
-                y: activeWaypoint.panY[0]
-              }}
-              animate={{
-                opacity: 1,
-                scale: isPaused
-                  ? activeWaypoint.scaleRange[0]
-                  : activeWaypoint.scaleRange[1],
-                x: isPaused ? '0%' : activeWaypoint.panX[1],
-                y: isPaused ? '0%' : activeWaypoint.panY[1]
-              }}
+              initial={{ opacity: 0, scale: 1.01 }}
+              animate={{ opacity: 1, scale: isPaused ? 1.01 : 1.04 }}
               exit={{ opacity: 0 }}
               transition={{
-                opacity: { duration: 0.65, ease: 'easeOut' },
-                scale: {
-                  duration: WAYPOINT_DURATION_MS / 1000 + 1.0,
-                  ease: 'linear'
-                },
-                x: {
-                  duration: WAYPOINT_DURATION_MS / 1000 + 1.0,
-                  ease: 'linear'
-                },
-                y: {
-                  duration: WAYPOINT_DURATION_MS / 1000 + 1.0,
-                  ease: 'linear'
-                }
+                opacity: { duration: 0.6, ease: 'easeOut' },
+                scale: { duration: WAYPOINT_DURATION_MS / 1000 + 1.0, ease: 'linear' }
               }}
-              style={{ transformOrigin: activeWaypoint.motionOrigin }}
               className="absolute inset-0 w-full h-full"
             >
               <img
@@ -793,32 +694,24 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 alt={`${activeWaypoint.headline} - ${activeWaypoint.label}`}
                 loading="eager"
                 decoding="async"
-                fetchPriority="high"
-                onError={() =>
-                  handleImageError(resolvedImageUrl, activeWaypoint.label)
-                }
-                style={{
-                  ...atmosphereStyle,
-                  imageRendering: 'high-quality' as any
-                }}
+                onError={() => handleImageError(resolvedImageUrl)}
+                style={atmosphereStyle}
                 className="w-full h-full object-cover object-center"
               />
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Subtle High-Clarity Scrim */}
         <div
-          className={`absolute inset-0 transition-all duration-500 ${
+          className={`absolute inset-0 pointer-events-none transition-all duration-500 ${
             isCinemaTheaterMode || !showLeftDescription
-              ? 'bg-gradient-to-t from-slate-950/65 via-transparent to-slate-950/25'
-              : 'bg-gradient-to-r from-slate-950/80 via-slate-950/40 to-transparent'
+              ? 'bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-slate-950/30'
+              : 'bg-gradient-to-r from-slate-950/85 via-slate-950/45 to-transparent'
           }`}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-slate-950/20" />
       </div>
 
-      {/* 2. TOP CATEGORY BAR */}
+      {/* 2. CATEGORY BAR */}
       <AnimatePresence>
         {showCategoryBar && !isCinemaTheaterMode && (
           <motion.div
@@ -840,7 +733,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                         setTourCategory(cat.id);
                         onSelectCategoryFilter(cat.filterCategory);
                       }}
-                      className={`px-2.5 sm:px-3 py-1.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all flex items-center gap-1.5 sm:gap-2 whitespace-nowrap cursor-pointer border ${
+                      className={`px-2.5 sm:px-3 py-1.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer border ${
                         isSelected
                           ? 'bg-amber-400 text-slate-950 border-amber-300 shadow-sm'
                           : 'bg-white/5 text-white border-white/15 hover:bg-white/15'
@@ -851,9 +744,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                       <span className="xl:hidden">{cat.shortLabel}</span>
                       <span
                         className={`text-[10px] px-1.5 py-0.2 rounded-full font-extrabold ${
-                          isSelected
-                            ? 'bg-slate-950 text-amber-300'
-                            : 'bg-white/15 text-white'
+                          isSelected ? 'bg-slate-950 text-amber-300' : 'bg-white/15 text-white'
                         }`}
                       >
                         {cat.count}
@@ -866,10 +757,10 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               <button
                 type="button"
                 onClick={() => setShowCategoryBar(false)}
-                className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-[11px] font-semibold text-slate-200 flex items-center gap-1 shrink-0 cursor-pointer"
+                className="px-2 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-[10px] font-semibold text-slate-200 flex items-center gap-1 shrink-0 cursor-pointer"
                 title="Hide Category Bar"
               >
-                <span className="hidden sm:inline">Hide Bar</span>
+                <span className="hidden sm:inline">Hide</span>
                 <ChevronUp className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -885,13 +776,13 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
-            className="relative z-20 border-b border-white/15 bg-slate-900/70 backdrop-blur-md"
+            className="relative z-20 border-b border-white/15 bg-slate-900/75 backdrop-blur-md"
           >
             <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-1.5 flex items-center justify-between gap-2 overflow-x-auto no-scrollbar">
               <div className="flex items-center gap-1.5">
                 <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-300 px-2 py-0.5 rounded bg-amber-500/15 border border-amber-400/30 flex items-center gap-1 shrink-0">
                   <Camera className="w-3 h-3" />
-                  <span>Angles ({cameraWaypoints.length})</span>
+                  <span>Slides ({cameraWaypoints.length})</span>
                 </span>
                 {cameraWaypoints.map((wp, idx) => {
                   const isSelected = safeIdx === idx;
@@ -900,7 +791,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                       key={wp.id}
                       type="button"
                       onClick={() => {
-                        setIsVideoTourActive(false);
                         setWaypointIdx(idx);
                       }}
                       className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all whitespace-nowrap cursor-pointer border ${
@@ -919,9 +809,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 type="button"
                 onClick={() => setShowShowroomTourBar(false)}
                 className="px-2 py-0.5 rounded-lg bg-white/10 hover:bg-white/20 text-[10px] font-semibold text-slate-200 flex items-center gap-1 shrink-0 cursor-pointer"
-                title="Hide Camera Waypoints Bar"
               >
-                <span className="hidden sm:inline">Hide</span>
                 <ChevronUp className="w-3 h-3" />
               </button>
             </div>
@@ -929,662 +817,487 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         )}
       </AnimatePresence>
 
-      {/* 4. MAIN FOREGROUND STAGE & VIVID CRYSTAL TRANSPARENT PORTFOLIO DECK */}
-      <div className="relative z-20 max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-3 sm:pt-4 pb-5 sm:pb-6 min-h-[500px] lg:min-h-[610px] flex flex-col justify-between w-full">
+      {/* 4. MAIN FOREGROUND STAGE & PORTFOLIO DECK */}
+      <div className="relative z-20 max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-3 pb-5 flex-1 flex flex-col justify-between w-full">
         {/* Top Utility Controls Row */}
         <div className="flex flex-wrap items-center justify-between gap-2 pb-2">
-          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-            <div className="inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 rounded-full bg-slate-950/65 backdrop-blur-xl border border-white/25">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-950/70 backdrop-blur-xl border border-white/20 max-w-full">
               <Building2 className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-              <span className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-white truncate max-w-[210px] sm:max-w-none">
-                Ri8click Consortium — Capsule Homes, Highrises &amp; UPVC
+              <span className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-white truncate">
+                Ri8click Consortium — Capsule Homes, Highrises &amp; German UPVC
               </span>
             </div>
-
-            <button
-              type="button"
-              onClick={() => setShowBrokenLinkModal(prev => !prev)}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-950/75 hover:bg-emerald-900/85 backdrop-blur-xl border border-emerald-400/45 text-emerald-200 text-[10px] font-bold transition-colors cursor-pointer"
-              title="View Verified Media Log"
-            >
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Synced ({cameraWaypoints.length})</span>
-            </button>
 
             {canManageDeck && onOpenBannerAdmin && (
               <button
                 type="button"
                 onClick={onOpenBannerAdmin}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-600/90 hover:bg-blue-500 backdrop-blur-xl border border-blue-300/40 text-white text-[10px] font-extrabold transition-colors cursor-pointer shadow-sm"
-                title="Synchronize & Edit Hero Slides in Admin Hub"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-extrabold border border-blue-400/40 cursor-pointer shadow-sm"
               >
                 <Settings className="w-3 h-3 text-amber-300" />
-                <span>Manage Deck in Admin Hub</span>
+                <span>Manage Deck &amp; 360° Video</span>
               </button>
             )}
           </div>
 
           <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 ml-auto">
+            {(!showCategoryBar || !showShowroomTourBar) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setShowCategoryBar(true);
+                  setShowShowroomTourBar(true);
+                }}
+                className="px-2.5 py-1.5 rounded-xl text-[11px] font-bold bg-white/15 hover:bg-white/25 text-white border border-white/20 backdrop-blur-xl cursor-pointer flex items-center gap-1"
+              >
+                <ChevronDown className="w-3.5 h-3.5" />
+                <span>Show Bars</span>
+              </button>
+            )}
+
             <button
               type="button"
-              onClick={() => {
-                setShowLeftDescription(prev => !prev);
-                if (!showDirectorDeck) setShowDirectorDeck(true);
-              }}
+              onClick={() => setShowLeftDescription(prev => !prev)}
               className={`px-2.5 sm:px-3 py-1.5 rounded-xl text-[11px] font-bold flex items-center gap-1.5 border transition-all cursor-pointer backdrop-blur-xl ${
-                !showLeftDescription
+                showLeftDescription
                   ? 'bg-amber-400 text-slate-950 border-amber-300 shadow-sm'
-                  : 'bg-slate-950/60 text-white border-white/25 hover:bg-slate-900/80'
+                  : 'bg-slate-950/70 text-white border-white/25 hover:bg-slate-900'
               }`}
             >
               {showLeftDescription ? (
                 <>
                   <EyeOff className="w-3.5 h-3.5" />
-                  <span>Hide Text</span>
+                  <span>Hide Details</span>
                 </>
               ) : (
                 <>
                   <FileText className="w-3.5 h-3.5" />
-                  <span>Full Text</span>
+                  <span>Slide Details</span>
                 </>
               )}
             </button>
 
+            {/* FUNCTIONAL 360° VIDEO TOUR BUTTON */}
             <button
               type="button"
-              onClick={() => setIsVideoTourActive(prev => !prev)}
-              className={`px-2.5 sm:px-3 py-1.5 rounded-xl text-[11px] font-bold flex items-center gap-1.5 border transition-all cursor-pointer backdrop-blur-xl ${
+              onClick={() => {
+                setVideoFailed(false);
+                setIsVideoTourActive(prev => !prev);
+              }}
+              className={`px-2.5 sm:px-3 py-1.5 rounded-xl text-[11px] font-extrabold flex items-center gap-1.5 border transition-all cursor-pointer backdrop-blur-xl ${
                 isVideoTourActive
-                  ? 'bg-amber-400 text-slate-950 border-amber-300'
-                  : 'bg-slate-950/60 text-white border-white/25 hover:bg-slate-900/80'
+                  ? 'bg-amber-400 text-slate-950 border-amber-300 shadow-md'
+                  : 'bg-indigo-600/90 hover:bg-indigo-500 text-white border-indigo-400/50 shadow-sm'
               }`}
             >
               <Video className="w-3.5 h-3.5" />
-              <span>{isVideoTourActive ? '360° Video: ON' : '360° Video Tour'}</span>
+              <span>
+                {isVideoTourActive ? '360° Video Tour: ON' : '360° Video Tour'}
+              </span>
             </button>
 
             {isVideoTourActive && (
-              <button
-                type="button"
-                onClick={() => setIsMuted(prev => !prev)}
-                className="p-1.5 rounded-xl bg-slate-950/60 hover:bg-slate-900/80 backdrop-blur-xl border border-white/25 text-white transition-colors cursor-pointer"
-                title={isMuted ? 'Unmute Audio' : 'Mute Audio'}
-              >
-                {isMuted ? (
-                  <VolumeX className="w-3.5 h-3.5" />
-                ) : (
-                  <Volume2 className="w-3.5 h-3.5 text-amber-400" />
-                )}
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={() => setIsMuted(prev => !prev)}
+                  className="p-1.5 rounded-xl bg-slate-950/80 hover:bg-slate-900 backdrop-blur-xl border border-white/25 text-white transition-colors cursor-pointer"
+                  title={isMuted ? 'Unmute Video Audio' : 'Mute Video Audio'}
+                >
+                  {isMuted ? (
+                    <VolumeX className="w-3.5 h-3.5 text-rose-400" />
+                  ) : (
+                    <Volume2 className="w-3.5 h-3.5 text-emerald-400" />
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleLaunchFull360Modal(activeWaypoint)}
+                  className="px-2.5 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-[11px] font-extrabold flex items-center gap-1 cursor-pointer shadow-sm"
+                  title="Open Fullscreen 360° Video & Room Studio"
+                >
+                  <ExternalLink className="w-3 h-3" />
+                  <span className="hidden sm:inline">Fullscreen Studio</span>
+                </button>
+              </>
             )}
+
+            <button
+              type="button"
+              onClick={() => {
+                setShowDirectorDeck(true);
+                setIsDeckMinimized(prev => !prev);
+              }}
+              className="px-2.5 sm:px-3 py-1.5 rounded-xl text-[11px] font-bold bg-blue-600/90 hover:bg-blue-500 text-white border border-blue-400/40 flex items-center gap-1.5 cursor-pointer shadow-sm"
+            >
+              {isDeckMinimized ? (
+                <>
+                  <Maximize2 className="w-3.5 h-3.5" />
+                  <span>Expand Deck</span>
+                </>
+              ) : (
+                <>
+                  <Minimize2 className="w-3.5 h-3.5" />
+                  <span>Minimize Deck</span>
+                </>
+              )}
+            </button>
 
             <div className="relative">
               <button
                 type="button"
                 onClick={() => setIsHudMenuOpen(prev => !prev)}
-                className={`px-2.5 sm:px-3 py-1.5 rounded-xl text-[11px] font-bold flex items-center gap-1.5 border transition-all cursor-pointer backdrop-blur-xl ${
+                className={`px-2.5 sm:px-3 py-1.5 rounded-xl text-[11px] font-bold border transition-all flex items-center gap-1.5 cursor-pointer backdrop-blur-xl ${
                   isHudMenuOpen
                     ? 'bg-amber-400 text-slate-950 border-amber-300'
-                    : 'bg-slate-950/60 text-white border-white/25 hover:bg-slate-900/80'
+                    : 'bg-slate-950/70 border-white/20 text-white hover:bg-slate-900'
                 }`}
               >
                 <SlidersHorizontal className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">View Controls</span>
+                <span className="hidden sm:inline">Controls</span>
               </button>
 
               <AnimatePresence>
                 {isHudMenuOpen && (
                   <motion.div
-                    initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                    initial={{ opacity: 0, y: 6, scale: 0.96 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 8, scale: 0.96 }}
-                    className="absolute right-0 mt-2 w-72 rounded-2xl bg-slate-950/90 backdrop-blur-2xl border border-white/25 p-3.5 shadow-2xl z-50 space-y-2"
+                    exit={{ opacity: 0, y: 6, scale: 0.96 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute right-0 mt-2 w-64 rounded-2xl bg-slate-900/95 backdrop-blur-2xl border border-white/20 shadow-2xl p-3.5 z-50 space-y-2.5"
                   >
-                    <div className="flex items-center justify-between border-b border-white/15 pb-2">
-                      <span className="text-xs font-extrabold uppercase tracking-wider text-amber-400">
-                        Showroom Display Controls
+                    <div className="flex items-center justify-between pb-2 border-b border-white/15">
+                      <span className="text-[11px] font-extrabold uppercase tracking-wider text-amber-300">
+                        Stage &amp; Deck Options
                       </span>
                       <button
                         type="button"
                         onClick={() => setIsHudMenuOpen(false)}
-                        className="text-xs text-slate-300 hover:text-white cursor-pointer"
+                        className="text-[10px] text-slate-300 hover:text-white cursor-pointer"
                       >
-                        Close
+                        Done
                       </button>
                     </div>
 
-                    <div className="space-y-1">
-                      <ToggleSwitch
-                        label="Left Description Panel"
-                        description="Show full headline & specs on left"
-                        checked={showLeftDescription}
-                        onChange={() => setShowLeftDescription(prev => !prev)}
-                      />
-                      <ToggleSwitch
-                        label="Crystal Portfolio Deck"
-                        description="Show interactive slide deck on right"
-                        checked={showDirectorDeck}
-                        onChange={() => setShowDirectorDeck(prev => !prev)}
-                      />
-                      <ToggleSwitch
-                        label="Feature Spec Badges"
-                        description="Show engineering highlight badges"
-                        checked={showSpecCards}
-                        onChange={() => setShowSpecCards(prev => !prev)}
-                      />
-                      <ToggleSwitch
-                        label="Top Category Bar"
-                        description="Show division filter bar at top"
-                        checked={showCategoryBar}
-                        onChange={() => setShowCategoryBar(prev => !prev)}
-                      />
-                      <ToggleSwitch
-                        label="Camera Waypoints Bar"
-                        description="Show quick angle selector bar"
-                        checked={showShowroomTourBar}
-                        onChange={() => setShowShowroomTourBar(prev => !prev)}
-                      />
-                      <ToggleSwitch
-                        label="Consortium 4-Pillar Ribbon"
-                        description="Show bottom division summary cards"
-                        checked={showConsortiumRibbon}
-                        onChange={() => setShowConsortiumRibbon(prev => !prev)}
-                      />
+                    <div className="grid grid-cols-3 gap-1">
+                      {(
+                        [
+                          { id: 'crystal_daylight', label: 'Natural' },
+                          { id: 'solar_vivid', label: 'Vivid' },
+                          { id: 'showroom_hdr', label: 'Crisp HDR' }
+                        ] as { id: AtmosphereGrade; label: string }[]
+                      ).map(grade => (
+                        <button
+                          key={grade.id}
+                          type="button"
+                          onClick={() => setAtmosphere(grade.id)}
+                          className={`px-2 py-1.5 rounded-lg text-[10px] font-bold border cursor-pointer ${
+                            atmosphere === grade.id
+                              ? 'bg-amber-400 text-slate-950 border-amber-300'
+                              : 'bg-white/5 text-slate-300 border-white/10'
+                          }`}
+                        >
+                          {grade.label}
+                        </button>
+                      ))}
                     </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowDirectorDeck(prev => !prev)}
+                      className="w-full py-2 px-3 rounded-xl bg-white/10 hover:bg-white/15 text-xs font-bold text-white flex items-center justify-between cursor-pointer"
+                    >
+                      <span>Show Portfolio Deck</span>
+                      <span>{showDirectorDeck ? 'ON' : 'OFF'}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowSpecCards(prev => !prev)}
+                      className="w-full py-2 px-3 rounded-xl bg-white/10 hover:bg-white/15 text-xs font-bold text-white flex items-center justify-between cursor-pointer"
+                    >
+                      <span>Bottom Feature Strip</span>
+                      <span>{showSpecCards ? 'ON' : 'OFF'}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setIsCinemaTheaterMode(prev => !prev)}
+                      className="w-full py-2 px-3 rounded-xl bg-white/10 hover:bg-white/15 text-xs font-bold text-white flex items-center justify-between cursor-pointer"
+                    >
+                      <span>Clean Theater View</span>
+                      <span>{isCinemaTheaterMode ? 'ON' : 'OFF'}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleResetDeckPosition}
+                      className="w-full py-2 px-3 rounded-xl bg-amber-400/20 hover:bg-amber-400/30 text-amber-300 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span>Reset Deck Position</span>
+                    </button>
                   </motion.div>
                 )}
               </AnimatePresence>
             </div>
-
-            <button
-              type="button"
-              onClick={() => setIsCinemaTheaterMode(prev => !prev)}
-              className={`px-2.5 sm:px-3 py-1.5 rounded-xl text-[11px] font-bold flex items-center gap-1.5 border transition-all cursor-pointer backdrop-blur-xl ${
-                isCinemaTheaterMode
-                  ? 'bg-amber-400 text-slate-950 border-amber-300'
-                  : 'bg-slate-950/60 text-white border-white/25 hover:bg-slate-900/80'
-              }`}
-              title="Toggle Pure Fullscreen Image View"
-            >
-              {isCinemaTheaterMode ? (
-                <>
-                  <Minimize2 className="w-3.5 h-3.5" />
-                  <span>Exit Pure View</span>
-                </>
-              ) : (
-                <>
-                  <Maximize2 className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Pure View</span>
-                </>
-              )}
-            </button>
           </div>
         </div>
 
-        {/* Verified Media Log Modal */}
-        <AnimatePresence>
-          {showBrokenLinkModal && (
-            <motion.div
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              className="mb-4 rounded-2xl bg-slate-950/90 backdrop-blur-2xl border border-emerald-400/45 p-4 text-xs shadow-2xl space-y-2.5"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 font-extrabold text-emerald-300">
-                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                  <span>
-                    Global Hero Banner &amp; 360° Media Sync Status (
-                    {cameraWaypoints.length} Active Slides)
+        {/* Center / Bottom Content Area */}
+        <div className="my-auto py-2 grid grid-cols-1 lg:grid-cols-12 gap-4 items-end">
+          {/* Left Slide Description Panel */}
+          <div className="lg:col-span-7 space-y-3">
+            {showLeftDescription && !isCinemaTheaterMode && (
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 12 }}
+                className="p-4 sm:p-6 rounded-3xl bg-slate-950/75 backdrop-blur-xl border border-white/20 space-y-3 max-w-2xl shadow-2xl"
+              >
+                <div className="flex flex-wrap items-center gap-2 text-[11px] font-bold text-amber-300 uppercase tracking-wider">
+                  <span>{activeWaypoint.code}</span>
+                  <span>•</span>
+                  <span className="flex items-center gap-1 text-emerald-300">
+                    <MapPin className="w-3.5 h-3.5" />
+                    {activeWaypoint.locationBadge}
                   </span>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setShowBrokenLinkModal(false)}
-                  className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white font-bold cursor-pointer"
-                >
-                  Close
-                </button>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-40 overflow-y-auto">
-                {brokenLinksLog.map(item => (
-                  <div
-                    key={item.id}
-                    className="p-2 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between gap-2"
-                  >
-                    <div className="truncate">
-                      <div className="font-bold text-white truncate">
-                        {item.waypointLabel}
-                      </div>
-                      <div className="text-[10px] text-emerald-300">
-                        {item.timestamp}
-                      </div>
-                    </div>
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+
+                <h1 className="text-xl sm:text-3xl lg:text-4xl font-black text-white leading-tight">
+                  {activeWaypoint.headline}
+                </h1>
+
+                <p className="text-xs sm:text-sm text-slate-200 leading-relaxed line-clamp-3">
+                  {activeWaypoint.description}
+                </p>
+
+                <div className="flex flex-wrap items-center gap-3 pt-2">
+                  <div className="px-3.5 py-2 rounded-xl bg-white/10 border border-white/15">
+                    <span className="text-[10px] uppercase text-slate-300 block font-bold">
+                      Valuation / Price
+                    </span>
+                    <span className="text-sm sm:text-base font-black text-amber-400">
+                      {activeWaypoint.valuation}
+                    </span>
                   </div>
-                ))}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
 
-        {/* Center / Main Stage Content */}
-        {!isCinemaTheaterMode && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-end my-auto py-2">
-            {/* Left Full Description Panel (Optional Toggle) */}
-            <div className="lg:col-span-7 space-y-4">
-              <AnimatePresence mode="wait">
-                {showLeftDescription ? (
-                  <motion.div
-                    key={`desc-full-${activeWaypoint.id}`}
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -12 }}
-                    transition={{ duration: 0.3 }}
-                    className="p-5 sm:p-6 rounded-3xl bg-slate-950/60 backdrop-blur-xl border border-white/25 shadow-2xl space-y-4"
+                  <button
+                    type="button"
+                    onClick={onExploreClick}
+                    className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-extrabold cursor-pointer shadow-lg"
                   >
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="px-2.5 py-1 rounded-md bg-amber-400 text-slate-950 text-[10px] font-black uppercase tracking-wider">
-                        {activeWaypoint.code} {activeWaypoint.label}
-                      </span>
-                      <span className="px-3 py-1 rounded-full bg-white/10 border border-white/20 text-xs font-bold text-amber-200 flex items-center gap-1.5">
-                        <MapPin className="w-3.5 h-3.5 text-amber-400" />
-                        <span>{activeWaypoint.locationBadge}</span>
-                      </span>
-                    </div>
+                    Explore Inventory
+                  </button>
 
-                    <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight leading-tight">
-                      {activeWaypoint.headline}
-                    </h1>
-
-                    <p className="text-xs sm:text-sm text-slate-200 leading-relaxed">
-                      {activeWaypoint.description}
-                    </p>
-
-                    {showSpecCards && activeWaypoint.specs.length > 0 && (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-                        {activeWaypoint.specs.map(sp => (
-                          <div
-                            key={sp.id}
-                            className="px-3 py-2 rounded-xl bg-white/10 border border-white/15 flex items-center gap-2"
-                          >
-                            <CheckCircle2 className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                            <div className="min-w-0">
-                              <div className="text-[10px] uppercase font-bold text-amber-300">
-                                {sp.title}
-                              </div>
-                              <div className="text-xs font-bold text-white truncate">
-                                {sp.spec}
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    <div className="flex flex-wrap items-center gap-3 pt-2">
-                      <div className="px-4 py-2 rounded-2xl bg-emerald-950/80 border border-emerald-400/50">
-                        <span className="text-[10px] font-bold uppercase text-emerald-300 block">
-                          Direct Valuation
-                        </span>
-                        <span className="text-base sm:text-lg font-black text-white">
-                          {activeWaypoint.valuation}
-                        </span>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={onExploreClick}
-                        className="px-5 py-3 rounded-2xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs uppercase tracking-wider transition-all shadow-lg cursor-pointer"
-                      >
-                        Explore Inventory
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() =>
-                          onOpen3DTour({
-                            id: activeWaypoint.id,
-                            title: activeWaypoint.headline,
-                            tagline: activeWaypoint.subLabel,
-                            description: activeWaypoint.description,
-                            priceFormatted: activeWaypoint.valuation,
-                            category: activeWaypoint.propertyCategory,
-                            images:
-                              activeWaypoint.galleryImages &&
-                              activeWaypoint.galleryImages.length > 0
-                                ? activeWaypoint.galleryImages
-                                : [
-                                    activeWaypoint.imageUrl,
-                                    activeWaypoint.secondaryImageUrl
-                                  ],
-                            virtualTourVideoUrl: activeWaypoint.videoUrl,
-                            virtualTourVideoTitle:
-                              activeWaypoint.videoTitle ||
-                              `${activeWaypoint.headline} — 360° Virtual Tour`,
-                            hasVirtualTour: Boolean(activeWaypoint.videoUrl),
-                            location: {
-                              city: 'Taxila & Islamabad',
-                              society: activeWaypoint.locationBadge,
-                              province: 'Punjab'
-                            }
-                          })
-                        }
-                        className="px-4 py-3 rounded-2xl bg-white/15 hover:bg-white/25 border border-white/30 text-white font-bold text-xs flex items-center gap-2 transition-all cursor-pointer"
-                      >
-                        <Compass className="w-4 h-4 text-amber-300" />
-                        <span>Launch 360° Tour</span>
-                      </button>
-                    </div>
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key={`desc-compact-${activeWaypoint.id}`}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="inline-flex flex-col gap-2 p-3.5 sm:p-4 rounded-2xl bg-slate-950/55 backdrop-blur-xl border border-white/25 max-w-xl"
+                  <button
+                    type="button"
+                    onClick={() => handleLaunchFull360Modal(activeWaypoint)}
+                    className="px-4 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-extrabold cursor-pointer flex items-center gap-1.5 shadow-lg"
                   >
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="px-2 py-0.5 rounded bg-amber-400 text-slate-950 text-[10px] font-black uppercase">
-                        {activeWaypoint.code}
-                      </span>
-                      <span className="text-xs font-extrabold text-amber-300">
-                        {activeWaypoint.locationBadge}
-                      </span>
-                      <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/25 border border-emerald-400/50 text-emerald-200 text-xs font-black">
-                        {activeWaypoint.valuation}
-                      </span>
-                    </div>
-                    <h2 className="text-base sm:text-xl font-black text-white leading-snug">
-                      {activeWaypoint.headline}
-                    </h2>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+                    <Compass className="w-3.5 h-3.5" />
+                    <span>Launch 360° &amp; Video Studio</span>
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </div>
 
-            {/* Right Vivid Crystal Transparent Portfolio Deck */}
-            {showDirectorDeck && (
-              <div className="lg:col-span-5 flex justify-end w-full">
-                <motion.div
-                  key={`crystal-deck-${deckResetKey}`}
-                  drag={canDragDeck}
-                  dragControls={portfolioDeckDragControls}
-                  dragListener={false}
-                  dragMomentum={false}
-                  className="w-full max-w-md rounded-3xl bg-white/[0.10] backdrop-blur-xl border border-white/35 shadow-[0_20px_60px_rgba(0,0,0,0.55)] overflow-hidden text-white"
+          {/* PORTFOLIO DECK — Mobile Responsive & Dockable/Draggable */}
+          {showDirectorDeck && !isCinemaTheaterMode && (
+            <motion.div
+              key={`portfolio-deck-${deckResetKey}`}
+              drag={!isMobileScreen && isDeckFloating}
+              dragControls={portfolioDeckDragControls}
+              dragListener={false}
+              dragMomentum={false}
+              className="lg:col-span-5 w-full max-w-full sm:max-w-md ml-auto z-30"
+            >
+              <div className="rounded-2xl sm:rounded-3xl bg-slate-950/80 backdrop-blur-2xl border border-white/25 shadow-2xl overflow-hidden text-white">
+                {/* Deck Header Bar */}
+                <div
+                  onPointerDown={e => {
+                    if (!isMobileScreen && isDeckFloating) {
+                      portfolioDeckDragControls.start(e);
+                    }
+                  }}
+                  className="px-3.5 py-2.5 bg-slate-900/90 border-b border-white/15 flex items-center justify-between gap-2 cursor-grab active:cursor-grabbing"
                 >
-                  {/* Crystal Deck Header */}
-                  <div
-                    onPointerDown={e => {
-                      if (canDragDeck) {
-                        portfolioDeckDragControls.start(e);
-                      }
-                    }}
-                    className={`px-4 py-2.5 bg-slate-950/45 border-b border-white/20 flex items-center justify-between gap-2 ${
-                      canDragDeck ? 'cursor-grab active:cursor-grabbing' : ''
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 min-w-0">
-                      <GripHorizontal className="w-4 h-4 text-amber-300 shrink-0" />
-                      <span className="text-[11px] font-black uppercase tracking-wider text-white truncate">
-                        Portfolio Deck ({safeIdx + 1}/{cameraWaypoints.length})
-                      </span>
-                      <span className="px-2 py-0.5 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black">
-                        {activeWaypoint.valuation}
-                      </span>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <GripHorizontal className="w-4 h-4 text-amber-400 shrink-0 hidden sm:block" />
+                    <div className="min-w-0">
+                      <div className="text-[10px] font-black uppercase tracking-wider text-amber-300 flex items-center gap-1.5">
+                        <span>Portfolio Deck</span>
+                        <span className="px-1.5 py-0.2 rounded bg-white/15 text-white">
+                          {safeIdx + 1}/{cameraWaypoints.length}
+                        </span>
+                      </div>
+                      <div className="text-xs font-bold text-white truncate">
+                        {activeWaypoint.label}
+                      </div>
                     </div>
+                  </div>
 
-                    <div className="flex items-center gap-1 shrink-0">
-                      {!isMobileViewport && (
-                        <button
-                          type="button"
-                          onClick={handleResetDeckPosition}
-                          className="p-1 rounded-lg bg-white/10 hover:bg-white/25 text-white cursor-pointer"
-                          title="Reset Deck Position"
-                        >
-                          <RotateCcw className="w-3.5 h-3.5" />
-                        </button>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      type="button"
+                      onClick={handlePrev}
+                      className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white cursor-pointer"
+                      title="Previous Slide"
+                    >
+                      <ChevronLeft className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsPaused(prev => !prev)}
+                      className="p-1.5 rounded-lg bg-amber-400 text-slate-950 hover:bg-amber-300 cursor-pointer"
+                      title={isPaused ? 'Resume Autoplay' : 'Pause Autoplay'}
+                    >
+                      {isPaused ? (
+                        <Play className="w-3.5 h-3.5 fill-current" />
+                      ) : (
+                        <Pause className="w-3.5 h-3.5 fill-current" />
                       )}
-                      <button
-                        type="button"
-                        onClick={() => setIsDeckMinimized(prev => !prev)}
-                        className="p-1 rounded-lg bg-white/10 hover:bg-white/25 text-white cursor-pointer"
-                        title={
-                          isDeckMinimized ? 'Expand Deck' : 'Minimize Deck'
-                        }
-                      >
-                        {isDeckMinimized ? (
-                          <ChevronDown className="w-3.5 h-3.5" />
-                        ) : (
-                          <ChevronUp className="w-3.5 h-3.5" />
-                        )}
-                      </button>
-                    </div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleNext}
+                      className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white cursor-pointer"
+                      title="Next Slide"
+                    >
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsDeckMinimized(prev => !prev)}
+                      className="p-1.5 rounded-lg bg-blue-600/80 hover:bg-blue-500 text-white cursor-pointer ml-1"
+                      title={
+                        isDeckMinimized
+                          ? 'Expand Portfolio Deck'
+                          : 'Minimize Portfolio Deck'
+                      }
+                    >
+                      {isDeckMinimized ? (
+                        <Maximize2 className="w-3.5 h-3.5" />
+                      ) : (
+                        <Minimize2 className="w-3.5 h-3.5" />
+                      )}
+                    </button>
                   </div>
+                </div>
 
-                  {!isDeckMinimized && (
-                    <div className="p-4 space-y-3.5">
-                      {/* Active Slide Summary inside Deck */}
-                      <div className="space-y-1">
-                        <div className="text-[10px] font-extrabold uppercase tracking-wider text-amber-300">
+                {/* Expandable Deck Body */}
+                {!isDeckMinimized && (
+                  <div className="p-3.5 space-y-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <span className="text-[10px] font-bold uppercase text-amber-300 block truncate">
                           {activeWaypoint.subLabel}
-                        </div>
-                        <h3 className="text-sm sm:text-base font-black text-white leading-snug line-clamp-2">
+                        </span>
+                        <h3 className="text-sm font-extrabold text-white line-clamp-1">
                           {activeWaypoint.headline}
                         </h3>
                       </div>
+                      <span className="px-2.5 py-1 rounded-xl bg-amber-400 text-slate-950 text-xs font-black shrink-0">
+                        {activeWaypoint.valuation}
+                      </span>
+                    </div>
 
-                      {/* Multi-Angle Thumbnails inside Crystal Deck */}
-                      {activeWaypoint.galleryImages &&
-                        activeWaypoint.galleryImages.length > 1 && (
-                          <div className="space-y-1">
-                            <div className="flex items-center justify-between text-[10px] font-bold text-slate-200">
-                              <span>
-                                Slide Angles (
-                                {activeWaypoint.galleryImages.length} Photos)
-                              </span>
-                              <span>Click to Switch Angle</span>
-                            </div>
-                            <div className="grid grid-cols-4 gap-1.5">
-                              {activeWaypoint.galleryImages
-                                .slice(0, 4)
-                                .map((gImg, gIdx) => {
-                                  const isCurrentAngle =
-                                    resolvedImageUrl === gImg;
-                                  return (
-                                    <button
-                                      key={`${gImg}-${gIdx}`}
-                                      type="button"
-                                      onClick={() => {
-                                        setIsVideoTourActive(false);
-                                        setCustomActiveImageOverride(gImg);
-                                      }}
-                                      className={`relative h-12 rounded-xl overflow-hidden border-2 transition-all cursor-pointer ${
-                                        isCurrentAngle
-                                          ? 'border-amber-400 scale-[1.03]'
-                                          : 'border-white/25 opacity-80 hover:opacity-100'
-                                      }`}
-                                    >
-                                      <img
-                                        src={gImg}
-                                        alt={`Angle ${gIdx + 1}`}
-                                        className="w-full h-full object-cover"
-                                      />
-                                      <span className="absolute bottom-0.5 right-1 text-[9px] font-black px-1 rounded bg-slate-950/80 text-white">
-                                        #{gIdx + 1}
-                                      </span>
-                                    </button>
-                                  );
-                                })}
-                            </div>
-                          </div>
-                        )}
-
-                      {/* Quick Waypoint Grid Selector */}
-                      <div className="grid grid-cols-2 gap-1.5 max-h-36 overflow-y-auto pr-0.5">
-                        {cameraWaypoints.map((wp, idx) => {
-                          const active = idx === safeIdx;
-                          return (
-                            <button
-                              key={wp.id}
-                              type="button"
-                              onClick={() => {
-                                setIsVideoTourActive(false);
-                                setWaypointIdx(idx);
-                              }}
-                              className={`p-1.5 rounded-xl border text-left flex items-center gap-2 transition-all cursor-pointer ${
-                                active
-                                  ? 'bg-amber-400 text-slate-950 border-amber-300 font-black shadow-sm'
-                                  : 'bg-slate-950/45 text-white border-white/20 hover:bg-slate-950/70'
-                              }`}
-                            >
-                              <img
-                                src={wp.imageUrl}
-                                alt={wp.label}
-                                onError={e => {
-                                  (e.target as HTMLImageElement).src =
-                                    wp.fallbackUrl;
-                                }}
-                                className="w-9 h-9 rounded-lg object-cover shrink-0 border border-white/20"
-                              />
-                              <div className="min-w-0 flex-1">
-                                <div className="text-[10.5px] font-extrabold truncate">
-                                  {idx + 1}. {wp.label}
-                                </div>
-                                <div
-                                  className={`text-[9.5px] font-bold truncate ${
-                                    active
-                                      ? 'text-slate-900'
-                                      : 'text-amber-300'
-                                  }`}
-                                >
-                                  {wp.valuation}
-                                </div>
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
-
-                      {/* Playback & 360 Tour Controls */}
-                      <div className="pt-2 border-t border-white/20 flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-1.5">
-                          <button
-                            type="button"
-                            onClick={handlePrev}
-                            className="p-2 rounded-xl bg-slate-950/60 hover:bg-amber-400 text-white hover:text-slate-950 border border-white/25 transition-colors cursor-pointer"
-                            title="Previous Slide"
-                          >
-                            <ChevronLeft className="w-4 h-4" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setIsPaused(prev => !prev)}
-                            className="px-3 py-2 rounded-xl bg-slate-950/60 hover:bg-white/20 text-white border border-white/25 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
-                          >
-                            {isPaused ? (
-                              <>
-                                <Play className="w-3.5 h-3.5 text-amber-400" />
-                                <span>Play</span>
-                              </>
-                            ) : (
-                              <>
-                                <Pause className="w-3.5 h-3.5 text-amber-400" />
-                                <span>Pause</span>
-                              </>
-                            )}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={handleNext}
-                            className="p-2 rounded-xl bg-slate-950/60 hover:bg-amber-400 text-white hover:text-slate-950 border border-white/25 transition-colors cursor-pointer"
-                            title="Next Slide"
-                          >
-                            <ChevronRight className="w-4 h-4" />
-                          </button>
+                    {/* Room / Angle Thumbnails Strip */}
+                    {activeSlideGallery.length > 1 && (
+                      <div className="space-y-1">
+                        <div className="text-[10px] font-bold text-slate-300 flex items-center justify-between">
+                          <span>Room Angles ({activeSlideGallery.length})</span>
+                          <span>Click to switch view</span>
                         </div>
-
-                        <button
-                          type="button"
-                          onClick={() =>
-                            onOpen3DTour({
-                              id: activeWaypoint.id,
-                              title: activeWaypoint.headline,
-                              tagline: activeWaypoint.subLabel,
-                              description: activeWaypoint.description,
-                              priceFormatted: activeWaypoint.valuation,
-                              category: activeWaypoint.propertyCategory,
-                              images:
-                                activeWaypoint.galleryImages &&
-                                activeWaypoint.galleryImages.length > 0
-                                  ? activeWaypoint.galleryImages
-                                  : [
-                                      activeWaypoint.imageUrl,
-                                      activeWaypoint.secondaryImageUrl
-                                    ],
-                              virtualTourVideoUrl: activeWaypoint.videoUrl,
-                              virtualTourVideoTitle:
-                                activeWaypoint.videoTitle ||
-                                `${activeWaypoint.headline} — 360° Virtual Tour`,
-                              hasVirtualTour: Boolean(activeWaypoint.videoUrl),
-                              location: {
-                                city: 'Taxila & Islamabad',
-                                society: activeWaypoint.locationBadge,
-                                province: 'Punjab'
-                              }
-                            })
-                          }
-                          className="px-3.5 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-black flex items-center gap-1.5 shadow-md cursor-pointer"
-                        >
-                          <Compass className="w-3.5 h-3.5" />
-                          <span>Launch 360° Tour</span>
-                        </button>
+                        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+                          {activeSlideGallery.map((imgUrl, gIdx) => {
+                            const isCurrentAngle =
+                              resolvedImageUrl === imgUrl && !isVideoTourActive;
+                            return (
+                              <button
+                                key={`${imgUrl}-${gIdx}`}
+                                type="button"
+                                onClick={() => {
+                                  setIsVideoTourActive(false);
+                                  setCustomActiveImageOverride(imgUrl);
+                                }}
+                                className={`relative w-14 h-10 rounded-lg overflow-hidden border-2 shrink-0 transition-all cursor-pointer ${
+                                  isCurrentAngle
+                                    ? 'border-amber-400 scale-105'
+                                    : 'border-white/15 opacity-75 hover:opacity-100'
+                                }`}
+                              >
+                                <img
+                                  src={imgUrl}
+                                  alt={`Angle ${gIdx + 1}`}
+                                  className="w-full h-full object-cover"
+                                />
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </motion.div>
-              </div>
-            )}
-          </div>
-        )}
+                    )}
 
-        {/* Bottom Consortium 4-Pillar Ribbon (Optional) */}
-        <AnimatePresence>
-          {showConsortiumRibbon && !isCinemaTheaterMode && (
-            <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 12 }}
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 pt-3"
-            >
-              {consortiumPillars.map(pillar => (
-                <button
-                  key={pillar.id}
-                  type="button"
-                  onClick={() => {
-                    setTourCategory(pillar.id);
-                    onSelectCategoryFilter(pillar.category);
-                  }}
-                  className="p-3 rounded-2xl bg-slate-950/65 hover:bg-slate-900/85 backdrop-blur-xl border border-white/20 text-left flex items-start gap-3 transition-all cursor-pointer"
-                >
-                  <div className="p-2 rounded-xl bg-white/10 border border-white/15 shrink-0">
-                    {pillar.icon}
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-xs font-extrabold text-white truncate">
-                      {pillar.title}
+                    {/* Action Buttons inside Deck */}
+                    <div className="grid grid-cols-2 gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setVideoFailed(false);
+                          setIsVideoTourActive(prev => !prev);
+                        }}
+                        className={`py-2 px-3 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 cursor-pointer transition-all ${
+                          isVideoTourActive
+                            ? 'bg-amber-400 text-slate-950'
+                            : 'bg-indigo-600 hover:bg-indigo-500 text-white'
+                        }`}
+                      >
+                        <Video className="w-3.5 h-3.5" />
+                        <span>
+                          {isVideoTourActive ? 'Stop Video' : '360° Video Tour'}
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleLaunchFull360Modal(activeWaypoint)}
+                        className="py-2 px-3 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-bold flex items-center justify-center gap-1.5 border border-white/20 cursor-pointer"
+                      >
+                        <Compass className="w-3.5 h-3.5 text-amber-300" />
+                        <span>360° Studio</span>
+                      </button>
                     </div>
-                    <div className="text-[10.5px] text-slate-300 truncate mt-0.5">
-                      {pillar.detail}
-                    </div>
                   </div>
-                </button>
-              ))}
+                )}
+              </div>
             </motion.div>
           )}
-        </AnimatePresence>
+        </div>
+
+        {/* Bottom Feature Spec Strip */}
+        {showSpecCards && !isCinemaTheaterMode && (
+          <div className="pt-3 grid grid-cols-2 lg:grid-cols-4 gap-2">
+            {activeWaypoint.specs.map(item => (
+              <div
+                key={item.id}
+                className="px-3 py-2 rounded-xl bg-slate-950/70 backdrop-blur-xl border border-white/15 flex items-center gap-2"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <div className="min-w-0">
+                  <div className="text-[9px] font-bold uppercase text-amber-300/90">
+                    {item.title}
+                  </div>
+                  <div className="text-[11px] font-bold text-white truncate">
+                    {item.spec}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );
