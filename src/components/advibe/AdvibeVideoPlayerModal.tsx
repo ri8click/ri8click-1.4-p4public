@@ -1,13 +1,5 @@
 import React, { useState } from 'react';
-import { 
-  Play, 
-  X, 
-  Film, 
-  Clock, 
-  ExternalLink,
-  Tv,
-  CheckCircle
-} from 'lucide-react';
+import { Play, X, Film, Clock } from 'lucide-react';
 import { AdVibeVideoItem } from '../../types';
 
 interface AdvibeVideoPlayerModalProps {
@@ -15,41 +7,66 @@ interface AdvibeVideoPlayerModalProps {
   projectTitle: string;
 }
 
+const FALLBACK_SAMPLE_VIDEO =
+  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4';
+
+function resolveVideoStream(video: AdVibeVideoItem): {
+  mode: 'youtube' | 'vimeo' | 'native';
+  src: string;
+} {
+  const url = (video.url || '').trim() || FALLBACK_SAMPLE_VIDEO;
+  const ytMatch = url.match(
+    /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/
+  );
+  if (ytMatch && ytMatch[1]) {
+    return {
+      mode: 'youtube',
+      src: `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1&rel=0`
+    };
+  }
+
+  const vimeoMatch = url.match(
+    /vimeo\.com\/(?:channels\/(?:\w+\/)?|groups\/(?:[^/]*)\/videos\/|album\/(?:\d+)\/video\/|video\/|)(\d+)/
+  );
+  if (vimeoMatch && vimeoMatch[1]) {
+    return {
+      mode: 'vimeo',
+      src: `https://player.vimeo.com/video/${vimeoMatch[1]}?autoplay=1`
+    };
+  }
+
+  return { mode: 'native', src: url };
+}
+
 export const AdvibeVideoPlayerModal: React.FC<AdvibeVideoPlayerModalProps> = ({
   videos,
   projectTitle
 }) => {
   const [activeVideo, setActiveVideo] = useState<AdVibeVideoItem | null>(null);
+  const [videoFailed, setVideoFailed] = useState(false);
 
-  const getEmbedUrl = (video: AdVibeVideoItem) => {
-    if (video.type === 'youtube') {
-      const match = video.url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
-      const videoId = match ? match[1] : video.url;
-      return `https://www.youtube.com/embed/${videoId}?autoplay=1`;
-    }
-    if (video.type === 'vimeo') {
-      const match = video.url.match(/vimeo\.com\/(?:channels\/(?:\w+\/)?|groups\/(?:[^\/]*)\/videos\/|album\/(?:\d+)\/video\/|video\/|)(\d+)/);
-      const videoId = match ? match[1] : video.url;
-      return `https://player.vimeo.com/video/${videoId}?autoplay=1`;
-    }
-    return video.url;
-  };
+  const resolvedActive = activeVideo ? resolveVideoStream(activeVideo) : null;
 
   return (
     <div className="w-full space-y-6">
-      
       {/* Video Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {videos.map((vid) => (
+        {videos.map(vid => (
           <div
             key={vid.id}
-            onClick={() => setActiveVideo(vid)}
+            onClick={() => {
+              setVideoFailed(false);
+              setActiveVideo(vid);
+            }}
             className="group relative rounded-2xl overflow-hidden cursor-pointer bg-slate-900 border border-slate-800 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 flex flex-col"
           >
             {/* Thumbnail Box */}
             <div className="relative h-48 w-full overflow-hidden bg-slate-950">
               <img
-                src={vid.thumbnail}
+                src={
+                  vid.thumbnail ||
+                  'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=800&q=80'
+                }
                 alt={vid.title}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 loading="lazy"
@@ -73,7 +90,7 @@ export const AdvibeVideoPlayerModal: React.FC<AdvibeVideoPlayerModalProps> = ({
 
               {/* Category Badge */}
               <div className="absolute top-2.5 left-2.5 bg-slate-900/80 backdrop-blur-xs text-white text-[10px] font-bold px-2 py-0.5 rounded-md border border-slate-700">
-                {vid.category}
+                {vid.category || 'Walkthrough'}
               </div>
             </div>
 
@@ -93,12 +110,12 @@ export const AdvibeVideoPlayerModal: React.FC<AdvibeVideoPlayerModalProps> = ({
       </div>
 
       {/* Video Player Modal */}
-      {activeVideo && (
-        <div 
+      {activeVideo && resolvedActive && (
+        <div
           className="fixed inset-0 z-50 bg-slate-950/95 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200"
           onClick={() => setActiveVideo(null)}
         >
-          <div 
+          <div
             className="w-full max-w-4xl bg-slate-900 rounded-2xl border border-slate-700 overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200"
             onClick={e => e.stopPropagation()}
           >
@@ -120,7 +137,7 @@ export const AdvibeVideoPlayerModal: React.FC<AdvibeVideoPlayerModalProps> = ({
 
               <button
                 onClick={() => setActiveVideo(null)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -128,19 +145,22 @@ export const AdvibeVideoPlayerModal: React.FC<AdvibeVideoPlayerModalProps> = ({
 
             {/* Video Screen Container */}
             <div className="relative w-full aspect-video bg-black flex items-center justify-center">
-              {activeVideo.type === 'hosted' ? (
+              {resolvedActive.mode === 'native' ? (
                 <video
-                  src={activeVideo.url}
+                  key={videoFailed ? FALLBACK_SAMPLE_VIDEO : resolvedActive.src}
+                  src={videoFailed ? FALLBACK_SAMPLE_VIDEO : resolvedActive.src}
+                  poster={activeVideo.thumbnail}
                   controls
                   autoPlay
                   playsInline
+                  onError={() => setVideoFailed(true)}
                   className="w-full h-full object-contain"
                 >
                   Your browser does not support HTML5 video streaming.
                 </video>
               ) : (
                 <iframe
-                  src={getEmbedUrl(activeVideo)}
+                  src={resolvedActive.src}
                   title={activeVideo.title}
                   className="w-full h-full border-0"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
@@ -158,7 +178,6 @@ export const AdvibeVideoPlayerModal: React.FC<AdvibeVideoPlayerModalProps> = ({
           </div>
         </div>
       )}
-
     </div>
   );
 };
