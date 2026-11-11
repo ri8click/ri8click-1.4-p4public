@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   ShieldCheck,
   MapPin,
@@ -46,19 +46,26 @@ export function resolvePakistanAgentAvatar(
   agencyIdOrName?: string,
   idx = 0
 ): string {
-  if (avatarUrl && avatarUrl.startsWith('data:image/')) {
-    return avatarUrl;
+  const trimmed = (avatarUrl || '').trim();
+
+  // Always preserve uploaded photos (/uploads/... or data:image/...) and valid custom URLs
+  if (
+    trimmed.startsWith('/uploads/') ||
+    trimmed.startsWith('data:image/') ||
+    trimmed.startsWith('blob:')
+  ) {
+    return trimmed;
+  }
+
+  const isForeignOrEmpty =
+    !trimmed ||
+    LEGACY_FOREIGN_AVATAR_IDS.some(foreignId => trimmed.includes(foreignId));
+
+  if (!isForeignOrEmpty && trimmed) {
+    return trimmed;
   }
 
   const key = (agencyIdOrName || '').toLowerCase();
-  const isForeignOrEmpty =
-    !avatarUrl ||
-    LEGACY_FOREIGN_AVATAR_IDS.some(foreignId => avatarUrl.includes(foreignId));
-
-  if (!isForeignOrEmpty && avatarUrl) {
-    return avatarUrl;
-  }
-
   if (key.includes('agency-1') || key.includes('zeeshan') || key.includes('mairaj')) {
     return PAKISTAN_AGENT_AVATARS.malikZeeshan;
   }
@@ -83,6 +90,23 @@ export function resolvePakistanAgentAvatar(
   return PAKISTAN_AVATAR_POOL[idx % PAKISTAN_AVATAR_POOL.length];
 }
 
+async function uploadAgentPhotoToServer(dataUrl: string, fileName: string): Promise<string> {
+  try {
+    const res = await fetch('/api/media/upload', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ dataUrl, fileName })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data?.url) return data.url;
+    }
+  } catch {
+    // Fallback to inline DataURL
+  }
+  return dataUrl;
+}
+
 export const AgenciesSection: React.FC<AgenciesSectionProps> = ({
   agencies,
   properties,
@@ -92,15 +116,17 @@ export const AgenciesSection: React.FC<AgenciesSectionProps> = ({
   onUpdateAgencies
 }) => {
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const [uploadingAgencyId, setUploadingAgencyId] = useState<string | null>(null);
 
   const handleUploadSpecialistPhoto = (agencyId: string, file?: File) => {
     if (!file || !onUpdateAgencies) return;
+    setUploadingAgencyId(agencyId);
     const reader = new FileReader();
     reader.onload = e => {
       const img = new Image();
-      img.onload = () => {
+      img.onload = async () => {
         const canvas = document.createElement('canvas');
-        const MAX_SIZE = 500;
+        const MAX_SIZE = 600;
         let width = img.width;
         let height = img.height;
         if (width > height && width > MAX_SIZE) {
@@ -114,14 +140,20 @@ export const AgenciesSection: React.FC<AgenciesSectionProps> = ({
         canvas.height = height;
         const ctx = canvas.getContext('2d');
         ctx?.drawImage(img, 0, 0, width, height);
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.86);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.88);
+        const permanentUrl = await uploadAgentPhotoToServer(dataUrl, file.name);
         const updated = agencies.map(ag =>
-          ag.id === agencyId ? { ...ag, logo: dataUrl, avatar: dataUrl } : ag
+          ag.id === agencyId
+            ? { ...ag, logo: permanentUrl, avatar: permanentUrl }
+            : ag
         );
         onUpdateAgencies(updated);
+        setUploadingAgencyId(null);
       };
+      img.onerror = () => setUploadingAgencyId(null);
       img.src = e.target?.result as string;
     };
+    reader.onerror = () => setUploadingAgencyId(null);
     reader.readAsDataURL(file);
   };
 
@@ -179,6 +211,7 @@ export const AgenciesSection: React.FC<AgenciesSectionProps> = ({
                     <div className="flex items-center gap-3.5 min-w-0">
                       <div className="relative group shrink-0">
                         <img
+                          key={resolvedAvatar}
                           src={resolvedAvatar}
                           alt={agency.name}
                           onError={e => {
@@ -203,8 +236,9 @@ export const AgenciesSection: React.FC<AgenciesSectionProps> = ({
                             <button
                               type="button"
                               onClick={() => fileInputRefs.current[agency.id]?.click()}
-                              className="absolute -bottom-1 -right-1 p-1.5 rounded-lg bg-blue-600 text-white shadow-md hover:bg-blue-700 cursor-pointer"
-                              title="Upload Local Specialist Photo"
+                              disabled={uploadingAgencyId === agency.id}
+                              className="absolute -bottom-1 -right-1 p-1.5 rounded-lg bg-blue-600 text-white shadow-md hover:bg-blue-700 cursor-pointer disabled:opacity-50"
+                              title="Upload Specialist Photo (Auto-Updates All Agent Ads)"
                             >
                               <Camera className="w-3 h-3" />
                             </button>
@@ -259,7 +293,10 @@ export const AgenciesSection: React.FC<AgenciesSectionProps> = ({
                 {/* Instant Actions */}
                 <div className="pt-3 border-t border-slate-100 flex items-center gap-2">
                   <a
-                    href={`https://wa.me/${agency.whatsapp}?text=${encodeURIComponent(
+                    href={`https://wa.me/${(agency.whatsapp || '923365666727').replace(
+                      /[^0-9]/g,
+                      ''
+                    )}?text=${encodeURIComponent(
                       `Assalam o Alaikum ${agency.name}, I am contacting you via ri8click regarding properties in ${agency.city}.`
                     )}`}
                     target="_blank"
